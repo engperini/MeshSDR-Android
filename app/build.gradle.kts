@@ -9,8 +9,8 @@ android {
         applicationId = "com.engperini.meshsdr"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (System.getenv("MESHSDR_VERSION_CODE") ?: "2").toInt()
+        versionName = "0.2.${versionCode}"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
