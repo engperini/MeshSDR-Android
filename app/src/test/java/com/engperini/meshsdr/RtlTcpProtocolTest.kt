@@ -16,7 +16,7 @@ class RtlTcpProtocolTest {
     }
     @Test fun frequencyCommandUsesBigEndian() {
         assertArrayEquals(
-            byteArrayOf(1, 0x37, 0x05, 0x6B, 0xC8.toByte()),
+            byteArrayOf(1, 0x37, 0x05, 0xC5.toByte(), 0x08),
             RtlTcpProtocol.command(1, 923125000L)
         )
     }
