@@ -35,7 +35,18 @@ jobs:
       - name: Unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Android Lint
-        run: gradle :app:lintDebug --stacktrace
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle :app:lintDebug --console=plain > lint-console.log 2>&1
+          result=$?
+          echo "=== Lint diagnostics ==="
+          grep -nE '(^.*(Error:|Warning:|error:|warning:|Lint found|FAILURE:|What went wrong:|> Task :app:lint|\.kt:[0-9]+|\.xml:[0-9]+).*$)' lint-console.log | tail -100 || true
+          if [ "$result" -ne 0 ]; then
+            echo "=== Full final output ==="
+            tail -90 lint-console.log
+          fi
+          exit "$result"
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
@@ -51,4 +62,7 @@ jobs:
             app/build/reports/tests/
             app/build/reports/lint-results-debug.html
             app/build/test-results/
+            lint-console.log
+            app/build/reports/lint-results-debug.txt
+            app/build/reports/lint-results-debug.xml
           if-no-files-found: ignore
