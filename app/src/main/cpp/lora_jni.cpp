@@ -11,8 +11,8 @@ struct Receiver {
     jmethodID onFrame;
     JNIEnv* env = nullptr;
     std::vector<lora_lite::Cx> samples;
-    Receiver(JNIEnv* e, jobject callback, int decimation, double shiftHz, double sampleRate)
-        : frontEnd(decimation, shiftHz, sampleRate), listener(e->NewGlobalRef(callback)) {
+    Receiver(JNIEnv* e, jobject callback, int decimation, double shiftHz, double sampleRate, bool average)
+        : frontEnd(decimation, shiftHz, sampleRate, average), listener(e->NewGlobalRef(callback)) {
         jclass cls = e->GetObjectClass(callback);
         onFrame = e->GetMethodID(cls, "onFrame", "([BIIZFI)V");
         e->DeleteLocalRef(cls);
@@ -37,9 +37,10 @@ struct Receiver {
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_engperini_meshsdr_LoraReceiver_nativeCreate(JNIEnv* env, jobject thiz, jint sf, jint bandwidth,
                                                      jint codingRate, jint syncWord, jlong centerHz,
-                                                     jint decimation, jdouble shiftHz, jdouble sampleRate) {
+                                                     jint decimation, jdouble shiftHz, jdouble sampleRate,
+                                                     jboolean average) {
     if (sf < 6 || sf > LORA_LITE_MAX_SF || decimation < 1) return 0;
-    auto* r = new Receiver(env, thiz, decimation, shiftHz, sampleRate);
+    auto* r = new Receiver(env, thiz, decimation, shiftHz, sampleRate, average == JNI_TRUE);
     if (!r->onFrame) { env->DeleteGlobalRef(r->listener); delete r; return 0; }
     // syncWord 0 accepts any sync word; the detected one is reported per frame.
     r->demod.init(sf, codingRate, true, static_cast<uint16_t>(syncWord), Receiver::received, r,

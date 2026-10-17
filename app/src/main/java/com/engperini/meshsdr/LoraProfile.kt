@@ -21,7 +21,7 @@ data class LoraProfile(
 
     companion object {
         const val SAMPLE_RATE = 1_000_000
-        /** The tuner sits this far above the channel to keep the RTL DC spike out of it. */
+        /** Optional (off by default): tuner this far above the channel, keeping the RTL DC spike off it. */
         const val TUNING_OFFSET_HZ = 250_000
 
         // Brazil: the Meshtastic community uses region ANZ (915-928 MHz) with

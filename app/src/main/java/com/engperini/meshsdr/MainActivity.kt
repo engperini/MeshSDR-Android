@@ -35,10 +35,13 @@ class MainActivity : Activity() {
     @Volatile private var captureRequested = false
     private val port = 14423
     private val sampleRate = LoraProfile.SAMPLE_RATE
-    /** LoRa channel frequency; the tuner sits TUNING_OFFSET_HZ above it. */
+    /** LoRa channel frequency; with the DC offset option the tuner sits TUNING_OFFSET_HZ above it. */
     private var centerHz = LoraProfile.DEFAULT.frequencyHz
     @Volatile private var profile = LoraProfile.DEFAULT
     @Volatile private var receiverStale = false
+    /** Optional DSP, both off by default (no field data yet showing they help). */
+    @Volatile private var offsetTuning = false
+    @Volatile private var averaging = false
     private lateinit var profileLabel: TextView
     /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
     private var gainTenths = 402
@@ -52,6 +55,8 @@ class MainActivity : Activity() {
         profile = LoraProfile.byId(getPreferences(MODE_PRIVATE).getString("profile", null))
         centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", profile.frequencyHz)
         gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
+        offsetTuning = getPreferences(MODE_PRIVATE).getBoolean("offsetTuning", false)
+        averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", false)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 18)
@@ -111,6 +116,25 @@ class MainActivity : Activity() {
             }, LinearLayout.LayoutParams(0, -2, 1f))
         }
         root.addView(gains)
+        root.addView(CheckBox(this).apply {
+            text = "Sintonizar 250 kHz acima (evita pico DC) — opcional"
+            isChecked = offsetTuning
+            setOnCheckedChangeListener { _, on ->
+                offsetTuning = on
+                getPreferences(MODE_PRIVATE).edit().putBoolean("offsetTuning", on).apply()
+                applyFrequency()
+            }
+        })
+        root.addView(CheckBox(this).apply {
+            text = "Filtro de média na decimação — opcional"
+            isChecked = averaging
+            setOnCheckedChangeListener { _, on ->
+                averaging = on
+                getPreferences(MODE_PRIVATE).edit().putBoolean("averaging", on).apply()
+                receiverStale = true
+                log("APP", if (on) "Filtro de média ligado" else "Filtro de média desligado")
+            }
+        })
         updateGainLabel()
         updateProfileLabel()
         val controls = LinearLayout(this)
@@ -218,8 +242,10 @@ class MainActivity : Activity() {
 
     private fun newReceiver(): LoraReceiver {
         val p = profile.copy(frequencyHz = centerHz)
-        log("LORA", "Decoder: ${p.describe()}; sintonizador em %.3f MHz (deslocado do DC)".format(Locale.US, tunedHz() / 1e6))
-        return LoraReceiver(p) { frame -> ui.post { onFrame(frame) } }
+        val offset = tuningOffsetHz()
+        log("LORA", "Decoder: ${p.describe()}; sintonizador em %.3f MHz; deslocamento %s; filtro de média %s".format(
+            Locale.US, tunedHz() / 1e6, if (offset != 0) "250 kHz" else "desligado", if (averaging) "ligado" else "desligado"))
+        return LoraReceiver(p, offset, averaging) { frame -> ui.post { onFrame(frame) } }
     }
 
     /** UI thread. */
@@ -238,7 +264,9 @@ class MainActivity : Activity() {
             "Recebendo • %.3f MHz • detecções %d • decodificados %d".format(Locale.US, centerHz / 1e6, detections, decoded)
     }
 
-    private fun tunedHz(): Long = centerHz + LoraProfile.TUNING_OFFSET_HZ
+    private fun tuningOffsetHz(): Int = if (offsetTuning) LoraProfile.TUNING_OFFSET_HZ else 0
+
+    private fun tunedHz(): Long = centerHz + tuningOffsetHz()
 
     private fun selectProfile(p: LoraProfile) {
         profile = p
@@ -344,7 +372,10 @@ class MainActivity : Activity() {
                 var captureStart = 0L
                 var captureBytes = 0L
                 var captureName = ""
+                var captureFrom = 0
                 var bytes = 0L
+                // Bytes since the RTL0 header: even = an I byte. Recordings start on one.
+                var streamBytes = 0L
                 var last = System.currentTimeMillis()
                 while (running) {
                     val n = input.read(buffer)
@@ -357,14 +388,18 @@ class MainActivity : Activity() {
                         captureName = target.location
                         captureStart = System.currentTimeMillis()
                         captureBytes = 0L
+                        captureFrom = if (streamBytes % 2 == 0L) 0 else 1
                         log("IQ", "Gravando em $captureName")
                     }
                     // Local val: a captured `var` can't be smart-cast to non-null.
                     val activeCapture = capture
                     if (activeCapture != null) {
                         try {
-                            activeCapture.stream.write(buffer, 0, n)
-                            captureBytes += n
+                            if (n > captureFrom) {
+                                activeCapture.stream.write(buffer, captureFrom, n - captureFrom)
+                                captureBytes += n - captureFrom
+                            }
+                            captureFrom = 0
                             if (System.currentTimeMillis() - captureStart >= 10_000L) {
                                 activeCapture.close()
                                 capture = null
@@ -385,6 +420,7 @@ class MainActivity : Activity() {
                     demod.feed(buffer, n)
                     level.add(buffer, n)
                     bytes += n
+                    streamBytes += n
                     val now = System.currentTimeMillis()
                     if (now - last >= 2000) {
                         val rate = bytes * 1000.0 / (now - last) / 1e6

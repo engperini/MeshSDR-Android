@@ -5,3 +5,5 @@ Files `lora_lite.h` and `lora_kiss.h` are copied from [mmmaly/LoraReceiverStanda
 The Android JNI bridge is in `../lora_jni.cpp`.
 
 **Modificação local (MeshSDR):** `lora_lite.h` `finish_sync()` passou a estimar o resíduo de net-ID também quando nenhum sync word é configurado (aceitar qualquer), usando o múltiplo de 8 bins mais próximo.
+
+**Modificação local (MeshSDR):** `finish_sync()` aplica a deriva de relógio (SFO) acumulada desde a referência de temporização do preâmbulo até o payload (`LORA_LITE_SFO_LEAD`), que antes era ignorada.
