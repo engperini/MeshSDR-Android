@@ -13,7 +13,6 @@ import android.os.Build
 import android.view.WindowInsets
 import android.widget.*
 import java.io.BufferedInputStream
-import java.io.DataOutputStream
 import java.net.Socket
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,6 +20,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 class MainActivity : Activity() {
+    private companion object { const val AUTO_GAIN = -1 }
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var freqInput: EditText
     private lateinit var status: TextView
@@ -36,11 +36,15 @@ class MainActivity : Activity() {
     private val port = 14423
     private val sampleRate = 1000000
     private var centerHz = 906875000L
+    /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
+    private var gainTenths = 402
+    private lateinit var gainLabel: TextView
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", centerHz)
+        gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 18)
@@ -86,6 +90,18 @@ class MainActivity : Activity() {
             }, LinearLayout.LayoutParams(0, -2, 1f))
         }
         root.addView(presets)
+        gainLabel = TextView(this).apply { textSize = 16f; setPadding(0, 8, 0, 0) }
+        root.addView(gainLabel)
+        val gains = LinearLayout(this)
+        listOf("Auto" to AUTO_GAIN, "20" to 197, "30" to 297, "40" to 402, "49.6" to 496).forEach { (label, tenths) ->
+            gains.addView(Button(this).apply {
+                text = label
+                textSize = 11f
+                setOnClickListener { applyGain(tenths) }
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+        root.addView(gains)
+        updateGainLabel()
         val controls = LinearLayout(this)
         controls.addView(Button(this).apply {
             text = "Conectar"
@@ -185,19 +201,36 @@ class MainActivity : Activity() {
         centerHz = (mhz * 1e6).toLong()
         getPreferences(MODE_PRIVATE).edit().putLong("frequency", centerHz).apply()
         log("SDR", "Frequência solicitada: $centerHz Hz")
+        sendCommands(listOf(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, centerHz)), "SET_FREQ")
+    }
+
+    private fun gainOrNull(): Int? = if (gainTenths == AUTO_GAIN) null else gainTenths
+
+    private fun updateGainLabel() {
+        gainLabel.text = if (gainTenths == AUTO_GAIN) "Ganho do sintonizador: automático (AGC)"
+            else "Ganho do sintonizador: %.1f dB".format(Locale.US, gainTenths / 10.0)
+    }
+
+    private fun applyGain(tenths: Int) {
+        gainTenths = tenths
+        getPreferences(MODE_PRIVATE).edit().putInt("gainTenths", tenths).apply()
+        updateGainLabel()
+        sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), "ganho")
+    }
+
+    /** Sends rtl_tcp commands if connected; otherwise they are applied on connect. */
+    private fun sendCommands(commands: List<ByteArray>, what: String) {
         val active = socket
-        if (active != null && active.isConnected && !active.isClosed) {
-            thread {
-                try {
-                    synchronized(active) {
-                        val stream = DataOutputStream(active.getOutputStream())
-                        stream.writeByte(0x01)
-                        stream.writeInt(centerHz.toInt())
-                        stream.flush()
-                    }
-                    log("SDR", "Comando rtl_tcp SET_FREQ enviado")
-                } catch (e: Exception) { log("ERROR", "Retune: ${e.message}") }
-            }
+        if (active == null || !active.isConnected || active.isClosed) return
+        thread {
+            try {
+                synchronized(active) {
+                    val out = active.getOutputStream()
+                    commands.forEach { out.write(it) }
+                    out.flush()
+                }
+                log("SDR", "Comando rtl_tcp $what enviado")
+            } catch (e: Exception) { log("ERROR", "Comando $what: ${e.message}") }
         }
     }
 
@@ -244,7 +277,15 @@ class MainActivity : Activity() {
                 }
                 if (String(header, 0, 4, Charsets.US_ASCII) != "RTL0")
                     throw IllegalStateException("Cabeçalho rtl_tcp inválido")
-                log("SDR", "RTL0 recebido; amostras IQ ativas")
+                log("SDR", "RTL0 recebido; sintonizador ${RtlTcpProtocol.tunerName(header)}; amostras IQ ativas")
+                synchronized(s) {
+                    val out = s.getOutputStream()
+                    RtlTcpProtocol.gainCommands(gainOrNull()).forEach { out.write(it) }
+                    out.flush()
+                }
+                log("SDR", if (gainTenths == AUTO_GAIN) "Ganho automático (AGC) aplicado"
+                    else "Ganho manual %.1f dB aplicado".format(Locale.US, gainTenths / 10.0))
+                val level = IqLevel()
                 ui.post { status.text = "Recebendo IQ • ${centerHz / 1e6} MHz" }
                 val demod = LoraReceiver { payload ->
                     try {
@@ -297,11 +338,12 @@ class MainActivity : Activity() {
                         }
                     }
                     demod.feed(buffer, n)
+                    level.add(buffer, n)
                     bytes += n
                     val now = System.currentTimeMillis()
                     if (now - last >= 2000) {
                         val rate = bytes * 1000.0 / (now - last) / 1e6
-                        log("IQ", "%.2f MB/s IQ recebidos".format(Locale.US, rate))
+                        log("IQ", "%.2f MB/s • %s".format(Locale.US, rate, level.summary()))
                         bytes = 0
                         last = now
                     }
