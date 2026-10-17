@@ -9,6 +9,7 @@ struct Receiver {
     jmethodID onPacket;
     JNIEnv* env = nullptr;
     int samplePhase = 0;
+    int pendingI = -1;
     std::vector<lora_lite::Cx> samples;
     Receiver(JNIEnv* e, jobject callback) : listener(e->NewGlobalRef(callback)) {
         jclass cls = e->GetObjectClass(callback);
@@ -45,11 +46,16 @@ Java_com_engperini_meshsdr_LoraReceiver_nativeFeed(JNIEnv* env, jobject, jlong h
     jbyte* ptr = env->GetByteArrayElements(bytes, nullptr);
     if (!ptr) return;
     r->samples.clear();
-    for (int i = 0; i + 1 < length; i += 2) {
+    // rtl_tcp is an uninterrupted interleaved unsigned I/Q byte stream.
+    // Reads can end between I and Q: preserve the orphan I byte.
+    for (int i = 0; i < length; ++i) {
+        const int value = static_cast<uint8_t>(ptr[i]);
+        if (r->pendingI < 0) { r->pendingI = value; continue; }
+        const int inPhase = r->pendingI;
+        r->pendingI = -1;
         if (r->samplePhase++ % 2 != 0) continue;
-        const float real = ((static_cast<uint8_t>(ptr[i]) - 127.5f) / 127.5f);
-        const float imag = ((static_cast<uint8_t>(ptr[i+1]) - 127.5f) / 127.5f);
-        r->samples.push_back({real, imag});
+        r->samples.push_back({(inPhase - 127.5f) / 127.5f,
+                              (value - 127.5f) / 127.5f});
     }
     env->ReleaseByteArrayElements(bytes, ptr, JNI_ABORT);
     r->env = env;
