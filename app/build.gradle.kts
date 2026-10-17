@@ -12,6 +12,10 @@ android {
         versionCode = (System.getenv("MESHSDR_VERSION_CODE") ?: "2").toInt()
         versionName = "0.2.${versionCode}"
     }
+    externalNativeBuild {
+        cmake { path = file("src/main/cpp/CMakeLists.txt") }
+    }
+    ndkVersion = "27.2.12479018"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
