@@ -2,14 +2,14 @@
 #include <cstdint>
 #include <vector>
 #include "lora_lite.h"
+#include "iq_u8.h"
 
 struct Receiver {
     lora_lite::Demod demod;
     jobject listener;
     jmethodID onPacket;
     JNIEnv* env = nullptr;
-    int samplePhase = 0;
-    int pendingI = -1;
+    meshsdr::U8Decimator decimator;
     std::vector<lora_lite::Cx> samples;
     Receiver(JNIEnv* e, jobject callback) : listener(e->NewGlobalRef(callback)) {
         jclass cls = e->GetObjectClass(callback);
@@ -40,23 +40,13 @@ Java_com_engperini_meshsdr_LoraReceiver_nativeCreate(JNIEnv* env, jobject thiz) 
 extern "C" JNIEXPORT void JNICALL
 Java_com_engperini_meshsdr_LoraReceiver_nativeFeed(JNIEnv* env, jobject, jlong handle, jbyteArray bytes, jint length) {
     auto* r = reinterpret_cast<Receiver*>(handle);
-    if (!r || length < 2) return;
+    if (!r || length <= 0) return;
     const jsize size = env->GetArrayLength(bytes);
     if (length > size) length = size;
     jbyte* ptr = env->GetByteArrayElements(bytes, nullptr);
     if (!ptr) return;
     r->samples.clear();
-    // rtl_tcp is an uninterrupted interleaved unsigned I/Q byte stream.
-    // Reads can end between I and Q: preserve the orphan I byte.
-    for (int i = 0; i < length; ++i) {
-        const int value = static_cast<uint8_t>(ptr[i]);
-        if (r->pendingI < 0) { r->pendingI = value; continue; }
-        const int inPhase = r->pendingI;
-        r->pendingI = -1;
-        if (r->samplePhase++ % 2 != 0) continue;
-        r->samples.push_back({(inPhase - 127.5f) / 127.5f,
-                              (value - 127.5f) / 127.5f});
-    }
+    r->decimator.push(reinterpret_cast<const uint8_t*>(ptr), length, r->samples);
     env->ReleaseByteArrayElements(bytes, ptr, JNI_ABORT);
     r->env = env;
     r->demod.feed(r->samples.data(), static_cast<int>(r->samples.size()));

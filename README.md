@@ -1,6 +1,6 @@
 # MeshSDR-Android
 
-> **Estado em 17/10/2026: protótipo experimental, não pronto para uso como decodificador Meshtastic.** A versão inicial recebeu IQ real de um RTL2832U no Android. Depois da introdução do decoder nativo C++/NDK, as execuções **Android APK #38** e **Quality gates #34** aparecem **vermelhas** no GitHub Actions. **Não existe confirmação de compilação, instalação ou decodificação LoRa bem-sucedida para esta versão.**
+> **Estado em 17/10/2026: protótipo experimental.** CI **verde** (Android APK #42 e Quality gates #38, PR #1). O decoder LoRa passa em **teste automatizado de bytes exatos** (modulador de referência → IQ u8 do `rtl_tcp` → decoder), mas **ainda não decodificou um pacote real no ar**, e a interpretação Meshtastic se limita ao cabeçalho de 16 bytes (sem protobuf/descriptografia).
 
 ## Objetivo do produto
 
@@ -32,10 +32,11 @@ Aplicativo Android que usa um dongle USB **RTL2832U (RTL-SDR)** por OTG e o driv
 | Protocolo rtl_tcp | `app/src/main/java/com/engperini/meshsdr/RtlTcpProtocol.kt` | Auxiliar de cabeçalho/comando |
 | Parser envelope Meshtastic | `app/src/main/java/com/engperini/meshsdr/MeshtasticAirPacket.kt` | Cabeçalho de rádio; **não** protobuf nem descriptografia |
 | Ponte Kotlin/JNI | `app/src/main/java/com/engperini/meshsdr/LoraReceiver.kt` | Publicada, sem CI verde |
-| Ponte C++/JNI | `app/src/main/cpp/lora_jni.cpp` | Alimenta decoder em tempo real; não validada |
-| DSP LoRa de terceiros | `app/src/main/cpp/upstream/lora_lite.h`, `lora_kiss.h` | Copiado de `mmmaly/LoraReceiverStandalone`; precisa validar licença, compatibilidade e compilação |
-| Build C++ | `app/src/main/cpp/CMakeLists.txt` | Android NDK 27.2.12479018; falhando na CI |
-| Gravação IQ | `MainActivity.kt` | Botão opcional de 10 s, não é requisito para decodificar |
+| Ponte C++/JNI | `app/src/main/cpp/lora_jni.cpp`, `iq_u8.h` | Conversão u8→complexo e decimação 2:1 (média de 2 amostras) testadas no host; JNI compila na CI |
+| DSP LoRa de terceiros | `app/src/main/cpp/upstream/lora_lite.h`, `lora_kiss.h` | Copiado de `mmmaly/LoraReceiverStandalone`; bytes exatos em SF7–12 × CR4/5–4/8 × BW125/250k no teste; licença GPL-3.0 ainda a conferir |
+| Build C++ | `app/src/main/cpp/CMakeLists.txt` | Android NDK 27.2.12479018; verde na CI |
+| Teste PHY LoRa (host) | `app/src/test/cpp/` | Roda no Quality gates via CMake/ctest |
+| Gravação IQ e logs | `MainActivity.kt`, `PublicFiles.kt` | Botões "Gravar IQ (10 s)" e "Salvar logs"; arquivos em **Download/MeshSDR** (Android 10+, via MediaStore, sem permissão). Não é requisito para decodificar |
 
 ### Caminho de recepção pretendido
 
@@ -45,7 +46,7 @@ RTL2832U USB OTG
    -> rtl_tcp localhost:14423 (cabeçalho RTL0 + IQ U8 interleaved)
    -> MainActivity (leitura em thread)
    -> LoraReceiver.kt -> JNI lora_jni.cpp
-   -> decimação IQ 1 MS/s -> 500 kS/s
+   -> decimação IQ 1 MS/s -> 500 kS/s (iq_u8.h)
    -> lora_lite::Demod (LoRa PHY, perfil inicial SF11/BW250k)
    -> bytes de quadro CRC-ok
    -> MeshtasticAirPacket (envelope, SEM decriptografia)
@@ -54,15 +55,27 @@ RTL2832U USB OTG
 
 **Limitações técnicas importantes:** o código atual configura o DSP **fixo** em SF11/BW250k/CR 4/5/sync 0x2B, embora a frequência seja editável. O sample rate foi alterado de 1.024 MS/s para **1 MS/s** para permitir decimação 2:1; não há validação da precisão da taxa ou do alinhamento de canal. Mudar a frequência no campo **não reconfigura** o perfil LoRa. Não há varredura automática, suporte comprovado a MeshCore, nem decodificação de texto Meshtastic. Os metadados Meshtastic **não são mensagens de texto**. O perfil US LongFast não cobre automaticamente todos os canais ou regiões.
 
-## Situação atual da CI (evidência enviada pelo usuário)
+## Teste automatizado do PHY LoRa
 
-- `Android APK #38` — **falhou**, commit `d36aacd`.
-- `Quality gates #34` — **falhou**, mesmo commit.
-- Captura mostra **somente status vermelho**; **não mostra a linha do erro de compilação**. Não é correto afirmar que a causa já foi diagnosticada.
-- O workflow `android.yml` tenta publicar `MeshSDR-build-log` **mesmo em falha**. Consultar esse artefato e o step **Build native LoRa decoder and Android APK** para a primeira mensagem `error:` / `CMake Error` / `FAILURE`. No `quality.yml`, conferir qual step falhou e os artefatos `MeshSDR-test-reports`.
-- Histórico: falhas anteriores de `setup-android` e Lint foram superadas antes da introdução do decoder; não confundir com o problema atual.
+`app/src/test/cpp/lora_tx.h` é um **modulador LoRa de referência** escrito de forma independente do decoder (cadeia do gr-lora_sdr: whitening, cabeçalho explícito, CRC, Hamming, interleaver diagonal, Gray inverso, chirps com preâmbulo, sync word e 2,25 downchirps). `lora_phy_test.cpp` gera quadros conhecidos e exige os **bytes exatos** na saída do decoder:
 
-[GitHub Actions — todas as execuções](https://github.com/engperini/MeshSDR-Android/actions) · [Android APK](https://github.com/engperini/MeshSDR-Android/actions/workflows/android.yml) · [Quality gates](https://github.com/engperini/MeshSDR-Android/actions/workflows/quality.yml)
+| Caso | O que prova |
+| --- | --- |
+| tables | Whitening e CRC do TX batem com a tabela/CRC do decoder (check value CRC-16/XMODEM `0x31C3`) |
+| clean, max-payload | LongFast (SF11/BW250k/CR4/5/sync 0x2B) pelo caminho real: IQ u8 1 MS/s → `U8Decimator` → decoder; 40 e 255 bytes |
+| reads | 3 quadros seguidos, leituras TCP aleatórias incluindo 1–7 bytes (I separado de Q) |
+| ppm+noise, weak, cheap-xtal | Erro de cristal ±3 a ±25 ppm (até ±22,7 kHz, com deriva de clock correspondente) e SNR de +10 a −10 dB na banda |
+| matrix | 48 combinações SF7–12 × CR4/5–4/8 × BW125/250k (com LDRO quando aplicável) |
+| noise | 5 s de ruído não geram quadro falso; mede velocidade (≈88× tempo real no runner x86) |
+
+Os testes foram verificados por mutação (sync word errado e um bit invertido no TX fazem o teste falhar). Rodar localmente:
+
+```bash
+cmake -S app/src/test/cpp -B build-host -DCMAKE_BUILD_TYPE=Release
+cmake --build build-host && ctest --test-dir build-host --output-on-failure
+```
+
+**Limites:** o canal é sintético (AWGN + ppm); não há multipercurso, interferência nem distorção do R820T. O decoder só trata um perfil fixo por vez (SF11/BW250k na app). Desempenho em ARM no celular não foi medido.
 
 ## Como reproduzir o build
 
@@ -76,9 +89,9 @@ gradle :app:assembleDebug --stacktrace --console=plain
 
 APK, **somente se compilar**: `app/build/outputs/apk/debug/app-debug.apk`, artifact `MeshSDR-Android-debug` da workflow Android APK. Não confundir um build de APK verde com a prova de decodificação LoRa.
 
-### Atualização sem desinstalar: pendência crítica
+### Atualização sem desinstalar (assinatura fixa)
 
-`app/build.gradle.kts` usa `MESHSDR_VERSION_CODE`, e as CIs tentam calculá-lo por `1000 + git rev-list --count HEAD`. **O checkout padrão do Actions é raso (`fetch-depth: 1`)**, portanto a contagem pode permanecer em 1 e **não garantir incremento de versão**. Corrigir com `fetch-depth: 0` e versionamento persistente ou `github.run_number` com política explícita. Além disso, `actions/cache` para `~/.android/debug.keystore` **não garante** que a mesma chave exista entre todos os builds ou em caso de cache miss. A instalação por cima só funciona com **applicationId igual, versionCode superior e assinatura idêntica**. Preferir chave de assinatura fixa armazenada em GitHub Secrets (sem versionar a chave no Git) e verificar fingerprint antes de distribuir. O APK atual **não tem garantia de upgrade in-place**.
+Todo build (CI ou local) é assinado com a chave pública de teste `app/meshsdr-debug.jks` (alias `meshsdr`, senha `meshsdr-public`), versionada no repositório de propósito: não há segredos neste projeto e qualquer pessoa pode recompilar com a mesma assinatura. O `versionCode` é `1000 + git rev-list --count HEAD`, com checkout completo (`fetch-depth: 0`), portanto cresce a cada commit. O step **Show APK version and signing certificate** imprime `versionCode` e o SHA-256 do certificado, que deve ser sempre `85:3E:23:FB:7D:32:D9:55:8C:2F:25:D2:8F:03:4F:E4:75:4C:8B:29:70:D1:0B:82:8C:E5:E0:EA:DF:3F:C2:B2`. APKs assinados antes desta mudança têm outra chave: desinstale uma única vez; daí em diante a instalação por cima funciona (`adb install -r app-debug.apk`).
 
 ### Licenciamento
 

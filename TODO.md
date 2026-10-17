@@ -2,22 +2,22 @@
 
 Este documento é um plano de execução para continuidade por outro desenvolvedor/IA. **Não marque tarefas como concluídas sem evidência.**
 
-## P0 — recuperar a CI e APK
+## P0 — recuperar a CI e APK (CI verde no PR #1)
 
 - [ ] Abrir **Android APK #38** e **Quality gates #34**; registrar no commit/PR o primeiro erro real (não apenas `exit code 1`).
 - [ ] Corrigir build CMake/NDK/JNI e eventuais falhas Kotlin/Lint **sem retirar o decoder**. Verificar compatibilidade de `lora_lite.h` com SF11/SF12 e tamanhos de buffer.
 - [ ] Garantir que `android.yml` e `quality.yml` fiquem verdes **no mesmo SHA**; manter artefatos de diagnóstico.
-- [ ] Corrigir versionCode: checkout com histórico completo ou outra sequência realmente monotônica.
-- [ ] Configurar assinatura estável em segredo de CI, validar SHA-256 do certificado; não depender de cache de debug keystore.
+- [x] Corrigir versionCode: checkout com histórico completo (`fetch-depth: 0`).
+- [x] Assinatura estável com chave pública de teste versionada (`app/meshsdr-debug.jks`); imprimir SHA-256 do certificado no log (falta validar upgrade no aparelho).
 - [ ] Documentar upgrade do APK com `adb install -r` e verificar mesmo `applicationId`, assinatura e versão.
 
 ## P1 — função principal: LoRa PHY ao vivo
 
 - [ ] Revisar e adaptar o decoder upstream de forma correta, mantendo fluxo **RTL TCP → IQ → JNI → LoRa PHY → bytes** contínuo. Gravação raw é **somente opcional**.
 - [ ] Revisar `LORA_LITE_MAX_SF=12`, `LORA_LITE_MAX_PAYLOAD=255`, alocação de `Demod`, possíveis truncamentos `uint8_t`, CRC e desempenho em ARM64.
-- [ ] Criar gerador/teste determinístico com quadros LoRa conhecidos (símbolos IQ), verificar detecção de preâmbulo, sync, SF/BW/CR, payload exato e CRC.
-- [ ] Testar streaming em blocos TCP de tamanho variável, incluindo byte I separado de Q e múltiplos pacotes seguidos.
-- [ ] Medir consumo de CPU, memória e perda de amostras a 1 MS/s; não bloquear UI nem perder dados silenciosamente.
+- [x] Criar gerador/teste determinístico com quadros LoRa conhecidos (`app/src/test/cpp`), verificando sync, SF/BW/CR, payload exato e CRC.
+- [x] Testar streaming em blocos TCP de tamanho variável, incluindo byte I separado de Q e múltiplos pacotes seguidos.
+- [ ] Medir consumo de CPU **no celular** (no host x86: ≈88× tempo real), memória e perda de amostras a 1 MS/s; não bloquear UI nem perder dados silenciosamente.
 - [ ] Configurar perfil LoRa (SF, BW, CR, sync, canal/frequência) e validar presets para região real.
 - [ ] Mostrar métricas: IQ MB/s, quadros detectados, CRC-ok/erro, perda de amostras e erros de decoder.
 

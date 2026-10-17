@@ -16,6 +16,20 @@ android {
         cmake { path = file("src/main/cpp/CMakeLists.txt") }
     }
     ndkVersion = "27.2.12479018"
+    // Public, test-only key committed to the repo: every build (CI or local)
+    // gets the same signature, so new APKs install over the previous one.
+    signingConfigs {
+        create("stable") {
+            storeFile = file("meshsdr-debug.jks")
+            storePassword = "meshsdr-public"
+            keyAlias = "meshsdr"
+            keyPassword = "meshsdr-public"
+        }
+    }
+    buildTypes {
+        getByName("debug") { signingConfig = signingConfigs.getByName("stable") }
+        getByName("release") { signingConfig = signingConfigs.getByName("stable") }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
