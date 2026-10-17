@@ -28,6 +28,9 @@
 #ifndef LORA_LITE_OS
 #define LORA_LITE_OS 2               // samples per chip after decimation
 #endif
+#ifndef LORA_LITE_SFO_LEAD
+#define LORA_LITE_SFO_LEAD 4.0f      // symbols from the timing reference to SYNC entry (fitted, see README)
+#endif
 #ifndef LORA_LITE_MAX_PAYLOAD
 #define LORA_LITE_MAX_PAYLOAD 64     // bytes; MeshCore frames fit easily
 #endif
@@ -215,6 +218,7 @@ private:
     uint32_t bin_idx_;
     float m_cfo_frac_, m_sto_frac_, sfo_hat_, sfo_cum_, cur_snr_;
     int m_cfo_int_, additional_up_;
+    int sync_syms_ = 0;   // MeshSDR: symbols consumed in SYNC, for SFO pre-compensation
     bool cfo_est_;
     static constexpr int N_UP_REQ = 5, UP_USE = 4, PREAMBLE_LEN = 8;
 
@@ -311,7 +315,7 @@ private:
         }
         bin_idx_ = nb;
         if (symbol_cnt_ == N_UP_REQ) {
-            additional_up_ = 0; state_ = SYNC; symbol_cnt_ = 0; cfo_est_ = false;
+            additional_up_ = 0; state_ = SYNC; symbol_cnt_ = 0; cfo_est_ = false; sync_syms_ = 0;
             k_hat_ = most_frequent(preamb_, N_UP_REQ);
             consume_n = (long)OS * (N_ - k_hat_);
         }
@@ -344,6 +348,7 @@ private:
             symbol_cnt_ = 4; break;
         case 4: return finish_sync();                              // QUARTER_DOWN
         }
+        sync_syms_++;
         return sps_;
     }
 
@@ -398,6 +403,19 @@ private:
         pay_cr_ = cr_; pay_len_ = LORA_LITE_MAX_PAYLOAD; pay_crc_ = has_crc_;
 
         long consume_n = sps_ / 4 + (long)OS * m_cfo_int_;
+        // MeshSDR modification: clock drift (SFO) between the preamble symbols
+        // that set the timing and the payload start was never compensated, so
+        // payloads failed once |ppm| * preamble length passed ~half a chip
+        // (e.g. 12-21 ppm with Meshtastic's 16-symbol preamble). Apply the
+        // drift accumulated over the SYNC symbols, the quarter downchirp and
+        // the preamble symbols used for STO estimation, in whole samples now
+        // and the remainder through the regular per-symbol tracking.
+        {
+            const float drift = sfo_hat_ * ((float)sync_syms_ + 0.25f + (float)LORA_LITE_SFO_LEAD);   // chips
+            const long whole = lroundf(drift * OS);
+            consume_n -= whole;
+            sfo_cum_ = drift - (float)whole / OS;
+        }
         if (consume_n < 0) consume_n = 0;
         return consume_n;
     }

@@ -46,7 +46,10 @@ std::string hex(const uint8_t* d, int n) {
 }
 
 constexpr double kFs = 1e6;          // rtl_tcp sample rate used by the app
-constexpr double kOffset = 250e3;    // tuner sits this far above the channel (app default)
+// App front-end options; main() runs every case with the defaults (both off)
+// and again with both on.
+struct Dsp { double offset; bool average; const char* name; };
+Dsp gDsp = {0, false, "default"};
 
 struct Channel {
     double ppm = 0;            // combined crystal error: carrier and chip rate
@@ -72,8 +75,8 @@ std::vector<uint8_t> toRtlTcp(const std::vector<std::vector<loratx::cf>>& frames
     double ph = 0;
     for (auto s : iq) {
         s *= std::polar(1.0, ph);
-        // Channel sits kOffset below the tuner centre, plus crystal CFO.
-        ph += 2 * M_PI * (ch.ppm * 1e-6 * carrierHz - kOffset) / fs;
+        // Channel sits gDsp.offset below the tuner centre, plus crystal CFO.
+        ph += 2 * M_PI * (ch.ppm * 1e-6 * carrierHz - gDsp.offset) / fs;
         s += loratx::cf(noise(rng), noise(rng)) + loratx::cf(ch.dcSpur, -ch.dcSpur);
         auto q = [](double v) { long x = std::lround(127.5 + 127.5 * v); return static_cast<uint8_t>(x < 0 ? 0 : x > 255 ? 255 : x); };
         out.push_back(q(s.real()));
@@ -85,7 +88,7 @@ std::vector<uint8_t> toRtlTcp(const std::vector<std::vector<loratx::cf>>& frames
 // Feed bytes through the same path as the JNI bridge, in random read sizes.
 void runRtlTcp(lora_lite::Demod& demod, const std::vector<uint8_t>& bytes, uint32_t seed, bool tinyReads,
                int decimation = 2) {
-    meshsdr::IqFrontEnd dec(decimation, kOffset, kFs);   // channel is at -kOffset
+    meshsdr::IqFrontEnd dec(decimation, gDsp.offset, kFs, gDsp.average);   // channel is at -offset
     std::vector<lora_lite::Cx> buf;
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> big(1, 65536), small(1, 7);
@@ -186,10 +189,14 @@ void testNoFalsePositives() {
 
 // MeshCore Brazil: 923.125 MHz, BW 62.5 kHz, SF8, CR 4/8, private sync 0x12.
 void testMeshCoreBr() {
-    std::printf("[meshcore-br] SF8/BW62.5k CR4/8 sync 0x12 via 1 MS/s u8, decimation 8, +10 ppm, snr 0 dB\n");
+    // Without the averaging filter, decimating 8x folds the whole 1 MHz of
+    // noise into the channel: measured ~8 dB less sensitive (README), so the
+    // default front end is checked at +4 dB and the filtered one at 0 dB.
+    const double snr = gDsp.average ? 0 : 4;
+    std::printf("[meshcore-br] SF8/BW62.5k CR4/8 sync 0x12 via 1 MS/s u8, decimation 8, +10 ppm, snr %.0f dB\n", snr);
     loratx::Params p;
     p.sf = 8; p.cr = 4; p.sync = 0x12; p.os = 16; p.preamble = 16;
-    Channel ch; ch.ppm = 10; ch.snrDb = 0;
+    Channel ch; ch.ppm = 10; ch.snrDb = snr;
     const auto payload = meshtasticLike(60, 77);
     const auto bytes = toRtlTcp({loratx::modulate(payload, p, ch.ppm)}, kFs, 62.5e3, ch, 11, 923.125e6);
     Sink sink;
@@ -222,8 +229,34 @@ void testDetectionWithoutDecode() {
 
 } // namespace
 
-int main() {
-    testTablesMatchReference();
+// Crystal error sweep, no noise. Before the SFO pre-compensation fix 30-45% of
+// these failed (every |ppm| ~12-21 with Meshtastic's 16-symbol preamble).
+void testPpmSweep() {
+    int ok = 0, total = 0;
+    std::string bad;
+    const int before = failures;
+    for (int ppm = -30; ppm <= 30; ++ppm) {
+        Channel c; c.ppm = ppm; c.dcSpur = 0;
+        const int f0 = failures;
+        loratx::Params p;
+        const auto payload = meshtasticLike(64, 3);
+        const auto bytes = toRtlTcp({loratx::modulate(payload, p, c.ppm)}, kFs, 250e3, c, 3);
+        Sink sink;
+        auto demod = std::make_unique<lora_lite::Demod>();
+        demod->init(11, 1, true, 0, Sink::cb, &sink, 250000, 919875000);
+        runRtlTcp(*demod, bytes, 3, false);
+        ++total;
+        if (sink.decoded.size() == 1 && sameBytes(sink.decoded[0], payload)) ++ok;
+        else bad += " " + std::to_string(ppm);
+        failures = f0;
+    }
+    failures = before;
+    std::printf("[ppm-sweep] LongFast, -30..+30 ppm, no noise: %d/%d decoded exactly; failing ppm:%s\n", ok, total, bad.c_str());
+    CHECK(ok * 100 >= total * 90, "only %d/%d ppm values decoded (need >= 90%%)", ok, total);
+}
+
+void runAll() {
+    std::printf("\n===== front end: %s (offset %.0f kHz, average %s) =====\n", gDsp.name, gDsp.offset / 1e3, gDsp.average ? "on" : "off");
     testLongFastRtlTcp("clean", Channel{}, {40}, false, 1);
     testLongFastRtlTcp("reads", Channel{}, {1, 16, 77}, true, 2);
     { Channel c; c.ppm = 5; c.snrDb = 0; testLongFastRtlTcp("ppm+noise", c, {64}, true, 3); }
@@ -231,10 +264,16 @@ int main() {
     { Channel c; c.ppm = 25; c.snrDb = 10; testLongFastRtlTcp("cheap-xtal", c, {200}, false, 7); }
     { Channel c; c.ppm = -25; c.snrDb = 10; testLongFastRtlTcp("cheap-xtal-neg", c, {120}, false, 8); }
     testLongFastRtlTcp("max-payload", Channel{}, {255}, false, 6);
-    testMatrix();
     testMeshCoreBr();
     testDetectionWithoutDecode();
+    testPpmSweep();
     testNoFalsePositives();
+}
+
+int main() {
+    testTablesMatchReference();
+    testMatrix();
+    for (Dsp d : {Dsp{0, false, "app default"}, Dsp{250e3, true, "options on"}}) { gDsp = d; runAll(); }
     std::printf(failures ? "\n%d check(s) FAILED\n" : "\nall LoRa PHY checks passed\n", failures);
     return failures ? 1 : 0;
 }

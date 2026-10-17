@@ -65,7 +65,22 @@ RTL2832U USB OTG
 
 A documentação oficial do Meshtastic também lista `BR_902` (902–907,5 MHz), mas a comunidade usa ANZ. O decoder **aceita qualquer sync word** e informa o detectado (0x2B Meshtastic, 0x12 rede privada, 0x34 LoRaWAN). A aba Mensagens mostra **detecções** (cabeçalho LoRa válido), quadros com CRC inválido e quadros decodificados.
 
-O sintonizador fica **250 kHz acima** do canal para tirar o pico DC do RTL2832U de cima do sinal; `iq_u8.h` desloca o canal de volta a 0 Hz e decima (2× para BW250k, 8× para BW62,5k). O ganho é enviado ao `rtl_tcp` ao conectar (padrão 40,2 dB) e o log mostra nível RMS e saturação a cada 2 s.
+O ganho é enviado ao `rtl_tcp` ao conectar (padrão 40,2 dB) e o log mostra nível RMS e saturação a cada 2 s. A gravação IQ sempre começa num byte I (antes podia começar num Q e trocar I/Q no arquivo inteiro).
+
+### Opções do front-end (ambas **desligadas** por padrão, caixas na tela)
+
+| Opção | O que faz | Evidência |
+| --- | --- | --- |
+| Sintonizar 250 kHz acima | Tira o pico DC do RTL de cima do canal e desloca de volta em software | **Nenhuma diferença medida** nos testes (com ou sem pico DC simulado). Nas gravações reais de 17/10 o pico DC não era o sinal dominante. |
+| Filtro de média na decimação | Média de N amostras em vez de descartar N−1 | Sensibilidade medida (sintético, 4 sementes): LongFast decodifica a partir de **≈ −8 dB com filtro** vs ≈ +4 dB sem (falhas esparsas abaixo); MeshCore BR (decimação 8×) **−6 dB com filtro vs +2 dB sem** (≈ 8 dB). |
+
+### Correção no decoder: deriva de relógio (SFO)
+
+Uma varredura de erro de cristal de −30 a +30 ppm (sem ruído) mostrou que o `lora_lite` original falhava em **30–45% dos valores**, por exemplo em toda a faixa de 12–21 ppm com o preâmbulo de 16 símbolos do Meshtastic. Dongles RTL comuns ficam nessa faixa. Causa: a deriva de relógio acumulada entre o preâmbulo (onde a temporização é medida) e o início do payload nunca era compensada. A correção (`finish_sync`, constante `LORA_LITE_SFO_LEAD` = 4 símbolos, **ajustada empiricamente** com preâmbulos de 8 e 16) leva o resultado para 58/61 sem filtro e 60/61 com filtro. Os valores restantes que falham ficam onde a parte fracionária do CFO cruza ±0,5 bin. O teste `ppm-sweep` exige ≥ 90% e reprova o decoder antigo.
+
+### Gravações reais de 17/10 (ganho AGC, ~33 LSB RMS)
+
+Três gravações de 10 s (923,375 / 920,125 / 915,25 MHz sintonizados) foram varridas offline em 318 combinações de canal × SF7–12 × BW 62,5/125/250 kHz cada: **nenhuma detecção LoRa**, e o espectrograma não mostra rajadas. Não havia tráfego LoRa nessas janelas; os nós Meshtastic transmitem esporadicamente (minutos entre pacotes), então é preciso deixar o app escutando por mais tempo.
 
 ## Teste automatizado do PHY LoRa
 
@@ -76,7 +91,8 @@ O sintonizador fica **250 kHz acima** do canal para tirar o pico DC do RTL2832U 
 | tables | Whitening e CRC do TX batem com a tabela/CRC do decoder (check value CRC-16/XMODEM `0x31C3`) |
 | clean, max-payload | LongFast (SF11/BW250k/CR4/5/sync 0x2B) pelo caminho real: IQ u8 1 MS/s → `U8Decimator` → decoder; 40 e 255 bytes |
 | reads | 3 quadros seguidos, leituras TCP aleatórias incluindo 1–7 bytes (I separado de Q) |
-| meshcore-br | SF8/BW62,5k/CR4/8/sync 0x12 por 1 MS/s u8 com decimação 8 |
+| meshcore-br | SF8/BW62,5k/CR4/8/sync 0x12 por 1 MS/s u8 com decimação 8 (SNR 0 dB com filtro, +4 dB sem) |
+| ppm-sweep | −30..+30 ppm sem ruído, ≥ 90% exatos (pega o bug de SFO) |
 | detect-only | Quadro com payload destruído gera detecção de cabeçalho e **nunca** um falso "decodificado" |
 | ppm+noise, weak, cheap-xtal | Erro de cristal ±3 a ±25 ppm (até ±22,7 kHz, com deriva de clock correspondente) e SNR de +10 a −10 dB na banda |
 | matrix | 48 combinações SF7–12 × CR4/5–4/8 × BW125/250k (com LDRO quando aplicável) |
@@ -89,7 +105,7 @@ cmake -S app/src/test/cpp -B build-host -DCMAKE_BUILD_TYPE=Release
 cmake --build build-host && ctest --test-dir build-host --output-on-failure
 ```
 
-**Limites:** o canal é sintético (AWGN + ppm); não há multipercurso, interferência nem distorção do R820T. O decoder escuta um perfil por vez (escolhido na tela). Todos os casos usam sintonia deslocada e pico DC simulado. Desempenho em ARM no celular não foi medido.
+**Limites:** o canal é sintético (AWGN + ppm); não há multipercurso, interferência nem distorção do R820T. O decoder escuta um perfil por vez (escolhido na tela). A bateria roda duas vezes: com o padrão do app (sem deslocamento, sem filtro) e com as duas opções ligadas; o pico DC é simulado em ambas. Desempenho em ARM no celular não foi medido.
 
 ## Como reproduzir o build
 

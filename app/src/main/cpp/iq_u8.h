@@ -2,9 +2,11 @@
 // Shared by the JNI bridge and the host-side PHY tests so both run the exact
 // same conversion.
 //
-// The tuner is set `offsetHz` away from the LoRa channel so the RTL2832U DC
-// spike and LO leakage fall outside it; the channel is mixed back to 0 Hz and
-// then decimated with a boxcar average (nulls at multiples of the output rate).
+// Both stages are optional (the app turns them off by default):
+//  - shift: when the tuner is set away from the LoRa channel (to keep the
+//    RTL2832U DC spike off it), mix the channel back to 0 Hz;
+//  - average: boxcar-average each decimation group instead of keeping only
+//    its first sample (less noise folded into the channel).
 #pragma once
 #include <cmath>
 #include <cstdint>
@@ -17,8 +19,8 @@ class IqFrontEnd {
 public:
     // `shiftHz` is added to every sample's frequency: with the tuner `offset` Hz
     // above the channel, the channel sits at -offset, so pass +offset.
-    IqFrontEnd(int decimation, double shiftHz, double sampleRate)
-        : decimation_(decimation < 1 ? 1 : decimation) {
+    IqFrontEnd(int decimation, double shiftHz, double sampleRate, bool average)
+        : decimation_(decimation < 1 ? 1 : decimation), average_(average) {
         const double w = 2.0 * M_PI * shiftHz / sampleRate;
         stepR_ = std::cos(w); stepI_ = std::sin(w);
     }
@@ -32,13 +34,16 @@ public:
             const double in = (pendingI_ - 127.5) / 127.5;
             const double quad = (value - 127.5) / 127.5;
             pendingI_ = -1;
-            accR_ += in * ncoR_ - quad * ncoI_;
-            accI_ += in * ncoI_ + quad * ncoR_;
+            if (average_ || count_ == 0) {
+                accR_ += in * ncoR_ - quad * ncoI_;
+                accI_ += in * ncoI_ + quad * ncoR_;
+            }
             const double r = ncoR_ * stepR_ - ncoI_ * stepI_;
             ncoI_ = ncoR_ * stepI_ + ncoI_ * stepR_;
             ncoR_ = r;
             if (++count_ == decimation_) {
-                out.push_back({static_cast<float>(accR_ / decimation_), static_cast<float>(accI_ / decimation_)});
+                const double n = average_ ? decimation_ : 1;
+                out.push_back({static_cast<float>(accR_ / n), static_cast<float>(accI_ / n)});
                 accR_ = accI_ = 0;
                 count_ = 0;
                 // Renormalise the oscillator so rounding never lets it drift.
@@ -50,6 +55,7 @@ public:
 
 private:
     int decimation_;
+    bool average_;
     int pendingI_ = -1;
     int count_ = 0;
     double accR_ = 0, accI_ = 0;
