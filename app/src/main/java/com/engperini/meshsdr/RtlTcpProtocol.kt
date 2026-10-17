@@ -22,6 +22,28 @@ object RtlTcpProtocol {
         )
     }
 
+    const val SET_FREQUENCY = 0x01
+    const val SET_GAIN_MODE = 0x03
+    const val SET_GAIN = 0x04
+    const val SET_AGC_MODE = 0x08
+
+    /** Tuner gain in tenths of dB, or null for automatic gain. */
+    fun gainCommands(tenthsDb: Int?): List<ByteArray> =
+        if (tenthsDb == null) listOf(command(SET_GAIN_MODE, 0), command(SET_AGC_MODE, 1))
+        else {
+            require(tenthsDb in 0..600) { "Gain out of range" }
+            listOf(command(SET_GAIN_MODE, 1), command(SET_AGC_MODE, 0), command(SET_GAIN, tenthsDb.toLong()))
+        }
+
+    fun tunerName(header: ByteArray): String {
+        val type = ((header[4].toInt() and 0xff) shl 24) or ((header[5].toInt() and 0xff) shl 16) or
+            ((header[6].toInt() and 0xff) shl 8) or (header[7].toInt() and 0xff)
+        return when (type) {
+            1 -> "E4000"; 2 -> "FC0012"; 3 -> "FC0013"; 4 -> "FC2580"; 5 -> "R820T/R820T2"; 6 -> "R828D"
+            else -> "desconhecido ($type)"
+        }
+    }
+
     fun isValidHeader(header: ByteArray): Boolean =
         header.size == 12 && header[0] == 'R'.code.toByte() &&
         header[1] == 'T'.code.toByte() && header[2] == 'L'.code.toByte() &&

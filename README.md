@@ -55,6 +55,18 @@ RTL2832U USB OTG
 
 **Limitações técnicas importantes:** o código atual configura o DSP **fixo** em SF11/BW250k/CR 4/5/sync 0x2B, embora a frequência seja editável. O sample rate foi alterado de 1.024 MS/s para **1 MS/s** para permitir decimação 2:1; não há validação da precisão da taxa ou do alinhamento de canal. Mudar a frequência no campo **não reconfigura** o perfil LoRa. Não há varredura automática, suporte comprovado a MeshCore, nem decodificação de texto Meshtastic. Os metadados Meshtastic **não são mensagens de texto**. O perfil US LongFast não cobre automaticamente todos os canais ou regiões.
 
+## Perfis LoRa (Brasil)
+
+| Perfil | Frequência | Parâmetros | Fonte |
+| --- | --- | --- | --- |
+| **Meshtastic BR (padrão)** | 919,875 MHz | SF11 / BW250k / CR4/5 / sync 0x2B | Comunidade usa região **ANZ** (915–928 MHz) + LongFast ([Meshtastic Brasil](https://www.meshbrasil.com/faq.html), [SC Mesh](https://www.sc-mesh.org/primeiros-passos/)); 919,875 = slot djb2("LongFast") % 52 do firmware, verificado em `LoraProfileTest` |
+| MeshCore BR | 923,125 MHz | SF8 / BW62,5k / CR4/8 | [Mesh Sorocaba](https://www.meshsorocaba.org/configuracao/) (perfil "Australia: SA, WA, Brazil") |
+| Meshtastic US | 906,875 MHz | SF11 / BW250k / CR4/5 / sync 0x2B | Região US |
+
+A documentação oficial do Meshtastic também lista `BR_902` (902–907,5 MHz), mas a comunidade usa ANZ. O decoder **aceita qualquer sync word** e informa o detectado (0x2B Meshtastic, 0x12 rede privada, 0x34 LoRaWAN). A aba Mensagens mostra **detecções** (cabeçalho LoRa válido), quadros com CRC inválido e quadros decodificados.
+
+O sintonizador fica **250 kHz acima** do canal para tirar o pico DC do RTL2832U de cima do sinal; `iq_u8.h` desloca o canal de volta a 0 Hz e decima (2× para BW250k, 8× para BW62,5k). O ganho é enviado ao `rtl_tcp` ao conectar (padrão 40,2 dB) e o log mostra nível RMS e saturação a cada 2 s.
+
 ## Teste automatizado do PHY LoRa
 
 `app/src/test/cpp/lora_tx.h` é um **modulador LoRa de referência** escrito de forma independente do decoder (cadeia do gr-lora_sdr: whitening, cabeçalho explícito, CRC, Hamming, interleaver diagonal, Gray inverso, chirps com preâmbulo, sync word e 2,25 downchirps). `lora_phy_test.cpp` gera quadros conhecidos e exige os **bytes exatos** na saída do decoder:
@@ -64,9 +76,11 @@ RTL2832U USB OTG
 | tables | Whitening e CRC do TX batem com a tabela/CRC do decoder (check value CRC-16/XMODEM `0x31C3`) |
 | clean, max-payload | LongFast (SF11/BW250k/CR4/5/sync 0x2B) pelo caminho real: IQ u8 1 MS/s → `U8Decimator` → decoder; 40 e 255 bytes |
 | reads | 3 quadros seguidos, leituras TCP aleatórias incluindo 1–7 bytes (I separado de Q) |
+| meshcore-br | SF8/BW62,5k/CR4/8/sync 0x12 por 1 MS/s u8 com decimação 8 |
+| detect-only | Quadro com payload destruído gera detecção de cabeçalho e **nunca** um falso "decodificado" |
 | ppm+noise, weak, cheap-xtal | Erro de cristal ±3 a ±25 ppm (até ±22,7 kHz, com deriva de clock correspondente) e SNR de +10 a −10 dB na banda |
 | matrix | 48 combinações SF7–12 × CR4/5–4/8 × BW125/250k (com LDRO quando aplicável) |
-| noise | 5 s de ruído não geram quadro falso; mede velocidade (≈88× tempo real no runner x86) |
+| noise | 5 s de ruído não geram quadro nem detecção falsa; mede velocidade (≈88× tempo real no runner x86) |
 
 Os testes foram verificados por mutação (sync word errado e um bit invertido no TX fazem o teste falhar). Rodar localmente:
 
@@ -75,7 +89,7 @@ cmake -S app/src/test/cpp -B build-host -DCMAKE_BUILD_TYPE=Release
 cmake --build build-host && ctest --test-dir build-host --output-on-failure
 ```
 
-**Limites:** o canal é sintético (AWGN + ppm); não há multipercurso, interferência nem distorção do R820T. O decoder só trata um perfil fixo por vez (SF11/BW250k na app). Desempenho em ARM no celular não foi medido.
+**Limites:** o canal é sintético (AWGN + ppm); não há multipercurso, interferência nem distorção do R820T. O decoder escuta um perfil por vez (escolhido na tela). Todos os casos usam sintonia deslocada e pico DC simulado. Desempenho em ARM no celular não foi medido.
 
 ## Como reproduzir o build
 

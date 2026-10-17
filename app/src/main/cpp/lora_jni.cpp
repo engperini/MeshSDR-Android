@@ -6,37 +6,47 @@
 
 struct Receiver {
     lora_lite::Demod demod;
+    meshsdr::IqFrontEnd frontEnd;
     jobject listener;
-    jmethodID onPacket;
+    jmethodID onFrame;
     JNIEnv* env = nullptr;
-    meshsdr::U8Decimator decimator;
     std::vector<lora_lite::Cx> samples;
-    Receiver(JNIEnv* e, jobject callback) : listener(e->NewGlobalRef(callback)) {
+    Receiver(JNIEnv* e, jobject callback, int decimation, double shiftHz, double sampleRate)
+        : frontEnd(decimation, shiftHz, sampleRate), listener(e->NewGlobalRef(callback)) {
         jclass cls = e->GetObjectClass(callback);
-        onPacket = e->GetMethodID(cls, "onPacket", "([B)V");
+        onFrame = e->GetMethodID(cls, "onFrame", "([BIIZFI)V");
         e->DeleteLocalRef(cls);
         samples.reserve(16384);
     }
+    // Every event goes to Kotlin: header-only detections and CRC failures
+    // too, so the UI can show LoRa activity it could not fully decode.
     static void received(const lora_lite::Packet& p, void* user) {
         auto* self = static_cast<Receiver*>(user);
-        if (p.status != lora_lite::PKT_DECODED || (p.has_crc && !p.crc_ok) || !self->env) return;
+        if (!self->env) return;
         JNIEnv* e = self->env;
         jbyteArray data = e->NewByteArray(p.len);
         if (!data) return;
         e->SetByteArrayRegion(data, 0, p.len, reinterpret_cast<const jbyte*>(p.data));
-        e->CallVoidMethod(self->listener, self->onPacket, data);
+        e->CallVoidMethod(self->listener, self->onFrame, data, static_cast<jint>(p.status),
+                          static_cast<jint>(p.hdr_len), static_cast<jboolean>(p.crc_ok),
+                          static_cast<jfloat>(p.snr), static_cast<jint>(p.sync));
         e->DeleteLocalRef(data);
     }
 };
+
 extern "C" JNIEXPORT jlong JNICALL
-Java_com_engperini_meshsdr_LoraReceiver_nativeCreate(JNIEnv* env, jobject thiz) {
-    auto* r = new Receiver(env, thiz);
-    if (!r->onPacket) { env->DeleteGlobalRef(r->listener); delete r; return 0; }
-    // Meshtastic US LongFast: SF11 / BW250k / CR4/5 / sync 0x2b.
-    // rtl_tcp sample rate 1 MS/s; decimate by 2 to 500k complex samples/s.
-    r->demod.init(11, 1, true, 0x2b, Receiver::received, r, 250000, 906875000);
+Java_com_engperini_meshsdr_LoraReceiver_nativeCreate(JNIEnv* env, jobject thiz, jint sf, jint bandwidth,
+                                                     jint codingRate, jint syncWord, jlong centerHz,
+                                                     jint decimation, jdouble shiftHz, jdouble sampleRate) {
+    if (sf < 6 || sf > LORA_LITE_MAX_SF || decimation < 1) return 0;
+    auto* r = new Receiver(env, thiz, decimation, shiftHz, sampleRate);
+    if (!r->onFrame) { env->DeleteGlobalRef(r->listener); delete r; return 0; }
+    // syncWord 0 accepts any sync word; the detected one is reported per frame.
+    r->demod.init(sf, codingRate, true, static_cast<uint16_t>(syncWord), Receiver::received, r,
+                  static_cast<uint32_t>(bandwidth), static_cast<uint32_t>(centerHz));
     return reinterpret_cast<jlong>(r);
 }
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_engperini_meshsdr_LoraReceiver_nativeFeed(JNIEnv* env, jobject, jlong handle, jbyteArray bytes, jint length) {
     auto* r = reinterpret_cast<Receiver*>(handle);
@@ -46,12 +56,13 @@ Java_com_engperini_meshsdr_LoraReceiver_nativeFeed(JNIEnv* env, jobject, jlong h
     jbyte* ptr = env->GetByteArrayElements(bytes, nullptr);
     if (!ptr) return;
     r->samples.clear();
-    r->decimator.push(reinterpret_cast<const uint8_t*>(ptr), length, r->samples);
+    r->frontEnd.push(reinterpret_cast<const uint8_t*>(ptr), length, r->samples);
     env->ReleaseByteArrayElements(bytes, ptr, JNI_ABORT);
     r->env = env;
     r->demod.feed(r->samples.data(), static_cast<int>(r->samples.size()));
     r->env = nullptr;
 }
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_engperini_meshsdr_LoraReceiver_nativeDestroy(JNIEnv* env, jobject, jlong handle) {
     auto* r = reinterpret_cast<Receiver*>(handle);

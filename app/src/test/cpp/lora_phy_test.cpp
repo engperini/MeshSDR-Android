@@ -45,8 +45,12 @@ std::string hex(const uint8_t* d, int n) {
     return n > 24 ? s + "..." : s;
 }
 
+constexpr double kFs = 1e6;          // rtl_tcp sample rate used by the app
+constexpr double kOffset = 250e3;    // tuner sits this far above the channel (app default)
+
 struct Channel {
     double ppm = 0;            // combined crystal error: carrier and chip rate
+    double dcSpur = 0.05;      // RTL2832U DC offset/LO leakage at the tuner centre
     double snrDb = 100;        // in-band (signal BW) SNR
     int leadSamples = 3001;    // noise before the frame (odd => fractional alignment)
     double amplitude = 0.45;   // of full scale, before quantization
@@ -54,7 +58,7 @@ struct Channel {
 
 // Frame(s) at fs complex samples/s -> rtl_tcp style unsigned 8-bit I/Q bytes.
 std::vector<uint8_t> toRtlTcp(const std::vector<std::vector<loratx::cf>>& frames, double fs, double bw,
-                              const Channel& ch, uint32_t seed) {
+                              const Channel& ch, uint32_t seed, double carrierHz = 919.875e6) {
     std::mt19937 rng(seed);
     const double sigma = ch.amplitude / std::sqrt(2.0) * std::pow(10.0, -ch.snrDb / 20.0) * std::sqrt(fs / bw);
     std::normal_distribution<double> noise(0.0, sigma);
@@ -68,8 +72,9 @@ std::vector<uint8_t> toRtlTcp(const std::vector<std::vector<loratx::cf>>& frames
     double ph = 0;
     for (auto s : iq) {
         s *= std::polar(1.0, ph);
-        ph += 2 * M_PI * (ch.ppm * 1e-6 * 906.875e6) / fs;
-        s += loratx::cf(noise(rng), noise(rng));
+        // Channel sits kOffset below the tuner centre, plus crystal CFO.
+        ph += 2 * M_PI * (ch.ppm * 1e-6 * carrierHz - kOffset) / fs;
+        s += loratx::cf(noise(rng), noise(rng)) + loratx::cf(ch.dcSpur, -ch.dcSpur);
         auto q = [](double v) { long x = std::lround(127.5 + 127.5 * v); return static_cast<uint8_t>(x < 0 ? 0 : x > 255 ? 255 : x); };
         out.push_back(q(s.real()));
         out.push_back(q(s.imag()));
@@ -78,8 +83,9 @@ std::vector<uint8_t> toRtlTcp(const std::vector<std::vector<loratx::cf>>& frames
 }
 
 // Feed bytes through the same path as the JNI bridge, in random read sizes.
-void runRtlTcp(lora_lite::Demod& demod, const std::vector<uint8_t>& bytes, uint32_t seed, bool tinyReads) {
-    meshsdr::U8Decimator dec;
+void runRtlTcp(lora_lite::Demod& demod, const std::vector<uint8_t>& bytes, uint32_t seed, bool tinyReads,
+               int decimation = 2) {
+    meshsdr::IqFrontEnd dec(decimation, kOffset, kFs);   // channel is at -kOffset
     std::vector<lora_lite::Cx> buf;
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> big(1, 65536), small(1, 7);
@@ -119,10 +125,11 @@ void testLongFastRtlTcp(const char* name, Channel ch, std::vector<int> lens, boo
         payloads.push_back(meshtasticLike(lens[i], seed + static_cast<uint32_t>(i)));
         frames.push_back(loratx::modulate(payloads.back(), p, ch.ppm));
     }
-    const auto bytes = toRtlTcp(frames, 1e6, 250e3, ch, seed);
+    const auto bytes = toRtlTcp(frames, kFs, 250e3, ch, seed);
     Sink sink;
     auto demod = std::make_unique<lora_lite::Demod>();
-    demod->init(11, 1, true, 0x2b, Sink::cb, &sink, 250000, 906875000);
+    // The app accepts any sync word (0) and reports the detected one.
+    demod->init(11, 1, true, 0, Sink::cb, &sink, 250000, 919875000);
     runRtlTcp(*demod, bytes, seed, tinyReads);
     CHECK(sink.decoded.size() == payloads.size(), "decoded %zu frames, expected %zu (headers seen %d)",
           sink.decoded.size(), payloads.size(), sink.headers);
@@ -168,12 +175,49 @@ void testNoFalsePositives() {
     for (auto& b : bytes) { long x = std::lround(127.5 + 127.5 * n(rng)); b = static_cast<uint8_t>(x < 0 ? 0 : x > 255 ? 255 : x); }
     Sink sink;
     auto demod = std::make_unique<lora_lite::Demod>();
-    demod->init(11, 1, true, 0x2b, Sink::cb, &sink, 250000, 906875000);
+    demod->init(11, 1, true, 0, Sink::cb, &sink, 250000, 919875000);
     const auto t0 = std::chrono::steady_clock::now();
     runRtlTcp(*demod, bytes, 5, false);
     const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("  5.0 s of 1 MS/s IQ processed in %.2f s on this host (%.0fx real time)\n", secs, 5.0 / secs);
     CHECK(sink.decoded.empty(), "noise produced %zu frames", sink.decoded.size());
+    CHECK(sink.headers == 0, "noise produced %d false header detections", sink.headers);
+}
+
+// MeshCore Brazil: 923.125 MHz, BW 62.5 kHz, SF8, CR 4/8, private sync 0x12.
+void testMeshCoreBr() {
+    std::printf("[meshcore-br] SF8/BW62.5k CR4/8 sync 0x12 via 1 MS/s u8, decimation 8, +10 ppm, snr 0 dB\n");
+    loratx::Params p;
+    p.sf = 8; p.cr = 4; p.sync = 0x12; p.os = 16; p.preamble = 16;
+    Channel ch; ch.ppm = 10; ch.snrDb = 0;
+    const auto payload = meshtasticLike(60, 77);
+    const auto bytes = toRtlTcp({loratx::modulate(payload, p, ch.ppm)}, kFs, 62.5e3, ch, 11, 923.125e6);
+    Sink sink;
+    auto demod = std::make_unique<lora_lite::Demod>();
+    demod->init(8, 4, true, 0, Sink::cb, &sink, 62500, 923125000);
+    runRtlTcp(*demod, bytes, 11, true, 8);
+    CHECK(sink.decoded.size() == 1 && sameBytes(sink.decoded[0], payload), "decoded %zu", sink.decoded.size());
+    if (!sink.decoded.empty()) CHECK(sink.decoded[0].sync == 0x12, "sync %02x", sink.decoded[0].sync);
+}
+
+// A frame whose payload is destroyed still produces a header detection.
+void testDetectionWithoutDecode() {
+    std::printf("[detect-only] payload jammed after the header: header-only event, no CRC-ok frame\n");
+    loratx::Params p;
+    const auto payload = meshtasticLike(48, 5);
+    auto frame = loratx::modulate(payload, p);
+    const size_t headerEnd = (p.preamble + 4.25 + 8) * 2048 * p.os;   // preamble+sync+downchirps+header block
+    std::mt19937 rng(3);
+    std::normal_distribution<double> jam(0.0, 30.0);
+    for (size_t i = headerEnd + 4096; i < frame.size(); ++i) frame[i] += loratx::cf(jam(rng), jam(rng));
+    Channel ch; ch.snrDb = 20;
+    const auto bytes = toRtlTcp({frame}, kFs, 250e3, ch, 9);
+    Sink sink;
+    auto demod = std::make_unique<lora_lite::Demod>();
+    demod->init(11, 1, true, 0, Sink::cb, &sink, 250000, 919875000);
+    runRtlTcp(*demod, bytes, 9, false);
+    CHECK(sink.headers == 1, "header detections %d", sink.headers);
+    for (const auto& f : sink.decoded) CHECK(f.status != lora_lite::PKT_DECODED, "jammed frame reported as decoded");
 }
 
 } // namespace
@@ -188,6 +232,8 @@ int main() {
     { Channel c; c.ppm = -25; c.snrDb = 10; testLongFastRtlTcp("cheap-xtal-neg", c, {120}, false, 8); }
     testLongFastRtlTcp("max-payload", Channel{}, {255}, false, 6);
     testMatrix();
+    testMeshCoreBr();
+    testDetectionWithoutDecode();
     testNoFalsePositives();
     std::printf(failures ? "\n%d check(s) FAILED\n" : "\nall LoRa PHY checks passed\n", failures);
     return failures ? 1 : 0;

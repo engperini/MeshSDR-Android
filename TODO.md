@@ -18,7 +18,7 @@ Este documento é um plano de execução para continuidade por outro desenvolved
 - [x] Criar gerador/teste determinístico com quadros LoRa conhecidos (`app/src/test/cpp`), verificando sync, SF/BW/CR, payload exato e CRC.
 - [x] Testar streaming em blocos TCP de tamanho variável, incluindo byte I separado de Q e múltiplos pacotes seguidos.
 - [ ] Medir consumo de CPU **no celular** (no host x86: ≈88× tempo real), memória e perda de amostras a 1 MS/s; não bloquear UI nem perder dados silenciosamente.
-- [ ] Configurar perfil LoRa (SF, BW, CR, sync, canal/frequência) e validar presets para região real.
+- [x] Perfis LoRa BR (Meshtastic ANZ LongFast padrão, MeshCore BR) e US; sync word livre. Falta validar no ar.
 - [ ] Mostrar métricas: IQ MB/s, quadros detectados, CRC-ok/erro, perda de amostras e erros de decoder.
 
 ## P2 — protocolo Meshtastic

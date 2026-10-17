@@ -13,7 +13,6 @@ import android.os.Build
 import android.view.WindowInsets
 import android.widget.*
 import java.io.BufferedInputStream
-import java.io.DataOutputStream
 import java.net.Socket
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,6 +20,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 class MainActivity : Activity() {
+    private companion object { const val AUTO_GAIN = -1 }
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var freqInput: EditText
     private lateinit var status: TextView
@@ -34,13 +34,24 @@ class MainActivity : Activity() {
     @Volatile private var socket: Socket? = null
     @Volatile private var captureRequested = false
     private val port = 14423
-    private val sampleRate = 1000000
-    private var centerHz = 906875000L
+    private val sampleRate = LoraProfile.SAMPLE_RATE
+    /** LoRa channel frequency; the tuner sits TUNING_OFFSET_HZ above it. */
+    private var centerHz = LoraProfile.DEFAULT.frequencyHz
+    @Volatile private var profile = LoraProfile.DEFAULT
+    @Volatile private var receiverStale = false
+    private lateinit var profileLabel: TextView
+    /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
+    private var gainTenths = 402
+    private var detections = 0
+    private var decoded = 0
+    private lateinit var gainLabel: TextView
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", centerHz)
+        profile = LoraProfile.byId(getPreferences(MODE_PRIVATE).getString("profile", null))
+        centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", profile.frequencyHz)
+        gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 18)
@@ -66,7 +77,19 @@ class MainActivity : Activity() {
         root.addView(title)
         status = TextView(this).apply { text = "Desconectado"; textSize = 15f; setPadding(0, 12, 0, 12) }
         root.addView(status)
-        root.addView(TextView(this).apply { text = "Frequência central (MHz)"; textSize = 16f })
+        profileLabel = TextView(this).apply { textSize = 14f }
+        root.addView(profileLabel)
+        val profiles = LinearLayout(this)
+        listOf("Meshtastic BR" to LoraProfile.MESHTASTIC_BR, "MeshCore BR" to LoraProfile.MESHCORE_BR,
+            "Meshtastic US" to LoraProfile.MESHTASTIC_US).forEach { (label, p) ->
+            profiles.addView(Button(this).apply {
+                text = label
+                textSize = 11f
+                setOnClickListener { selectProfile(p) }
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+        root.addView(profiles)
+        root.addView(TextView(this).apply { text = "Frequência do canal LoRa (MHz)"; textSize = 16f })
         val freqRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         freqInput = EditText(this).apply {
             setSingleLine(true)
@@ -77,15 +100,19 @@ class MainActivity : Activity() {
         val apply = Button(this).apply { text = "Aplicar"; setOnClickListener { applyFrequency() } }
         freqRow.addView(apply)
         root.addView(freqRow)
-        val presets = LinearLayout(this)
-        listOf("906.875", "915.000", "923.125").forEach { value ->
-            presets.addView(Button(this).apply {
-                text = value
+        gainLabel = TextView(this).apply { textSize = 16f; setPadding(0, 8, 0, 0) }
+        root.addView(gainLabel)
+        val gains = LinearLayout(this)
+        listOf("Auto" to AUTO_GAIN, "20" to 197, "30" to 297, "40" to 402, "49.6" to 496).forEach { (label, tenths) ->
+            gains.addView(Button(this).apply {
+                text = label
                 textSize = 11f
-                setOnClickListener { freqInput.setText(value); applyFrequency() }
+                setOnClickListener { applyGain(tenths) }
             }, LinearLayout.LayoutParams(0, -2, 1f))
         }
-        root.addView(presets)
+        root.addView(gains)
+        updateGainLabel()
+        updateProfileLabel()
         val controls = LinearLayout(this)
         controls.addView(Button(this).apply {
             text = "Conectar"
@@ -142,7 +169,7 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(bottom)
         setContentView(root)
-        log("APP", "LoRa PHY habilitado: Meshtastic US LongFast SF11/BW250k. Aguardando pacotes CRC-ok.")
+        log("APP", "Perfil LoRa: ${profile.describe()}. Qualquer sync word é aceito e mostrado.")
         render()
     }
 
@@ -171,7 +198,7 @@ class MainActivity : Activity() {
 
     private fun render() {
         output.text = if (showLogs) logs.joinToString("\n") else
-            if (messages.isEmpty()) "Aguardando pacotes LoRa válidos (SF11 / BW250k / sync 0x2B)." else messages.joinToString("\n")
+            if (messages.isEmpty()) "Aguardando LoRa: ${profile.describe()}.\nDetecções (cabeçalho válido) também aparecem aqui." else messages.joinToString("\n")
         logsTab.isEnabled = !showLogs
         messagesTab.isEnabled = showLogs
     }
@@ -185,26 +212,82 @@ class MainActivity : Activity() {
         centerHz = (mhz * 1e6).toLong()
         getPreferences(MODE_PRIVATE).edit().putLong("frequency", centerHz).apply()
         log("SDR", "Frequência solicitada: $centerHz Hz")
+        sendCommands(listOf(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, tunedHz())), "SET_FREQ")
+        receiverStale = true
+    }
+
+    private fun newReceiver(): LoraReceiver {
+        val p = profile.copy(frequencyHz = centerHz)
+        log("LORA", "Decoder: ${p.describe()}; sintonizador em %.3f MHz (deslocado do DC)".format(Locale.US, tunedHz() / 1e6))
+        return LoraReceiver(p) { frame -> ui.post { onFrame(frame) } }
+    }
+
+    /** UI thread. */
+    private fun onFrame(frame: LoraFrame) {
+        if (frame.status == LoraFrame.DECODED) decoded++ else detections++
+        val text = frame.describe()
+        messages.addLast("[${timeFormat.format(Date())}] $text")
+        while (messages.size > 200) messages.removeFirst()
+        log("LORA", text)
+        updateStatus()
+        if (!showLogs) render()
+    }
+
+    private fun updateStatus() {
+        status.text = if (!running) "Desconectado" else
+            "Recebendo • %.3f MHz • detecções %d • decodificados %d".format(Locale.US, centerHz / 1e6, detections, decoded)
+    }
+
+    private fun tunedHz(): Long = centerHz + LoraProfile.TUNING_OFFSET_HZ
+
+    private fun selectProfile(p: LoraProfile) {
+        profile = p
+        getPreferences(MODE_PRIVATE).edit().putString("profile", p.id).apply()
+        updateProfileLabel()
+        freqInput.setText("%.6f".format(Locale.US, p.frequencyHz / 1e6))
+        log("APP", "Perfil LoRa: ${p.describe()}")
+        applyFrequency()
+        render()
+    }
+
+    private fun updateProfileLabel() {
+        profileLabel.text = "Perfil: ${profile.describe()}"
+    }
+
+    private fun gainOrNull(): Int? = if (gainTenths == AUTO_GAIN) null else gainTenths
+
+    private fun updateGainLabel() {
+        gainLabel.text = if (gainTenths == AUTO_GAIN) "Ganho do sintonizador: automático (AGC)"
+            else "Ganho do sintonizador: %.1f dB".format(Locale.US, gainTenths / 10.0)
+    }
+
+    private fun applyGain(tenths: Int) {
+        gainTenths = tenths
+        getPreferences(MODE_PRIVATE).edit().putInt("gainTenths", tenths).apply()
+        updateGainLabel()
+        sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), "ganho")
+    }
+
+    /** Sends rtl_tcp commands if connected; otherwise they are applied on connect. */
+    private fun sendCommands(commands: List<ByteArray>, what: String) {
         val active = socket
-        if (active != null && active.isConnected && !active.isClosed) {
-            thread {
-                try {
-                    synchronized(active) {
-                        val stream = DataOutputStream(active.getOutputStream())
-                        stream.writeByte(0x01)
-                        stream.writeInt(centerHz.toInt())
-                        stream.flush()
-                    }
-                    log("SDR", "Comando rtl_tcp SET_FREQ enviado")
-                } catch (e: Exception) { log("ERROR", "Retune: ${e.message}") }
-            }
+        if (active == null || !active.isConnected || active.isClosed) return
+        thread {
+            try {
+                synchronized(active) {
+                    val out = active.getOutputStream()
+                    commands.forEach { out.write(it) }
+                    out.flush()
+                }
+                log("SDR", "Comando rtl_tcp $what enviado")
+            } catch (e: Exception) { log("ERROR", "Comando $what: ${e.message}") }
         }
     }
 
     private fun launchDriver() {
         if (running) { log("APP", "Recepção já ativa"); return }
         applyFrequency()
-        val uri = Uri.parse("iqsrc://-a 127.0.0.1 -p $port -s $sampleRate -f $centerHz")
+        val uri = Uri.parse("iqsrc://-a 127.0.0.1 -p $port -s $sampleRate -f ${tunedHz()}")
         try {
             startActivityForResult(Intent(Intent.ACTION_VIEW, uri), 1001)
             log("USB", "Solicitada abertura do driver RTL-SDR")
@@ -244,21 +327,18 @@ class MainActivity : Activity() {
                 }
                 if (String(header, 0, 4, Charsets.US_ASCII) != "RTL0")
                     throw IllegalStateException("Cabeçalho rtl_tcp inválido")
-                log("SDR", "RTL0 recebido; amostras IQ ativas")
-                ui.post { status.text = "Recebendo IQ • ${centerHz / 1e6} MHz" }
-                val demod = LoraReceiver { payload ->
-                    try {
-                        val packet = MeshtasticAirPacket.parse(payload)
-                        ui.post {
-                            messages.addLast("[${timeFormat.format(Date())}] ${packet.summary()}")
-                            while (messages.size > 200) messages.removeFirst()
-                            if (!showLogs) render()
-                        }
-                        log("LORA", "Pacote Meshtastic CRC-ok: ${payload.size} bytes")
-                    } catch (e: IllegalArgumentException) {
-                        log("LORA", "Quadro LoRa CRC-ok não reconhecido como Meshtastic: ${payload.size} bytes")
-                    }
+                log("SDR", "RTL0 recebido; sintonizador ${RtlTcpProtocol.tunerName(header)}; amostras IQ ativas")
+                synchronized(s) {
+                    val out = s.getOutputStream()
+                    RtlTcpProtocol.gainCommands(gainOrNull()).forEach { out.write(it) }
+                    out.flush()
                 }
+                log("SDR", if (gainTenths == AUTO_GAIN) "Ganho automático (AGC) aplicado"
+                    else "Ganho manual %.1f dB aplicado".format(Locale.US, gainTenths / 10.0))
+                val level = IqLevel()
+                ui.post { updateStatus() }
+                receiverStale = false
+                var demod = newReceiver()
                 val buffer = ByteArray(65536)
                 var capture: PublicFiles.Target? = null
                 var captureStart = 0L
@@ -272,7 +352,7 @@ class MainActivity : Activity() {
                     if (captureRequested && capture == null) {
                         captureRequested = false
                         val target = PublicFiles.create(this,
-                            "meshsdr-${System.currentTimeMillis()}-${centerHz}Hz-${sampleRate}sps.cu8", "application/octet-stream")
+                            "meshsdr-${System.currentTimeMillis()}-${tunedHz()}Hz-${sampleRate}sps.cu8", "application/octet-stream")
                         capture = target
                         captureName = target.location
                         captureStart = System.currentTimeMillis()
@@ -296,12 +376,19 @@ class MainActivity : Activity() {
                             capture = null
                         }
                     }
+                    if (receiverStale) {
+                        // Profile or frequency changed: restart the decoder with the new settings.
+                        receiverStale = false
+                        demod.close()
+                        demod = newReceiver()
+                    }
                     demod.feed(buffer, n)
+                    level.add(buffer, n)
                     bytes += n
                     val now = System.currentTimeMillis()
                     if (now - last >= 2000) {
                         val rate = bytes * 1000.0 / (now - last) / 1e6
-                        log("IQ", "%.2f MB/s IQ recebidos".format(Locale.US, rate))
+                        log("IQ", "%.2f MB/s • %s".format(Locale.US, rate, level.summary()))
                         bytes = 0
                         last = now
                     }
