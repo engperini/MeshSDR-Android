@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(meshsdr_lora LANGUAGES CXX)
+add_library(meshsdr_lora SHARED lora_jni.cpp)
+target_compile_features(meshsdr_lora PRIVATE cxx_std_17)
+target_compile_definitions(meshsdr_lora PRIVATE LORA_LITE_MAX_SF=12 LORA_LITE_MAX_PAYLOAD=255)
+target_include_directories(meshsdr_lora PRIVATE upstream)
+target_link_libraries(meshsdr_lora log)
