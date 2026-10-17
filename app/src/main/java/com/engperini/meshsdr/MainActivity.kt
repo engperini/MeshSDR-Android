@@ -9,6 +9,8 @@ import android.os.Handler
 import android.os.Looper
 import android.graphics.Color
 import android.view.View
+import android.os.Build
+import android.view.WindowInsets
 import android.widget.*
 import java.io.BufferedInputStream
 import java.io.DataOutputStream
@@ -43,6 +45,23 @@ class MainActivity : Activity() {
             setPadding(18, 18, 18, 18)
         }
         val title = TextView(this).apply { text = "MeshSDR  •  RTL2832U"; textSize = 22f }
+        // Android 15+ draws behind system bars for target SDK 35.
+        // Apply safe-area padding to BOTH status and navigation bars.
+        if (Build.VERSION.SDK_INT >= 30) {
+            root.setOnApplyWindowInsetsListener { view, insets ->
+                val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                view.setPadding(18 + bars.left, 18 + bars.top, 18 + bars.right, 18 + bars.bottom)
+                insets
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            root.setOnApplyWindowInsetsListener { view, insets ->
+                @Suppress("DEPRECATION")
+                view.setPadding(18 + insets.systemWindowInsetLeft, 18 + insets.systemWindowInsetTop,
+                    18 + insets.systemWindowInsetRight, 18 + insets.systemWindowInsetBottom)
+                insets
+            }
+        }
         root.addView(title)
         status = TextView(this).apply { text = "Desconectado"; textSize = 15f; setPadding(0, 12, 0, 12) }
         root.addView(status)
