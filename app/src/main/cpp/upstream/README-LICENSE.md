@@ -3,3 +3,5 @@
 Files `lora_lite.h` and `lora_kiss.h` are copied from [mmmaly/LoraReceiverStandalone](https://github.com/mmmaly/LoraReceiverStandalone) (master branch), and are derived from `gr-lora_sdr` DSP algorithms. Upstream describes its DSP as **GPL-3.0**; `lora_kiss.h` is included from the same project. These files are not authored by MeshSDR. Preserve upstream attribution and comply with applicable GPL-3.0 obligations when distributing APKs and source. Full upstream source is available at the linked repository.
 
 The Android JNI bridge is in `../lora_jni.cpp`.
+
+**Modificação local (MeshSDR):** `lora_lite.h` `finish_sync()` passou a estimar o resíduo de net-ID também quando nenhum sync word é configurado (aceitar qualquer), usando o múltiplo de 8 bins mais próximo.

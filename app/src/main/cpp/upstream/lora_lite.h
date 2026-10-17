@@ -364,6 +364,12 @@ private:
             // whole bin (the frac estimator wraps at +/-0.5). Used to decode
             // a shadow nibble stream tried when the payload CRC fails.
             nid_resid_ = (int)(d <= (long)N_ / 2 ? d : d - (long)N_);
+        } else {
+            // MeshSDR modification: with no sync word configured (accept any),
+            // still measure the residual. Net-ID symbols are nibble << 3, so
+            // the offset from the nearest multiple of 8 is the bin shift.
+            long r = lmod(nid0 - (((nid0 + 4) >> 3) << 3), N_);
+            nid_resid_ = (int)(r <= (long)N_ / 2 ? r : r - (long)N_);
         }
         det_sync_ = det_sync;
 
