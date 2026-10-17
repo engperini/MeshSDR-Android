@@ -8,6 +8,12 @@ class IqLevel {
     private var clipped = 0L
     private var count = 0L
 
+    /** Values from the last [summary] window, for the UI meter. */
+    var lastRms = 0.0
+        private set
+    var lastClipPct = 0.0
+        private set
+
     fun add(bytes: ByteArray, length: Int) {
         for (i in 0 until length) {
             val v = bytes[i].toInt() and 0xff
@@ -23,6 +29,8 @@ class IqLevel {
         if (count == 0L) return "sem amostras"
         val rms = Math.sqrt(sumSquares / count)
         val clipPct = 100.0 * clipped / count
+        lastRms = rms
+        lastClipPct = clipPct
         sumSquares = 0.0; clipped = 0; count = 0
         val hint = when {
             clipPct > 1.0 -> " — SATURANDO: reduza o ganho"

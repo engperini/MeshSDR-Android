@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.graphics.Color
+import android.view.Gravity
 import android.view.View
 import android.os.Build
 import android.view.WindowInsets
@@ -48,6 +49,16 @@ class MainActivity : Activity() {
     private var detections = 0
     private var decoded = 0
     private lateinit var gainLabel: TextView
+    private lateinit var detectionsValue: TextView
+    private lateinit var decodedValue: TextView
+    private lateinit var levelValue: TextView
+    private lateinit var levelMeter: ProgressBar
+    private lateinit var settingsBody: LinearLayout
+    private lateinit var settingsSummary: TextView
+    private lateinit var settingsArrow: TextView
+    private lateinit var outputScroll: ScrollView
+    private val profileChips = mutableMapOf<String, Button>()
+    private val gainChips = mutableMapOf<Int, Button>()
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,142 +68,195 @@ class MainActivity : Activity() {
         gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
         offsetTuning = getPreferences(MODE_PRIVATE).getBoolean("offsetTuning", false)
         averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", false)
+        val pad = dp(16)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18, 18, 18, 18)
+            setPadding(pad, pad, pad, pad)
         }
-        val title = TextView(this).apply { text = "MeshSDR  •  RTL2832U"; textSize = 22f }
         // Android 15+ draws behind system bars for target SDK 35.
         // Apply safe-area padding to BOTH status and navigation bars.
         if (Build.VERSION.SDK_INT >= 30) {
             root.setOnApplyWindowInsetsListener { view, insets ->
                 val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
-                view.setPadding(18 + bars.left, 18 + bars.top, 18 + bars.right, 18 + bars.bottom)
+                view.setPadding(pad + bars.left, pad / 2 + bars.top, pad + bars.right, pad / 2 + bars.bottom)
                 insets
             }
         } else {
             @Suppress("DEPRECATION")
             root.setOnApplyWindowInsetsListener { view, insets ->
                 @Suppress("DEPRECATION")
-                view.setPadding(18 + insets.systemWindowInsetLeft, 18 + insets.systemWindowInsetTop,
-                    18 + insets.systemWindowInsetRight, 18 + insets.systemWindowInsetBottom)
+                view.setPadding(pad + insets.systemWindowInsetLeft, pad / 2 + insets.systemWindowInsetTop,
+                    pad + insets.systemWindowInsetRight, pad / 2 + insets.systemWindowInsetBottom)
                 insets
             }
         }
-        root.addView(title)
-        status = TextView(this).apply { text = "Desconectado"; textSize = 15f; setPadding(0, 12, 0, 12) }
-        root.addView(status)
-        profileLabel = TextView(this).apply { textSize = 14f }
-        root.addView(profileLabel)
-        val profiles = LinearLayout(this)
-        listOf("Meshtastic BR" to LoraProfile.MESHTASTIC_BR, "MeshCore BR" to LoraProfile.MESHCORE_BR,
-            "Meshtastic US" to LoraProfile.MESHTASTIC_US).forEach { (label, p) ->
-            profiles.addView(Button(this).apply {
-                text = label
-                textSize = 11f
-                setOnClickListener { selectProfile(p) }
-            }, LinearLayout.LayoutParams(0, -2, 1f))
+
+        // Header: logo, name, connection status.
+        val logo = ImageView(this).apply {
+            setImageResource(R.drawable.logo)
+            clipToOutline = true
+            background = rounded(Ui.SURFACE_2, 12f)
+            contentDescription = "MeshSDR"
         }
-        root.addView(profiles)
-        root.addView(TextView(this).apply { text = "Frequência do canal LoRa (MHz)"; textSize = 16f })
-        val freqRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val titles = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(label("MeshSDR", 22f, Ui.TEXT, bold = true))
+            addView(label("LoRa • Meshtastic • MeshCore via RTL-SDR", 12f))
+        }
+        status = statusChip()
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(logo, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(12) })
+            addView(titles, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(status, LinearLayout.LayoutParams(-2, -2))
+        }
+        root.addView(header)
+
+        // Live numbers.
+        val (detTile, detValue) = statTile("Detecções")
+        val (decTile, decValue) = statTile("Decodificados")
+        detectionsValue = detValue
+        decodedValue = decValue
+        levelValue = label("—", 13f, Ui.TEXT, bold = true)
+        levelMeter = meter()
+        val levelTile = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(Ui.SURFACE, 16f, Ui.OUTLINE, 1f)
+            setPadding(dp(12), dp(8), dp(12), dp(10))
+            addView(label("Sinal (IQ)", 11f))
+            addView(levelValue)
+            addView(levelMeter, LinearLayout.LayoutParams(-1, dp(6)).apply { topMargin = dp(6) })
+        }
+        root.addView(row(this, detTile, decTile, levelTile), spaced(12))
+
+        // Settings card, collapsible to give the output more room.
+        val settings = card()
+        settingsSummary = label("", 12f)
+        val settingsHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            val texts = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(label("Configuração", 15f, Ui.TEXT, bold = true))
+                addView(settingsSummary)
+            }
+            addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+            settingsArrow = label("▾", 18f, Ui.ACCENT, bold = true)
+            addView(settingsArrow)
+            setOnClickListener { setSettingsExpanded(settingsBody.visibility != View.VISIBLE) }
+        }
+        settings.addView(settingsHeader)
+        settingsBody = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        settings.addView(settingsBody)
+
+        settingsBody.addView(sectionLabel("Perfil LoRa"))
+        profileLabel = label("", 12f)
+        val profileButtons = listOf("Meshtastic BR" to LoraProfile.MESHTASTIC_BR, "MeshCore BR" to LoraProfile.MESHCORE_BR,
+            "Meshtastic US" to LoraProfile.MESHTASTIC_US).map { (label, p) ->
+            chip(label) { selectProfile(p) }.also { profileChips[p.id] = it }
+        }
+        settingsBody.addView(row(this, *profileButtons.toTypedArray(), gapDp = 6))
+        settingsBody.addView(profileLabel, spaced(6))
+
+        settingsBody.addView(sectionLabel("Frequência do canal LoRa (MHz)"))
         freqInput = EditText(this).apply {
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
             setText("%.6f".format(Locale.US, centerHz / 1e6))
+            setTextColor(Ui.TEXT)
+            textSize = 18f
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            background = rounded(Ui.SURFACE_2, 14f, Ui.OUTLINE, 1f)
+            setPadding(dp(14), dp(10), dp(14), dp(10))
         }
-        freqRow.addView(freqInput, LinearLayout.LayoutParams(0, -2, 1f))
-        val apply = Button(this).apply { text = "Aplicar"; setOnClickListener { applyFrequency() } }
-        freqRow.addView(apply)
-        root.addView(freqRow)
-        gainLabel = TextView(this).apply { textSize = 16f; setPadding(0, 8, 0, 0) }
-        root.addView(gainLabel)
-        val gains = LinearLayout(this)
-        listOf("Auto" to AUTO_GAIN, "20" to 197, "30" to 297, "40" to 402, "49.6" to 496).forEach { (label, tenths) ->
-            gains.addView(Button(this).apply {
-                text = label
-                textSize = 11f
-                setOnClickListener { applyGain(tenths) }
-            }, LinearLayout.LayoutParams(0, -2, 1f))
+        val apply = pill("Aplicar", UiStyle.TONAL) { applyFrequency() }
+        settingsBody.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(freqInput, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(apply, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
+        })
+
+        gainLabel = sectionLabel("")
+        settingsBody.addView(gainLabel)
+        val gainButtons = listOf("Auto" to AUTO_GAIN, "20" to 197, "30" to 297, "40" to 402, "49.6" to 496).map { (label, tenths) ->
+            chip(label) { applyGain(tenths) }.also { gainChips[tenths] = it }
         }
-        root.addView(gains)
-        root.addView(CheckBox(this).apply {
-            text = "Sintonizar 250 kHz acima (evita pico DC) — opcional"
+        settingsBody.addView(row(this, *gainButtons.toTypedArray(), gapDp = 6))
+
+        settingsBody.addView(sectionLabel("Processamento (opcional)"))
+        settingsBody.addView(Switch(this).apply {
+            text = "Sintonizar 250 kHz acima (evita pico DC)"
+            setTextColor(Ui.TEXT)
             isChecked = offsetTuning
             setOnCheckedChangeListener { _, on ->
                 offsetTuning = on
                 getPreferences(MODE_PRIVATE).edit().putBoolean("offsetTuning", on).apply()
                 applyFrequency()
+                updateSettingsSummary()
             }
-        })
-        root.addView(CheckBox(this).apply {
-            text = "Filtro de média na decimação — opcional"
+        }, spaced(4))
+        settingsBody.addView(Switch(this).apply {
+            text = "Filtro de média na decimação"
+            setTextColor(Ui.TEXT)
             isChecked = averaging
             setOnCheckedChangeListener { _, on ->
                 averaging = on
                 getPreferences(MODE_PRIVATE).edit().putBoolean("averaging", on).apply()
                 receiverStale = true
                 log("APP", if (on) "Filtro de média ligado" else "Filtro de média desligado")
+                updateSettingsSummary()
             }
-        })
+        }, spaced(8))
+        root.addView(settings, spaced(12))
         updateGainLabel()
         updateProfileLabel()
-        val controls = LinearLayout(this)
-        controls.addView(Button(this).apply {
-            text = "Conectar"
-            setOnClickListener { launchDriver() }
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        controls.addView(Button(this).apply {
-            text = "Parar"
-            setOnClickListener { disconnect() }
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        root.addView(controls)
-        root.addView(Button(this).apply {
-            text = "Gravar IQ (10 segundos)"
-            setOnClickListener {
-                if (!running) log("IQ", "Conecte o RTL-SDR antes de gravar")
-                else {
-                    captureRequested = true
-                    log("IQ", "Gravação IQ solicitada: 10 segundos, formato unsigned IQ 8-bit")
-                }
+
+        // Main actions.
+        val connect = pill("Conectar", UiStyle.PRIMARY) { launchDriver() }
+        val stop = pill("Parar", UiStyle.OUTLINED) { disconnect() }
+        val record = pill("● Gravar IQ 10 s", UiStyle.OUTLINED) {
+            if (!running) log("IQ", "Conecte o RTL-SDR antes de gravar")
+            else {
+                captureRequested = true
+                log("IQ", "Gravação IQ solicitada: 10 segundos, formato unsigned IQ 8-bit")
             }
-        })
-        val tabs = LinearLayout(this)
-        messagesTab = Button(this).apply { text = "Mensagens"; setOnClickListener { showLogs = false; render() } }
-        logsTab = Button(this).apply { text = "Logs técnicos"; setOnClickListener { showLogs = true; render() } }
-        tabs.addView(messagesTab, LinearLayout.LayoutParams(0, -2, 1f))
-        tabs.addView(logsTab, LinearLayout.LayoutParams(0, -2, 1f))
-        root.addView(tabs)
-        val scroll = ScrollView(this)
-        output = TextView(this).apply {
-            textSize = 13f
-            typeface = android.graphics.Typeface.MONOSPACE
-            setTextIsSelectable(true)
-            setPadding(8, 8, 8, 8)
         }
-        scroll.addView(output)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        val bottom = LinearLayout(this)
-        bottom.addView(Button(this).apply {
-            text = "Copiar"
-            setOnClickListener {
-                val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("MeshSDR", output.text))
-            }
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        bottom.addView(Button(this).apply {
-            text = "Salvar logs"
-            setOnClickListener { saveLogs() }
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        bottom.addView(Button(this).apply {
-            text = "Limpar aba"
-            setOnClickListener {
-                if (showLogs) logs.clear() else messages.clear()
-                render()
-            }
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        root.addView(bottom)
+        root.addView(row(this, connect, stop, record), spaced(12))
+
+        // Output: segmented tabs + monospace panel.
+        messagesTab = chip("Mensagens") { showLogs = false; render() }
+        logsTab = chip("Logs técnicos") { showLogs = true; render() }
+        root.addView(row(this, messagesTab, logsTab, gapDp = 6), spaced(12))
+        outputScroll = ScrollView(this).apply {
+            background = rounded(Color.argb(200, 5, 9, 17), 16f, Ui.OUTLINE, 1f)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            isVerticalScrollBarEnabled = true
+        }
+        output = TextView(this).apply {
+            textSize = 12.5f
+            typeface = android.graphics.Typeface.MONOSPACE
+            setTextColor(Color.parseColor("#FFCFE3F5"))
+            setLineSpacing(0f, 1.15f)
+            setTextIsSelectable(true)
+        }
+        outputScroll.addView(output)
+        root.addView(outputScroll, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
+
+        val copy = pill("Copiar", UiStyle.TEXT) {
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("MeshSDR", output.text))
+            Toast.makeText(this, "Copiado", Toast.LENGTH_SHORT).show()
+        }
+        val save = pill("Salvar logs", UiStyle.TEXT) { saveLogs() }
+        val clear = pill("Limpar aba", UiStyle.TEXT) {
+            if (showLogs) logs.clear() else messages.clear()
+            render()
+        }
+        root.addView(row(this, copy, save, clear, gapDp = 4), spaced(6))
         setContentView(root)
+        updateStatus()
         log("APP", "Perfil LoRa: ${profile.describe()}. Qualquer sync word é aceito e mostrado.")
         render()
     }
@@ -223,8 +287,43 @@ class MainActivity : Activity() {
     private fun render() {
         output.text = if (showLogs) logs.joinToString("\n") else
             if (messages.isEmpty()) "Aguardando LoRa: ${profile.describe()}.\nDetecções (cabeçalho válido) também aparecem aqui." else messages.joinToString("\n")
-        logsTab.isEnabled = !showLogs
-        messagesTab.isEnabled = showLogs
+        setChipSelected(logsTab, showLogs)
+        setChipSelected(messagesTab, !showLogs)
+        messagesTab.text = if (messages.isEmpty()) "Mensagens" else "Mensagens (${messages.size})"
+        // Follow new lines only when the reader is already at the bottom.
+        val atBottom = outputScroll.scrollY + outputScroll.height >= output.height - dp(48)
+        if (atBottom) outputScroll.post { outputScroll.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    private fun sectionLabel(text: String) = label(text, 12f, Ui.MUTED, bold = true).apply {
+        setPadding(0, dp(12), 0, dp(6))
+    }
+
+    private fun spaced(topDp: Int) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(topDp) }
+
+    private fun setSettingsExpanded(expanded: Boolean) {
+        settingsBody.visibility = if (expanded) View.VISIBLE else View.GONE
+        settingsArrow.text = if (expanded) "▾" else "▸"
+    }
+
+    private fun updateSettingsSummary() {
+        val gain = if (gainTenths == AUTO_GAIN) "ganho auto" else "%.1f dB".format(Locale.US, gainTenths / 10.0)
+        val extras = listOfNotNull(if (offsetTuning) "deslocado" else null, if (averaging) "filtro" else null)
+        settingsSummary.text = "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
+            if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
+    }
+
+    /** UI thread: level meter from the last 2 s window. */
+    private fun updateLevel(rms: Double, clipPct: Double) {
+        // ~32 LSB RMS is a healthy level; clipping turns the bar red, near-silence amber.
+        val color = when {
+            clipPct > 1.0 -> Ui.RED
+            rms < 3.0 -> Ui.AMBER
+            else -> Ui.GREEN
+        }
+        levelValue.text = "%.0f LSB • sat. %.1f%%".format(Locale.US, rms, clipPct)
+        levelValue.setTextColor(color)
+        setMeter(levelMeter, (rms / 64.0 * 100).toInt(), color)
     }
 
     private fun applyFrequency() {
@@ -236,6 +335,7 @@ class MainActivity : Activity() {
         centerHz = (mhz * 1e6).toLong()
         getPreferences(MODE_PRIVATE).edit().putLong("frequency", centerHz).apply()
         log("SDR", "Frequência solicitada: $centerHz Hz")
+        updateSettingsSummary()
         sendCommands(listOf(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, tunedHz())), "SET_FREQ")
         receiverStale = true
     }
@@ -260,8 +360,14 @@ class MainActivity : Activity() {
     }
 
     private fun updateStatus() {
-        status.text = if (!running) "Desconectado" else
-            "Recebendo • %.3f MHz • detecções %d • decodificados %d".format(Locale.US, centerHz / 1e6, detections, decoded)
+        if (running) setStatus(status, "Recebendo", Ui.GREEN) else setStatus(status, "Desconectado", Ui.MUTED)
+        detectionsValue.text = detections.toString()
+        decodedValue.text = decoded.toString()
+        if (!running) {
+            levelValue.text = "—"
+            levelValue.setTextColor(Ui.TEXT)
+            setMeter(levelMeter, 0, Ui.ACCENT)
+        }
     }
 
     private fun tuningOffsetHz(): Int = if (offsetTuning) LoraProfile.TUNING_OFFSET_HZ else 0
@@ -279,7 +385,9 @@ class MainActivity : Activity() {
     }
 
     private fun updateProfileLabel() {
-        profileLabel.text = "Perfil: ${profile.describe()}"
+        profileLabel.text = profile.describe()
+        profileChips.forEach { (id, chip) -> setChipSelected(chip, id == profile.id) }
+        updateSettingsSummary()
     }
 
     private fun gainOrNull(): Int? = if (gainTenths == AUTO_GAIN) null else gainTenths
@@ -287,6 +395,8 @@ class MainActivity : Activity() {
     private fun updateGainLabel() {
         gainLabel.text = if (gainTenths == AUTO_GAIN) "Ganho do sintonizador: automático (AGC)"
             else "Ganho do sintonizador: %.1f dB".format(Locale.US, gainTenths / 10.0)
+        gainChips.forEach { (tenths, chip) -> setChipSelected(chip, tenths == gainTenths) }
+        if (::settingsSummary.isInitialized) updateSettingsSummary()
     }
 
     private fun applyGain(tenths: Int) {
@@ -339,7 +449,8 @@ class MainActivity : Activity() {
     private fun connectStream() {
         if (running) return
         running = true
-        status.text = "Conectando…"
+        setStatus(status, "Conectando…", Ui.AMBER)
+        setSettingsExpanded(false)
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             // Optional: without it the service still runs, the notification is just hidden.
@@ -436,6 +547,9 @@ class MainActivity : Activity() {
                     if (now - last >= 2000) {
                         val rate = bytes * 1000.0 / (now - last) / 1e6
                         log("IQ", "%.2f MB/s • %s".format(Locale.US, rate, level.summary()))
+                        val rms = level.lastRms
+                        val clip = level.lastClipPct
+                        ui.post { if (running) updateLevel(rms, clip) }
                         bytes = 0
                         last = now
                     }
@@ -450,7 +564,7 @@ class MainActivity : Activity() {
                 ReceiverService.stop(this)
                 try { socket?.close() } catch (_: Exception) {}
                 socket = null
-                ui.post { status.text = "Desconectado" }
+                ui.post { updateStatus() }
                 log("SDR", "Recepção encerrada")
             }
         }
