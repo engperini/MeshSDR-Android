@@ -40,9 +40,24 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: meshsdr-debug-signing-v1
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Build native LoRa decoder and Android APK
+        shell: bash
+        run: |
+          set +e
+          gradle :app:assembleDebug --stacktrace --console=plain > build.log 2>&1
+          code=$?
+          echo "=== Build errors and context ==="
+          grep -n -E '(^.*(error:|FAILED|FAILURE:|What went wrong|CMake Error|ninja: error|e: file|Unresolved reference).*$)' build.log | tail -100 || true
+          tail -100 build.log
+          exit "$code"
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MeshSDR-build-log
+          path: build.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: MeshSDR-Android-debug
           path: app/build/outputs/apk/debug/app-debug.apk
