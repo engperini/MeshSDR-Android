@@ -11,6 +11,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - name: Set monotonically increasing APK version
+        shell: bash
+        run: echo "MESHSDR_VERSION_CODE=$((1000 + $(git rev-list --count HEAD)))" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
