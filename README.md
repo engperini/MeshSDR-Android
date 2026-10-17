@@ -78,7 +78,7 @@ APK, **somente se compilar**: `app/build/outputs/apk/debug/app-debug.apk`, artif
 
 ### Atualização sem desinstalar (assinatura fixa)
 
-O workflow **Android APK** assina o APK com uma chave fixa lida dos GitHub Secrets `MESHSDR_KEYSTORE_BASE64` (keystore PKCS12 em base64, alias `meshsdr`) e `MESHSDR_KEYSTORE_PASSWORD`. A chave **nunca** é versionada (`*.jks` está no `.gitignore`). O `versionCode` é `1000 + git rev-list --count HEAD`, com checkout completo (`fetch-depth: 0`), portanto cresce a cada commit. O step **Show APK version and signing certificate** imprime `versionCode` e o SHA-256 do certificado; ele deve ser sempre `09:5C:61:9B:E4:1A:13:8B:11:2E:EC:69:E3:3B:8A:5A:B7:6E:3A:58:89:04:10:34:DD:EE:32:81:A4:26:CF:9B`. Sem os secrets o build falha (exceto em PR de fork, que usa chave descartável). APKs assinados antes desta mudança têm outra chave: desinstale uma única vez; daí em diante a instalação por cima funciona (`adb install -r app-debug.apk`).
+Todo build (CI ou local) é assinado com a chave pública de teste `app/meshsdr-debug.jks` (alias `meshsdr`, senha `meshsdr-public`), versionada no repositório de propósito: não há segredos neste projeto e qualquer pessoa pode recompilar com a mesma assinatura. O `versionCode` é `1000 + git rev-list --count HEAD`, com checkout completo (`fetch-depth: 0`), portanto cresce a cada commit. O step **Show APK version and signing certificate** imprime `versionCode` e o SHA-256 do certificado, que deve ser sempre `85:3E:23:FB:7D:32:D9:55:8C:2F:25:D2:8F:03:4F:E4:75:4C:8B:29:70:D1:0B:82:8C:E5:E0:EA:DF:3F:C2:B2`. APKs assinados antes desta mudança têm outra chave: desinstale uma única vez; daí em diante a instalação por cima funciona (`adb install -r app-debug.apk`).
 
 ### Licenciamento
 
