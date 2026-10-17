@@ -35,7 +35,7 @@ class MainActivity : Activity() {
     @Volatile private var socket: Socket? = null
     @Volatile private var captureRequested = false
     private val port = 14423
-    private val sampleRate = 1024000
+    private val sampleRate = 1000000
     private var centerHz = 906875000L
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 
@@ -139,7 +139,7 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(bottom)
         setContentView(root)
-        log("APP", "Inicializado. Mensagens LoRa exigem demodulador ainda não integrado.")
+        log("APP", "LoRa PHY habilitado: Meshtastic US LongFast SF11/BW250k. Aguardando pacotes CRC-ok.")
         render()
     }
 
@@ -153,7 +153,7 @@ class MainActivity : Activity() {
 
     private fun render() {
         output.text = if (showLogs) logs.joinToString("\n") else
-            if (messages.isEmpty()) "Nenhuma mensagem decodificada. O demodulador LoRa ainda não está integrado." else messages.joinToString("\n")
+            if (messages.isEmpty()) "Aguardando pacotes LoRa válidos (SF11 / BW250k / sync 0x2B)." else messages.joinToString("\n")
         logsTab.isEnabled = !showLogs
         messagesTab.isEnabled = showLogs
     }
@@ -228,6 +228,19 @@ class MainActivity : Activity() {
                     throw IllegalStateException("Cabeçalho rtl_tcp inválido")
                 log("SDR", "RTL0 recebido; amostras IQ ativas")
                 ui.post { status.text = "Recebendo IQ • ${centerHz / 1e6} MHz" }
+                val demod = LoraReceiver { payload ->
+                    try {
+                        val packet = MeshtasticAirPacket.parse(payload)
+                        ui.post {
+                            messages.addLast("[${timeFormat.format(Date())}] ${packet.summary()}")
+                            while (messages.size > 200) messages.removeFirst()
+                            if (!showLogs) render()
+                        }
+                        log("LORA", "Pacote Meshtastic CRC-ok: ${payload.size} bytes")
+                    } catch (e: IllegalArgumentException) {
+                        log("LORA", "Quadro LoRa CRC-ok não reconhecido como Meshtastic: ${payload.size} bytes")
+                    }
+                }
                 val buffer = ByteArray(65536)
                 var capture: FileOutputStream? = null
                 var captureStart = 0L
@@ -263,6 +276,7 @@ class MainActivity : Activity() {
                             capture = null
                         }
                     }
+                    demod.feed(buffer, n)
                     bytes += n
                     val now = System.currentTimeMillis()
                     if (now - last >= 2000) {
@@ -272,6 +286,7 @@ class MainActivity : Activity() {
                         last = now
                     }
                 }
+                demod.close()
                 capture?.close()
                 if (capture != null) log("IQ", "Gravação parcial: $captureBytes bytes em $captureName")
             } catch (e: Exception) {
