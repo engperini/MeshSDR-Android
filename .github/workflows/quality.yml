@@ -38,8 +38,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          set +e
           gradle :app:lintDebug --console=plain > lint-console.log 2>&1
           result=$?
+          set -e
           echo "=== Lint diagnostics ==="
           grep -nE '(^.*(Error:|Warning:|error:|warning:|Lint found|FAILURE:|What went wrong:|> Task :app:lint|\.kt:[0-9]+|\.xml:[0-9]+).*$)' lint-console.log | tail -100 || true
           if [ "$result" -ne 0 ]; then
