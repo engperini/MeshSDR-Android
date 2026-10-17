@@ -16,6 +16,12 @@ jobs:
       - name: Set monotonically increasing APK version
         shell: bash
         run: echo "MESHSDR_VERSION_CODE=$((1000 + $(git rev-list --count HEAD)))" >> "$GITHUB_ENV"
+      - name: LoRa PHY tests (host, modulator -> rtl_tcp u8 -> decoder)
+        shell: bash
+        run: |
+          cmake -S app/src/test/cpp -B build-host -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-host -j
+          ctest --test-dir build-host --output-on-failure
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

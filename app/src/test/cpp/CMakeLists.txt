@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(meshsdr_lora_tests LANGUAGES CXX)
+enable_testing()
+add_executable(lora_phy_test lora_phy_test.cpp)
+target_compile_features(lora_phy_test PRIVATE cxx_std_17)
+# Same decoder configuration as the Android library (app/src/main/cpp/CMakeLists.txt).
+target_compile_definitions(lora_phy_test PRIVATE LORA_LITE_MAX_SF=12 LORA_LITE_MAX_PAYLOAD=255)
+target_include_directories(lora_phy_test PRIVATE ../../main/cpp ../../main/cpp/upstream)
+target_compile_options(lora_phy_test PRIVATE -O2 -Wall -Wextra)
+add_test(NAME lora_phy COMMAND lora_phy_test)
