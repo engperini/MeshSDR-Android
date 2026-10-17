@@ -7,8 +7,8 @@ Este documento é um plano de execução para continuidade por outro desenvolved
 - [ ] Abrir **Android APK #38** e **Quality gates #34**; registrar no commit/PR o primeiro erro real (não apenas `exit code 1`).
 - [ ] Corrigir build CMake/NDK/JNI e eventuais falhas Kotlin/Lint **sem retirar o decoder**. Verificar compatibilidade de `lora_lite.h` com SF11/SF12 e tamanhos de buffer.
 - [ ] Garantir que `android.yml` e `quality.yml` fiquem verdes **no mesmo SHA**; manter artefatos de diagnóstico.
-- [ ] Corrigir versionCode: checkout com histórico completo ou outra sequência realmente monotônica.
-- [ ] Configurar assinatura estável em segredo de CI, validar SHA-256 do certificado; não depender de cache de debug keystore.
+- [x] Corrigir versionCode: checkout com histórico completo (`fetch-depth: 0`).
+- [x] Configurar assinatura estável em segredo de CI e imprimir SHA-256 do certificado no log (falta validar upgrade no aparelho).
 - [ ] Documentar upgrade do APK com `adb install -r` e verificar mesmo `applicationId`, assinatura e versão.
 
 ## P1 — função principal: LoRa PHY ao vivo

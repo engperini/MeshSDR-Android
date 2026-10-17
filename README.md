@@ -76,9 +76,9 @@ gradle :app:assembleDebug --stacktrace --console=plain
 
 APK, **somente se compilar**: `app/build/outputs/apk/debug/app-debug.apk`, artifact `MeshSDR-Android-debug` da workflow Android APK. Não confundir um build de APK verde com a prova de decodificação LoRa.
 
-### Atualização sem desinstalar: pendência crítica
+### Atualização sem desinstalar (assinatura fixa)
 
-`app/build.gradle.kts` usa `MESHSDR_VERSION_CODE`, e as CIs tentam calculá-lo por `1000 + git rev-list --count HEAD`. **O checkout padrão do Actions é raso (`fetch-depth: 1`)**, portanto a contagem pode permanecer em 1 e **não garantir incremento de versão**. Corrigir com `fetch-depth: 0` e versionamento persistente ou `github.run_number` com política explícita. Além disso, `actions/cache` para `~/.android/debug.keystore` **não garante** que a mesma chave exista entre todos os builds ou em caso de cache miss. A instalação por cima só funciona com **applicationId igual, versionCode superior e assinatura idêntica**. Preferir chave de assinatura fixa armazenada em GitHub Secrets (sem versionar a chave no Git) e verificar fingerprint antes de distribuir. O APK atual **não tem garantia de upgrade in-place**.
+O workflow **Android APK** assina o APK com uma chave fixa lida dos GitHub Secrets `MESHSDR_KEYSTORE_BASE64` (keystore PKCS12 em base64, alias `meshsdr`) e `MESHSDR_KEYSTORE_PASSWORD`. A chave **nunca** é versionada (`*.jks` está no `.gitignore`). O `versionCode` é `1000 + git rev-list --count HEAD`, com checkout completo (`fetch-depth: 0`), portanto cresce a cada commit. O step **Show APK version and signing certificate** imprime `versionCode` e o SHA-256 do certificado; ele deve ser sempre `09:5C:61:9B:E4:1A:13:8B:11:2E:EC:69:E3:3B:8A:5A:B7:6E:3A:58:89:04:10:34:DD:EE:32:81:A4:26:CF:9B`. Sem os secrets o build falha (exceto em PR de fork, que usa chave descartável). APKs assinados antes desta mudança têm outra chave: desinstale uma única vez; daí em diante a instalação por cima funciona (`adb install -r app-debug.apk`).
 
 ### Licenciamento
 

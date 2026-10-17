@@ -37,11 +37,26 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Restore stable debug signing key
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: meshsdr-debug-signing-v1
+      - name: Load stable signing key from secrets
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.MESHSDR_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.MESHSDR_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "::warning::Signing secrets unavailable (fork PR?); using throwaway debug key."
+              exit 0
+            fi
+            echo "::error::Secrets MESHSDR_KEYSTORE_BASE64 / MESHSDR_KEYSTORE_PASSWORD are not set."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/meshsdr.jks"
+          {
+            echo "MESHSDR_KEYSTORE=$RUNNER_TEMP/meshsdr.jks"
+            echo "MESHSDR_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "MESHSDR_KEY_ALIAS=meshsdr"
+          } >> "$GITHUB_ENV"
       - name: Build native LoRa decoder and Android APK
         shell: bash
         run: |
@@ -58,6 +73,12 @@ jobs:
           name: MeshSDR-build-log
           path: build.log
           if-no-files-found: ignore
+      - name: Show APK version and signing certificate
+        shell: bash
+        run: |
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$apk" | head -1
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$apk" | grep -E 'SHA-256|DN'
       - uses: actions/upload-artifact@v4
         if: success()
         with:

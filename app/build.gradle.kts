@@ -16,6 +16,23 @@ android {
         cmake { path = file("src/main/cpp/CMakeLists.txt") }
     }
     ndkVersion = "27.2.12479018"
+    // Stable signing from CI secrets so each APK upgrades the previous one in place.
+    // Without MESHSDR_KEYSTORE the default (per-machine) debug key is used.
+    val keystorePath = System.getenv("MESHSDR_KEYSTORE")
+    if (keystorePath != null) {
+        signingConfigs {
+            create("stable") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("MESHSDR_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("MESHSDR_KEY_ALIAS") ?: "meshsdr"
+                keyPassword = System.getenv("MESHSDR_KEY_PASSWORD") ?: System.getenv("MESHSDR_KEYSTORE_PASSWORD")
+            }
+        }
+        buildTypes {
+            getByName("debug") { signingConfig = signingConfigs.getByName("stable") }
+            getByName("release") { signingConfig = signingConfigs.getByName("stable") }
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
