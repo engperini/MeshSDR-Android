@@ -261,18 +261,20 @@ class MainActivity : Activity() {
                         captureBytes = 0L
                         log("IQ", "Gravando em $captureName")
                     }
-                    if (capture != null) {
+                    // Local val: a captured `var` can't be smart-cast to non-null.
+                    val activeCapture = capture
+                    if (activeCapture != null) {
                         try {
-                            capture.write(buffer, 0, n)
+                            activeCapture.write(buffer, 0, n)
                             captureBytes += n
                             if (System.currentTimeMillis() - captureStart >= 10_000L) {
-                                capture.close()
+                                activeCapture.close()
                                 capture = null
                                 log("IQ", "Gravação concluída: $captureBytes bytes em $captureName")
                             }
                         } catch (e: Exception) {
                             log("ERROR", "Gravação IQ: ${e.message}")
-                            try { capture.close() } catch (_: Exception) {}
+                            try { activeCapture.close() } catch (_: Exception) {}
                             capture = null
                         }
                     }
@@ -281,7 +283,7 @@ class MainActivity : Activity() {
                     val now = System.currentTimeMillis()
                     if (now - last >= 2000) {
                         val rate = bytes * 1000.0 / (now - last) / 1e6
-                        log("IQ", "%.2f MB/s recebidos (sem demodulação)".format(Locale.US, rate))
+                        log("IQ", "%.2f MB/s IQ recebidos".format(Locale.US, rate))
                         bytes = 0
                         last = now
                     }
