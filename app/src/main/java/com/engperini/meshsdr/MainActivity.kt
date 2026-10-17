@@ -14,6 +14,7 @@ import android.view.WindowInsets
 import android.widget.*
 import java.io.BufferedInputStream
 import java.io.DataOutputStream
+import java.io.FileOutputStream
 import java.net.Socket
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -32,6 +33,7 @@ class MainActivity : Activity() {
     private val messages = ArrayDeque<String>()
     @Volatile private var running = false
     @Volatile private var socket: Socket? = null
+    @Volatile private var captureRequested = false
     private val port = 14423
     private val sampleRate = 1024000
     private var centerHz = 906875000L
@@ -95,6 +97,16 @@ class MainActivity : Activity() {
             setOnClickListener { disconnect() }
         }, LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(controls)
+        root.addView(Button(this).apply {
+            text = "Gravar IQ (10 segundos)"
+            setOnClickListener {
+                if (!running) log("IQ", "Conecte o RTL-SDR antes de gravar")
+                else {
+                    captureRequested = true
+                    log("IQ", "Gravação IQ solicitada: 10 segundos, formato unsigned IQ 8-bit")
+                }
+            }
+        })
         val tabs = LinearLayout(this)
         messagesTab = Button(this).apply { text = "Mensagens"; setOnClickListener { showLogs = false; render() } }
         logsTab = Button(this).apply { text = "Logs técnicos"; setOnClickListener { showLogs = true; render() } }
@@ -217,11 +229,40 @@ class MainActivity : Activity() {
                 log("SDR", "RTL0 recebido; amostras IQ ativas")
                 ui.post { status.text = "Recebendo IQ • ${centerHz / 1e6} MHz" }
                 val buffer = ByteArray(65536)
+                var capture: FileOutputStream? = null
+                var captureStart = 0L
+                var captureBytes = 0L
+                var captureName = ""
                 var bytes = 0L
                 var last = System.currentTimeMillis()
                 while (running) {
                     val n = input.read(buffer)
                     if (n < 0) break
+                    if (captureRequested && capture == null) {
+                        captureRequested = false
+                        val directory = getExternalFilesDir(null) ?: filesDir
+                        val file = java.io.File(directory, "meshsdr-${System.currentTimeMillis()}-${centerHz}Hz-${sampleRate}sps.cu8")
+                        capture = FileOutputStream(file)
+                        captureName = file.absolutePath
+                        captureStart = System.currentTimeMillis()
+                        captureBytes = 0L
+                        log("IQ", "Gravando em $captureName")
+                    }
+                    if (capture != null) {
+                        try {
+                            capture.write(buffer, 0, n)
+                            captureBytes += n
+                            if (System.currentTimeMillis() - captureStart >= 10_000L) {
+                                capture.close()
+                                capture = null
+                                log("IQ", "Gravação concluída: $captureBytes bytes em $captureName")
+                            }
+                        } catch (e: Exception) {
+                            log("ERROR", "Gravação IQ: ${e.message}")
+                            try { capture.close() } catch (_: Exception) {}
+                            capture = null
+                        }
+                    }
                     bytes += n
                     val now = System.currentTimeMillis()
                     if (now - last >= 2000) {
@@ -231,6 +272,8 @@ class MainActivity : Activity() {
                         last = now
                     }
                 }
+                capture?.close()
+                if (capture != null) log("IQ", "Gravação parcial: $captureBytes bytes em $captureName")
             } catch (e: Exception) {
                 if (running) log("ERROR", "Fluxo IQ: ${e.message}")
             } finally {
