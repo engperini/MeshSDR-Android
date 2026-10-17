@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Very faint mesh mark used as a background decoration. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:alpha="0.07">
+    <path
+        android:pathData="M54,48 L37,74 L71,74 Z"
+        android:strokeColor="#22D3EE"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M46.2,40.2 A11,11 0 0 1 61.8,40.2"
+        android:strokeColor="#67E8F9"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M41.3,35.3 A18,18 0 0 1 66.7,35.3"
+        android:strokeColor="#67E8F9"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M48,48 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z"
+        android:fillColor="#22D3EE" />
+    <path
+        android:pathData="M32.5,74 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 Z"
+        android:fillColor="#22D3EE" />
+    <path
+        android:pathData="M66.5,74 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 Z"
+        android:fillColor="#22D3EE" />
+</vector>

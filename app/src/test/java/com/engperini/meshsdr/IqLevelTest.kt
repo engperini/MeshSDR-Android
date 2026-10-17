@@ -25,5 +25,7 @@ class IqLevelTest {
         level.add(bytes, bytes.size)
         val text = level.summary()
         assertTrue(text, !text.contains("—"))
+        assertTrue(level.lastRms in 5.0..30.0)
+        assertTrue(level.lastClipPct == 0.0)
     }
 }

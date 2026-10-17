@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Window background: deep night gradient with the mesh mark faintly at the top right. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:startColor="#FF060A13"
+                android:centerColor="#FF0A1424"
+                android:endColor="#FF0B2530" />
+        </shape>
+    </item>
+    <item
+        android:width="280dp"
+        android:height="280dp"
+        android:gravity="top|end"
+        android:drawable="@drawable/bg_watermark" />
+</layer-list>
