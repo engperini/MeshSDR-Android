@@ -52,6 +52,11 @@ jobs:
             tail -90 lint-console.log
           fi
           exit "$result"
+      - name: Restore stable debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: meshsdr-debug-signing-v1
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
