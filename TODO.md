@@ -33,7 +33,7 @@ Este documento é um plano de execução para continuidade por outro desenvolved
 
 - [ ] Implementar parser MeshCore e perfis de rádio específicos, com testes próprios.
 - [ ] Validar margens superior/inferior em Android 15/16 e rotação.
-- [ ] Mover recepção para serviço com ciclo de vida apropriado, encerramento e reconexão USB/TCP.
+- [~] Serviço em primeiro plano + wake lock mantém a recepção com a tela apagada; falta mover o leitor para o serviço (sobreviver ao fechamento da Activity) e reconexão USB/TCP.
 - [ ] Melhorar UI: separação clara mensagens/logs, scroll, exportação e persistência de configurações.
 - [ ] Validar hardware real apenas **após** CI e testes DSP verdes; usuário tem RTL2832U, mas **não** possui transmissor LoRa.
 
