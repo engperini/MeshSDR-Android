@@ -36,7 +36,7 @@ Aplicativo Android que usa um dongle USB **RTL2832U (RTL-SDR)** por OTG e o driv
 | DSP LoRa de terceiros | `app/src/main/cpp/upstream/lora_lite.h`, `lora_kiss.h` | Copiado de `mmmaly/LoraReceiverStandalone`; bytes exatos em SF7–12 × CR4/5–4/8 × BW125/250k no teste; licença GPL-3.0 ainda a conferir |
 | Build C++ | `app/src/main/cpp/CMakeLists.txt` | Android NDK 27.2.12479018; verde na CI |
 | Teste PHY LoRa (host) | `app/src/test/cpp/` | Roda no Quality gates via CMake/ctest |
-| Gravação IQ | `MainActivity.kt` | Botão opcional de 10 s, não é requisito para decodificar |
+| Gravação IQ e logs | `MainActivity.kt`, `PublicFiles.kt` | Botões "Gravar IQ (10 s)" e "Salvar logs"; arquivos em **Download/MeshSDR** (Android 10+, via MediaStore, sem permissão). Não é requisito para decodificar |
 
 ### Caminho de recepção pretendido
 

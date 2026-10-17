@@ -14,7 +14,6 @@ import android.view.WindowInsets
 import android.widget.*
 import java.io.BufferedInputStream
 import java.io.DataOutputStream
-import java.io.FileOutputStream
 import java.net.Socket
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -131,6 +130,10 @@ class MainActivity : Activity() {
             }
         }, LinearLayout.LayoutParams(0, -2, 1f))
         bottom.addView(Button(this).apply {
+            text = "Salvar logs"
+            setOnClickListener { saveLogs() }
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        bottom.addView(Button(this).apply {
             text = "Limpar aba"
             setOnClickListener {
                 if (showLogs) logs.clear() else messages.clear()
@@ -141,6 +144,21 @@ class MainActivity : Activity() {
         setContentView(root)
         log("APP", "LoRa PHY habilitado: Meshtastic US LongFast SF11/BW250k. Aguardando pacotes CRC-ok.")
         render()
+    }
+
+    private fun saveLogs() {
+        val text = (logs + listOf("", "--- Mensagens ---") + messages).joinToString("\n")
+        thread(name = "save-logs") {
+            try {
+                val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+                val location = PublicFiles.create(this, "meshsdr-log-$stamp.txt", "text/plain").use { target ->
+                    target.stream.write(text.toByteArray(Charsets.UTF_8))
+                    target.location
+                }
+                log("APP", "Logs salvos em $location")
+                ui.post { Toast.makeText(this, "Logs salvos em $location", Toast.LENGTH_LONG).show() }
+            } catch (e: Exception) { log("ERROR", "Salvar logs: ${e.message}") }
+        }
     }
 
     private fun log(tag: String, detail: String) {
@@ -242,7 +260,7 @@ class MainActivity : Activity() {
                     }
                 }
                 val buffer = ByteArray(65536)
-                var capture: FileOutputStream? = null
+                var capture: PublicFiles.Target? = null
                 var captureStart = 0L
                 var captureBytes = 0L
                 var captureName = ""
@@ -253,10 +271,10 @@ class MainActivity : Activity() {
                     if (n < 0) break
                     if (captureRequested && capture == null) {
                         captureRequested = false
-                        val directory = getExternalFilesDir(null) ?: filesDir
-                        val file = java.io.File(directory, "meshsdr-${System.currentTimeMillis()}-${centerHz}Hz-${sampleRate}sps.cu8")
-                        capture = FileOutputStream(file)
-                        captureName = file.absolutePath
+                        val target = PublicFiles.create(this,
+                            "meshsdr-${System.currentTimeMillis()}-${centerHz}Hz-${sampleRate}sps.cu8", "application/octet-stream")
+                        capture = target
+                        captureName = target.location
                         captureStart = System.currentTimeMillis()
                         captureBytes = 0L
                         log("IQ", "Gravando em $captureName")
@@ -265,7 +283,7 @@ class MainActivity : Activity() {
                     val activeCapture = capture
                     if (activeCapture != null) {
                         try {
-                            activeCapture.write(buffer, 0, n)
+                            activeCapture.stream.write(buffer, 0, n)
                             captureBytes += n
                             if (System.currentTimeMillis() - captureStart >= 10_000L) {
                                 activeCapture.close()
