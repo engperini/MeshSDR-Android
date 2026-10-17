@@ -340,6 +340,17 @@ class MainActivity : Activity() {
         if (running) return
         running = true
         status.text = "Conectando…"
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            // Optional: without it the service still runs, the notification is just hidden.
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1002)
+        }
+        try {
+            ReceiverService.start(this, "${profile.label} • %.3f MHz".format(Locale.US, centerHz / 1e6))
+            log("APP", "Serviço em primeiro plano ativo: recepção continua com a tela apagada")
+        } catch (e: Exception) {
+            log("ERROR", "Serviço em primeiro plano: ${e.message} (a recepção pode parar com a tela apagada)")
+        }
         thread(name = "rtl-iq-reader") {
             try {
                 val s = Socket("127.0.0.1", port)
@@ -436,6 +447,7 @@ class MainActivity : Activity() {
                 if (running) log("ERROR", "Fluxo IQ: ${e.message}")
             } finally {
                 running = false
+                ReceiverService.stop(this)
                 try { socket?.close() } catch (_: Exception) {}
                 socket = null
                 ui.post { status.text = "Desconectado" }

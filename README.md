@@ -67,6 +67,14 @@ A documentação oficial do Meshtastic também lista `BR_902` (902–907,5 MHz),
 
 O ganho é enviado ao `rtl_tcp` ao conectar (padrão 40,2 dB) e o log mostra nível RMS e saturação a cada 2 s. A gravação IQ sempre começa num byte I (antes podia começar num Q e trocar I/Q no arquivo inteiro).
 
+### Recepção com a tela apagada
+
+Ao conectar, o app inicia `ReceiverService` (serviço em primeiro plano do tipo `connectedDevice`, com notificação fixa e *partial wake lock* de até 12 h). Antes disso, com a tela apagada o Android congelava o processo e a recepção caía com `Read timed out` (visto em campo em 17/10).
+
+### Teste de cadeia RF com portadora (17/10, Baofeng UV-6R)
+
+Portadora em 433,500 MHz com o sintonizador em 433,400 MHz: apareceu em **+100,570 kHz** (lado correto; orientação I/Q validada), erro combinado dongle + rádio de **+1,3 ppm**, estabilidade de ±3 Hz em 3 s, rejeição de imagem de **67 dB**. Com o ganho em AGC, o nível medido varia quando o transmissor liga e desliga; para medir nível, use ganho fixo. **Validação às cegas:** demodulando o FM da gravação, a tecla DTMF apertada durante o PTT foi identificada como **5** (770,0 + 1336,1 Hz) sem que o analista soubesse qual era, e o usuário confirmou. Isso mostra que gravação e I/Q chegam sem perda nem desalinhamento. Há também uma portadora contínua local em 433,496 MHz, sem relação com o app.
+
 ### Opções do front-end (ambas **desligadas** por padrão, caixas na tela)
 
 | Opção | O que faz | Evidência |
