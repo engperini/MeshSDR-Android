@@ -42,7 +42,8 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 }
 
-val appVersion = System.getenv("MESHSDR_VERSION_NAME") ?: "0.4.0"
+// Release builds pass the tag (v0.5.0 or 0.5.0); other builds use the next version.
+val appVersion = System.getenv("MESHSDR_VERSION_NAME")?.removePrefix("v")?.takeIf { it.isNotBlank() } ?: "0.5.0"
 
 compose.desktop {
     application {

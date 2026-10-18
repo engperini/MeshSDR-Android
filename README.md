@@ -67,7 +67,7 @@ LoRa radio, a PC or GNU Radio.
    details in **Technical logs**.
 
 
-## Desktop app (Windows / Linux) — preview
+## Desktop app (Windows / Linux)
 
 The same receiver as a desktop app, with the phone's interface: a Kotlin + Compose
 Multiplatform window over the same C++ LoRa PHY and the same protocol code.
@@ -82,7 +82,8 @@ Multiplatform window over the same C++ LoRa PHY and the same protocol code.
   Raspberry Pi on the roof running `rtl_tcp -a 0.0.0.0`.
 - `--connect` starts receiving at launch, for unattended monitoring stations.
 
-Builds are produced by the **Desktop app** workflow in GitHub Actions.
+Download the `.msi`, `.deb` or portable builds from the
+[latest release](https://github.com/engperini/MeshSDR-Android/releases/latest).
 
 ## How it works
 
