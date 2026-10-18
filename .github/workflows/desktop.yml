@@ -1,0 +1,78 @@
+name: Desktop app
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 22.04: older glibc, so the .deb and native library run on more distributions.
+          - os: ubuntu-22.04
+            platform: linux-x64
+          - os: windows-latest
+            platform: windows-x64
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Native LoRa PHY (same C++ as the Android app)
+        run: |
+          cmake -S desktop/native -B build-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --config Release -j
+          mkdir -p desktop/resources/${{ matrix.platform }}
+          find build-native -name 'libmeshsdr_lora.so' -o -name 'meshsdr_lora.dll' | xargs -I{} cp {} desktop/resources/${{ matrix.platform }}/
+          ls -la desktop/resources/${{ matrix.platform }}
+      - name: Bundle rtl_tcp (Windows)
+        if: runner.os == 'Windows'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # RTL-SDR Blog drivers: rtl_tcp.exe and its DLLs, started by the app on Connect.
+          mkdir -p rtl && cd rtl
+          gh release download -R rtlsdrblog/rtl-sdr-blog --pattern '*.zip'
+          for z in *.zip; do 7z x "$z" -o"${z%.zip}" -y >/dev/null; done
+          exe=$(find . -iname rtl_tcp.exe | grep -i x64 | head -1)
+          [ -n "$exe" ] || exe=$(find . -iname rtl_tcp.exe | head -1)
+          test -n "$exe"
+          echo "Using $exe"
+          cp "$(dirname "$exe")"/*.dll "$exe" ../desktop/resources/windows-x64/
+          ls -la ../desktop/resources/windows-x64
+      - name: Package
+        working-directory: desktop
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then gradle packageMsi createDistributable --console=plain
+          else gradle packageDeb createDistributable --console=plain; fi
+      - name: Smoke test (native library loads)
+        if: runner.os == 'Linux'
+        working-directory: desktop
+        run: |
+          app=build/compose/binaries/main/app/MeshSDR
+          test -f "$app/lib/app/resources/libmeshsdr_lora.so"
+          ldd "$app/lib/app/resources/libmeshsdr_lora.so"
+      - name: Collect
+        run: |
+          mkdir -p dist
+          find desktop/build/compose/binaries -name '*.msi' -o -name '*.deb' | xargs -I{} cp {} dist/
+          cd desktop/build/compose/binaries/main/app
+          if [ "$RUNNER_OS" = Windows ]; then 7z a -bd ../../../../../../dist/MeshSDR-windows-x64-portable.zip MeshSDR >/dev/null
+          else tar czf ../../../../../../dist/MeshSDR-linux-x64-portable.tar.gz MeshSDR; fi
+          ls -la ../../../../../../dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MeshSDR-desktop-${{ matrix.platform }}
+          path: dist/*

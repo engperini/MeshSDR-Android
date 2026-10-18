@@ -13,7 +13,7 @@ class LoraReceiver(
     average: Boolean,
     private val onFrame: (LoraFrame) -> Unit
 ) : AutoCloseable {
-    companion object { init { System.loadLibrary("meshsdr_lora") } }
+    companion object { init { NativeLibrary.load() } }
     private var handle = nativeCreate(
         spreadingFactor, profile.bandwidthHz, profile.codingRate, 0, profile.frequencyHz,
         LoraProfile.decimation(profile), tuningOffsetHz.toDouble(), LoraProfile.SAMPLE_RATE.toDouble(), average
