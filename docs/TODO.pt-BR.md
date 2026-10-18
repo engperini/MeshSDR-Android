@@ -43,4 +43,4 @@ Este documento é um plano de execução para continuidade por outro desenvolved
 - CI: https://github.com/engperini/MeshSDR-Android/actions
 - Núcleo LoRa importado: https://github.com/mmmaly/LoraReceiverStandalone
 - Android APK #38 e Quality gates #34: vermelhos no print enviado em 17/10/2026.
-- README: [visão geral, arquivos e problemas conhecidos](README.md).
+- README: [visão geral, arquivos e problemas conhecidos](engineering-notes.pt-BR.md).

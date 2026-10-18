@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#060A13"/><stop offset="0.55" stop-color="#0A1424"/><stop offset="1" stop-color="#0B2E3A"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1220"/><stop offset="1" stop-color="#0F4C5C"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <path d="M0,560 L80,480 L80,560 L160,480 L160,560 L240,480 L240,560 L320,480 L320,560 L400,480 L400,560 L480,480 L480,560 L560,480 L560,560 L640,480 L640,560 L720,480 L720,560 L800,480 L800,560 L880,480 L880,560 L960,480 L960,560 L1040,480 L1040,560 L1120,480 L1120,560 L1200,480 L1200,560 L1280,480" fill="none" stroke="#22D3EE" stroke-opacity="0.12" stroke-width="4" stroke-linejoin="round"/>
+  <g transform="translate(110,150) scale(2.9)">
+    <rect width="108" height="108" rx="24" fill="url(#tile)" stroke="#24344F" stroke-width="1"/>
+    <path d="M54,48 L37,74 L71,74 Z" fill="none" stroke="#22D3EE" stroke-opacity="0.9" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M46.2,40.2 A11,11 0 0 1 61.8,40.2" fill="none" stroke="#67E8F9" stroke-width="3" stroke-linecap="round"/>
+    <path d="M41.3,35.3 A18,18 0 0 1 66.7,35.3" fill="none" stroke="#67E8F9" stroke-opacity="0.6" stroke-width="3" stroke-linecap="round"/>
+    <path d="M47,48 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z" fill="#FFFFFF"/>
+    <path d="M50.5,48 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 Z" fill="#22D3EE"/>
+    <path d="M31.5,74 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" fill="#22D3EE"/>
+    <path d="M65.5,74 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" fill="#22D3EE"/>
+  </g>
+  <text x="490" y="290" font-family="DejaVu Sans, Arial, sans-serif" font-size="104" font-weight="bold" fill="#E6EDF7">MeshSDR</text>
+  <text x="494" y="358" font-family="DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8DA2BE">Receive LoRa, Meshtastic &amp; MeshCore</text>
+  <text x="494" y="402" font-family="DejaVu Sans, Arial, sans-serif" font-size="34" fill="#8DA2BE">with an RTL-SDR dongle on Android</text>
+  <g font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="bold">
+    <rect x="494" y="432" width="226" height="46" rx="23" fill="#22D3EE" fill-opacity="0.15" stroke="#22D3EE"/>
+    <text x="607" y="463" text-anchor="middle" fill="#22D3EE">No LoRa radio</text>
+    <rect x="736" y="432" width="244" height="46" rx="23" fill="#22D3EE" fill-opacity="0.15" stroke="#22D3EE"/>
+    <text x="858" y="463" text-anchor="middle" fill="#22D3EE">Native C++ PHY</text>
+    <rect x="996" y="432" width="200" height="46" rx="23" fill="#34D399" fill-opacity="0.15" stroke="#34D399"/>
+    <text x="1096" y="463" text-anchor="middle" fill="#34D399">Field-tested</text>
+  </g>
+</svg>

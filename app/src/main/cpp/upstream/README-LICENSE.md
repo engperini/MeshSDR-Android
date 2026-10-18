@@ -1,9 +1,21 @@
 # Third-party LoRa PHY
 
-Files `lora_lite.h` and `lora_kiss.h` are copied from [mmmaly/LoraReceiverStandalone](https://github.com/mmmaly/LoraReceiverStandalone) (master branch), and are derived from `gr-lora_sdr` DSP algorithms. Upstream describes its DSP as **GPL-3.0**; `lora_kiss.h` is included from the same project. These files are not authored by MeshSDR. Preserve upstream attribution and comply with applicable GPL-3.0 obligations when distributing APKs and source. Full upstream source is available at the linked repository.
+`lora_lite.h` and `lora_kiss.h` come from
+[mmmaly/LoraReceiverStandalone](https://github.com/mmmaly/LoraReceiverStandalone)
+and are derived from the DSP algorithms of
+[gr-lora_sdr](https://github.com/tapparelj/gr-lora_sdr). They are licensed
+under the **GNU GPL v3.0**, which is why MeshSDR as a whole is distributed under
+GPL-3.0 (see `LICENSE` at the repository root). Upstream attribution is kept
+in the files.
 
-The Android JNI bridge is in `../lora_jni.cpp`.
+## Local modifications (MeshSDR)
 
-**Modificação local (MeshSDR):** `lora_lite.h` `finish_sync()` passou a estimar o resíduo de net-ID também quando nenhum sync word é configurado (aceitar qualquer), usando o múltiplo de 8 bins mais próximo.
+- `finish_sync()`: when no sync word is configured ("accept any"), the net-ID
+  residual used for CFO recovery is still estimated, against the nearest
+  multiple of 8 bins.
+- `finish_sync()`: the clock drift (SFO) accumulated between the preamble
+  timing reference and the payload is now compensated
+  (`LORA_LITE_SFO_LEAD`). Without it, payloads failed for crystal errors of
+  roughly 12–21 ppm with a 16-symbol preamble.
 
-**Modificação local (MeshSDR):** `finish_sync()` aplica a deriva de relógio (SFO) acumulada desde a referência de temporização do preâmbulo até o payload (`LORA_LITE_SFO_LEAD`), que antes era ignorada.
+The Android JNI bridge is `../lora_jni.cpp`; the IQ front end is `../iq_u8.h`.

@@ -1,0 +1,68 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 0.3.0 (creates tag v<version> on the selected branch)'
+        required: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history: versionCode = 1000 + commit count
+      - name: Resolve version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          version="${version#v}"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "MESHSDR_VERSION_NAME=$version" >> "$GITHUB_ENV"
+          echo "MESHSDR_VERSION_CODE=$((1000 + $(git rev-list --count HEAD)))" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install required SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: LoRa PHY tests (synthetic + real capture)
+        run: |
+          cmake -S app/src/test/cpp -B build-host -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-host -j
+          ctest --test-dir build-host --output-on-failure
+      - name: Unit tests and APK
+        run: gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace --console=plain
+      - name: Package release assets
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/MeshSDR-${VERSION}.apk"
+          cp app/src/test/cpp/data/meshcore_jundiai_20261017_923125000Hz_1Msps.cu8 dist/
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "dist/MeshSDR-${VERSION}.apk" | head -1
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "dist/MeshSDR-${VERSION}.apk" | grep -E 'SHA-256'
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: MeshSDR v${{ env.VERSION }}
+          body_path: docs/release-notes.md
+          files: |
+            dist/MeshSDR-${{ env.VERSION }}.apk
+            dist/meshcore_jundiai_20261017_923125000Hz_1Msps.cu8
+            dist/SHA256SUMS.txt

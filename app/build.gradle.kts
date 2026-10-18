@@ -10,7 +10,8 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = (System.getenv("MESHSDR_VERSION_CODE") ?: "2").toInt()
-        versionName = "0.2.${versionCode}"
+        // Release builds pass MESHSDR_VERSION_NAME from the git tag (e.g. 0.3.0).
+        versionName = System.getenv("MESHSDR_VERSION_NAME") ?: "0.2.${versionCode}"
     }
     externalNativeBuild {
         cmake { path = file("src/main/cpp/CMakeLists.txt") }
