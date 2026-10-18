@@ -147,9 +147,9 @@ void testLongFastRtlTcp(const char* name, Channel ch, std::vector<int> lens, boo
 
 // Decoder core across SF/CR/BW at its native 2 samples per chip.
 void testMatrix() {
-    std::printf("[matrix] SF7..12 x CR4/5..4/8 x BW125/250k, direct complex input\n");
+    std::printf("[matrix] SF7..12 x CR4/5..4/8 x BW15.6/31.25/125/250k, direct complex input\n");
     int ok = 0, total = 0;
-    for (int bw : {125000, 250000}) for (int sf = 7; sf <= 12; ++sf) for (int cr = 1; cr <= 4; ++cr) {
+    for (int bw : {15625, 31250, 125000, 250000}) for (int sf = 7; sf <= 12; ++sf) for (int cr = 1; cr <= 4; ++cr) {
         loratx::Params p;
         p.sf = sf; p.cr = cr; p.os = 2; p.preamble = 8;
         p.ldro = (1 << sf) * 1e3 / bw > 16.0;

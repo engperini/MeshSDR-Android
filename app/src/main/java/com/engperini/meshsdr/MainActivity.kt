@@ -54,15 +54,17 @@ class MainActivity : Activity() {
     private lateinit var levelValue: TextView
     private lateinit var levelMeter: ProgressBar
     private lateinit var settingsBody: LinearLayout
+    private lateinit var settingsScroll: ScrollView
     private lateinit var settingsSummary: TextView
     private lateinit var settingsArrow: TextView
     private lateinit var outputScroll: ScrollView
     private val profileChips = mutableMapOf<String, Button>()
     private val gainChips = mutableMapOf<Int, Button>()
     private val sfChips = mutableMapOf<Int, Button>()
-    private val bwChips = mutableMapOf<Int, Button>()
     private val languageChips = mutableMapOf<Boolean, Button>()
     private lateinit var genericBox: LinearLayout
+    private lateinit var bwInput: EditText
+    private lateinit var channelLabel: TextView
     /** Generic LoRa settings, kept while another profile is selected. */
     private var genericSf = LoraProfile.ALL_SF
     private var genericBw = 125_000
@@ -157,11 +159,17 @@ class MainActivity : Activity() {
             addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
             settingsArrow = label("▾", 18f, Ui.ACCENT, bold = true)
             addView(settingsArrow)
-            setOnClickListener { setSettingsExpanded(settingsBody.visibility != View.VISIBLE) }
+            setOnClickListener { setSettingsExpanded(settingsScroll.visibility != View.VISIBLE) }
         }
         settings.addView(settingsHeader)
         settingsBody = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        settings.addView(settingsBody)
+        // Scrolls inside the card so the buttons and output stay on screen when expanded.
+        settingsScroll = MaxHeightScrollView(this).apply {
+            maxHeightPx = (resources.displayMetrics.heightPixels * 0.42).toInt()
+            isVerticalScrollBarEnabled = true
+            addView(settingsBody)
+        }
+        settings.addView(settingsScroll)
 
         settingsBody.addView(sectionLabel(tr("LoRa profile", "Perfil LoRa")))
         profileLabel = label("", 12f)
@@ -176,42 +184,29 @@ class MainActivity : Activity() {
         settingsBody.addView(row(this, profileButtons[2], genericChip, gapDp = 6), spaced(6))
         settingsBody.addView(profileLabel, spaced(6))
 
-        // Generic LoRa: any SF (or all at once) and bandwidth; bytes are shown raw.
+        // Generic LoRa: one SF or all at once; the bandwidth is typed next to the frequency.
         genericBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        genericBox.addView(sectionLabel(tr("Spreading factor", "Fator de espalhamento (SF)")))
-        val sfButtons = LoraProfile.GENERIC_SFS.map { sf ->
-            chip("$sf") { selectGeneric(sf, genericBw) }.also { sfChips[sf] = it }
+        genericBox.addView(sectionLabel(tr("Spreading factor (All = SF7–12 at once)", "Fator de espalhamento (Todos = SF7–12 juntos)")))
+        val sfButtons = (listOf(LoraProfile.ALL_SF) + LoraProfile.GENERIC_SFS).map { sf ->
+            chip(if (sf == LoraProfile.ALL_SF) tr("All", "Todos") else "$sf") { selectGeneric(sf, genericBw) }.apply {
+                minWidth = 0
+                minimumWidth = 0
+                setPadding(dp(2), 0, dp(2), 0)
+            }.also { sfChips[sf] = it }
         }
         genericBox.addView(row(this, *sfButtons.toTypedArray(), gapDp = 4))
-        val allSf = chip(tr("All SF (7–12) at once", "Todos os SF (7–12) juntos")) {
-            selectGeneric(LoraProfile.ALL_SF, genericBw)
-        }.also { sfChips[LoraProfile.ALL_SF] = it }
-        genericBox.addView(allSf, spaced(6))
-        genericBox.addView(sectionLabel(tr("Bandwidth (kHz)", "Largura de banda (kHz)")))
-        val bwButtons = LoraProfile.GENERIC_BANDWIDTHS.map { bw ->
-            chip(if (bw % 1000 == 0) "${bw / 1000}" else "%.1f".format(Locale.US, bw / 1000.0)) {
-                selectGeneric(genericSf, bw)
-            }.also { bwChips[bw] = it }
-        }
-        genericBox.addView(row(this, *bwButtons.toTypedArray(), gapDp = 6))
         settingsBody.addView(genericBox)
 
-        settingsBody.addView(sectionLabel(tr("LoRa channel frequency (MHz)", "Frequência do canal LoRa (MHz)")))
-        freqInput = EditText(this).apply {
-            setSingleLine(true)
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-            setText("%.6f".format(Locale.US, centerHz / 1e6))
-            setTextColor(Ui.TEXT)
-            textSize = 18f
-            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-            background = rounded(Ui.SURFACE_2, 14f, Ui.OUTLINE, 1f)
-            setPadding(dp(14), dp(10), dp(14), dp(10))
-        }
+        channelLabel = sectionLabel("")
+        settingsBody.addView(channelLabel)
+        freqInput = numberInput("%.6f".format(Locale.US, centerHz / 1e6))
+        bwInput = numberInput(LoraProfile.formatKhz(genericBw))
         val apply = pill(tr("Apply", "Aplicar"), UiStyle.TONAL) { applyFrequency() }
         settingsBody.addView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             addView(freqInput, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(bwInput, LinearLayout.LayoutParams(dp(84), -2).apply { marginStart = dp(8) })
             addView(apply, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
         })
 
@@ -345,6 +340,17 @@ class MainActivity : Activity() {
         if (atBottom) outputScroll.post { outputScroll.fullScroll(View.FOCUS_DOWN) }
     }
 
+    private fun numberInput(value: String) = EditText(this).apply {
+        setSingleLine(true)
+        inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        setText(value)
+        setTextColor(Ui.TEXT)
+        textSize = 18f
+        typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        background = rounded(Ui.SURFACE_2, 14f, Ui.OUTLINE, 1f)
+        setPadding(dp(14), dp(10), dp(14), dp(10))
+    }
+
     private fun sectionLabel(text: String) = label(text, 12f, Ui.MUTED, bold = true).apply {
         setPadding(0, dp(12), 0, dp(6))
     }
@@ -352,7 +358,7 @@ class MainActivity : Activity() {
     private fun spaced(topDp: Int) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(topDp) }
 
     private fun setSettingsExpanded(expanded: Boolean) {
-        settingsBody.visibility = if (expanded) View.VISIBLE else View.GONE
+        settingsScroll.visibility = if (expanded) View.VISIBLE else View.GONE
         settingsArrow.text = if (expanded) "▾" else "▸"
     }
 
@@ -383,6 +389,21 @@ class MainActivity : Activity() {
             log("UI", tr("Invalid frequency or outside the typical R820T range: 24–1766 MHz",
                 "Frequência inválida ou fora da faixa típica R820T: 24–1766 MHz"))
             return
+        }
+        if (profile.protocol == Protocol.GENERIC) {
+            val khz = bwInput.text.toString().replace(',', '.').toDoubleOrNull()
+            val bw = khz?.let { LoraProfile.genericBandwidth(it) }
+            if (bw == null) {
+                log("UI", tr("Bandwidth not supported at 1 MS/s. Use (kHz): ", "Largura de banda não suportada a 1 MS/s. Use (kHz): ") +
+                    LoraProfile.GENERIC_BANDWIDTHS.joinToString(", ") { LoraProfile.formatKhz(it) })
+                return
+            }
+            if (bw != genericBw) {
+                genericBw = bw
+                getPreferences(MODE_PRIVATE).edit().putInt("genericBw", bw).apply()
+                profile = LoraProfile.generic(centerHz, genericSf, bw)
+            }
+            bwInput.setText(LoraProfile.formatKhz(bw))
         }
         centerHz = (mhz * 1e6).toLong()
         getPreferences(MODE_PRIVATE).edit().putLong("frequency", centerHz).apply()
@@ -472,7 +493,9 @@ class MainActivity : Activity() {
         val generic = profile.protocol == Protocol.GENERIC
         genericBox.visibility = if (generic) View.VISIBLE else View.GONE
         sfChips.forEach { (sf, chip) -> setChipSelected(chip, generic && sf == profile.spreadingFactor) }
-        bwChips.forEach { (bw, chip) -> setChipSelected(chip, generic && bw == profile.bandwidthHz) }
+        bwInput.visibility = if (generic) View.VISIBLE else View.GONE
+        channelLabel.text = if (generic) tr("Frequency (MHz) • bandwidth (kHz)", "Frequência (MHz) • largura de banda (kHz)")
+            else tr("LoRa channel frequency (MHz)", "Frequência do canal LoRa (MHz)")
         updateSettingsSummary()
     }
 

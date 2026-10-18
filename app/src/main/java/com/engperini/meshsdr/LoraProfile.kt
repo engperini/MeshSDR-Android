@@ -47,8 +47,12 @@ data class LoraProfile(
         const val GENERIC_ID = "lora"
         const val ALL_SF = 0
         val GENERIC_SFS = (7..12).toList()
-        /** Bandwidths that divide the 1 MS/s stream into exactly 2 samples per chip. */
-        val GENERIC_BANDWIDTHS = listOf(62_500, 125_000, 250_000, 500_000)
+        /** LoRa bandwidths that divide the 1 MS/s stream into exactly 2 samples per chip. */
+        val GENERIC_BANDWIDTHS = listOf(15_625, 31_250, 62_500, 125_000, 250_000, 500_000)
+
+        /** Typed kHz to a supported bandwidth in Hz (15.6 → 15 625), or null. */
+        fun genericBandwidth(khz: Double): Int? =
+            GENERIC_BANDWIDTHS.firstOrNull { Math.abs(khz * 1000 - it) <= it * 0.01 }
 
         /** Any LoRa transmission: chosen SF (or all) and bandwidth, bytes shown raw. */
         fun generic(frequencyHz: Long, spreadingFactor: Int = ALL_SF, bandwidthHz: Int = 125_000) =
@@ -72,8 +76,9 @@ data class LoraProfile(
             else -> String.format(Locale.US, "0x%02X", sync)
         }
 
-        private fun formatKhz(hz: Int): String =
-            if (hz % 1000 == 0) (hz / 1000).toString() else String.format(Locale.US, "%.1f", hz / 1000.0)
+        fun formatKhz(hz: Int): String =
+            if (hz % 1000 == 0) (hz / 1000).toString()
+            else String.format(Locale.US, "%.3f", hz / 1000.0).trimEnd('0').trimEnd('.')
     }
 }
 

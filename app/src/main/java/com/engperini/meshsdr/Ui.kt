@@ -14,6 +14,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextView
 
 /** Dark "night sky" palette. */
@@ -159,3 +160,13 @@ fun row(context: Context, vararg views: View, weights: Boolean = true, gapDp: In
             addView(v, lp)
         }
     }
+
+/** ScrollView that wraps its content up to [maxHeightPx], then scrolls. */
+class MaxHeightScrollView(context: Context) : ScrollView(context) {
+    var maxHeightPx = 0
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val spec = if (maxHeightPx > 0) MeasureSpec.makeMeasureSpec(maxHeightPx, MeasureSpec.AT_MOST) else heightMeasureSpec
+        super.onMeasure(widthMeasureSpec, spec)
+    }
+}

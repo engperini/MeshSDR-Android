@@ -63,6 +63,11 @@ class LoraProfileTest {
         assertEquals(listOf(9), LoraProfile.generic(915_000_000, 9, 250_000).spreadingFactors)
         for (bw in LoraProfile.GENERIC_BANDWIDTHS) LoraProfile.decimation(LoraProfile.generic(915_000_000, 7, bw))
         assertEquals(LoraProfile.GENERIC_ID, LoraProfile.byId(LoraProfile.GENERIC_ID).id)
+        // Typed bandwidths: LoRa's rounded names map to the exact rate; ones that don't divide 1 MS/s are refused.
+        assertEquals(15_625, LoraProfile.genericBandwidth(15.6))
+        assertEquals(62_500, LoraProfile.genericBandwidth(62.5))
+        assertEquals(null, LoraProfile.genericBandwidth(41.7))
+        assertEquals("31.25", LoraProfile.formatKhz(31_250))
 
         // Bytes that would parse as Meshtastic are not interpreted, and no sync word is "expected".
         val bytes = ByteArray(20).also { for (i in 0..3) it[i] = 0xff.toByte() }
