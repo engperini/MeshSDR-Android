@@ -63,15 +63,29 @@ class LoraFrame(
     val snrDb: Float,
     val syncWord: Int
 ) {
-    fun describe(): String {
-        val sync = LoraProfile.syncName(syncWord)
+    /**
+     * @param profile the active profile, if any: its protocol decides how a
+     * CRC-ok frame is interpreted (the sync word read from a weak signal can
+     * be wrong), and a sync word different from the expected one is flagged.
+     */
+    fun describe(profile: LoraProfile? = null): String {
+        var sync = LoraProfile.syncName(syncWord)
+        if (profile != null && syncWord != profile.syncWord)
+            sync += String.format(Locale.US, " (esperado 0x%02X; leitura pode estar errada)", profile.syncWord)
         val snr = String.format(Locale.US, "SNR %.1f dB", snrDb)
         return when (status) {
             HEADER_ONLY -> "LoRa detectado • sync $sync • cabeçalho válido: $declaredLength bytes • $snr"
             CRC_FAIL -> "Quadro LoRa com CRC inválido • ${bytes.size} bytes • sync $sync • $snr"
             else -> {
-                val meshtastic = if (syncWord == 0x2B) runCatching { MeshtasticAirPacket.parse(bytes).summary() }.getOrNull() else null
-                meshtastic?.let { "$it • $snr" }
+                val meshCoreProfile = profile?.id?.startsWith("meshcore") == true
+                val meshtasticProfile = profile?.id?.startsWith("meshtastic") == true
+                val parsed = when {
+                    meshCoreProfile || (profile == null && syncWord == 0x12) -> MeshCorePacket.parse(bytes)?.summary()
+                    meshtasticProfile || syncWord == 0x2B ->
+                        runCatching { MeshtasticAirPacket.parse(bytes).summary() }.getOrNull()
+                    else -> null
+                }
+                parsed?.let { "$it • $snr" }
                     ?: "Quadro LoRa CRC-ok • ${bytes.size} bytes • sync $sync • $snr • ${hex(bytes)}"
             }
         }

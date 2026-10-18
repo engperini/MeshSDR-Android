@@ -40,9 +40,9 @@ class MainActivity : Activity() {
     private var centerHz = LoraProfile.DEFAULT.frequencyHz
     @Volatile private var profile = LoraProfile.DEFAULT
     @Volatile private var receiverStale = false
-    /** Optional DSP, both off by default (no field data yet showing they help). */
+    /** Optional DSP: offset tuning off (no measured benefit), averaging on (measured gain). */
     @Volatile private var offsetTuning = false
-    @Volatile private var averaging = false
+    @Volatile private var averaging = true
     private lateinit var profileLabel: TextView
     /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
     private var gainTenths = 402
@@ -67,7 +67,8 @@ class MainActivity : Activity() {
         centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", profile.frequencyHz)
         gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
         offsetTuning = getPreferences(MODE_PRIVATE).getBoolean("offsetTuning", false)
-        averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", false)
+        // On by default since 18/10: ~9 dB more sensitivity measured on a real MeshCore packet.
+        averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", true)
         val pad = dp(16)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -351,7 +352,7 @@ class MainActivity : Activity() {
     /** UI thread. */
     private fun onFrame(frame: LoraFrame) {
         if (frame.status == LoraFrame.DECODED) decoded++ else detections++
-        val text = frame.describe()
+        val text = frame.describe(profile)
         messages.addLast("[${timeFormat.format(Date())}] $text")
         while (messages.size > 200) messages.removeFirst()
         log("LORA", text)

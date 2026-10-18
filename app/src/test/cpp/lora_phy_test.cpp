@@ -46,8 +46,8 @@ std::string hex(const uint8_t* d, int n) {
 }
 
 constexpr double kFs = 1e6;          // rtl_tcp sample rate used by the app
-// App front-end options; main() runs every case with the defaults (both off)
-// and again with both on.
+// App front-end options; main() runs every case with the app default
+// (filter on, no offset), with the filter off and with both options on.
 struct Dsp { double offset; bool average; const char* name; };
 Dsp gDsp = {0, false, "default"};
 
@@ -255,6 +255,34 @@ void testPpmSweep() {
     CHECK(ok * 100 >= total * 90, "only %d/%d ppm values decoded (need >= 90%%)", ok, total);
 }
 
+// Real over-the-air MeshCore packet (data/README.md): exact bytes required.
+void testRealCapture() {
+    if (gDsp.offset != 0) return;   // recorded with the tuner on the channel
+    std::printf("[real-capture] MeshCore packet recorded in Jundiai, 17/10/2026\n");
+    const std::string path = std::string(MESHSDR_TEST_DATA) + "/meshcore_jundiai_20261017_923125000Hz_1Msps.cu8";
+    FILE* f = std::fopen(path.c_str(), "rb");
+    CHECK(f != nullptr, "cannot open %s", path.c_str());
+    if (!f) return;
+    std::vector<uint8_t> bytes;
+    uint8_t buf[1 << 16];
+    size_t n;
+    while ((n = std::fread(buf, 1, sizeof buf, f)) > 0) bytes.insert(bytes.end(), buf, buf + n);
+    std::fclose(f);
+    const char* want =
+        "0640b678c4df75c2098027c5d84cc9de9ff03127198fd268bb848fde560de2f8b9a98bc8045c3255f9f0f929eff740340f392a6e21e2470fa99efa6809881436be0535c9df8f";
+    std::vector<uint8_t> expected;
+    for (size_t i = 0; want[i] && want[i + 1]; i += 2) expected.push_back((uint8_t)std::strtol(std::string(want + i, 2).c_str(), nullptr, 16));
+    Sink sink;
+    auto demod = std::make_unique<lora_lite::Demod>();
+    demod->init(8, 4, true, 0, Sink::cb, &sink, 62500, 923125000);
+    runRtlTcp(*demod, bytes, 21, true, 8);
+    CHECK(sink.decoded.size() == 1 && sameBytes(sink.decoded[0], expected), "decoded %zu frame(s)", sink.decoded.size());
+    if (!sink.decoded.empty()) {
+        CHECK(sink.decoded[0].sync == 0x12, "sync %02x", sink.decoded[0].sync);
+        std::printf("  70 bytes exact, CRC-ok, SNR %.1f dB\n", sink.decoded[0].snr);
+    }
+}
+
 void runAll() {
     std::printf("\n===== front end: %s (offset %.0f kHz, average %s) =====\n", gDsp.name, gDsp.offset / 1e3, gDsp.average ? "on" : "off");
     testLongFastRtlTcp("clean", Channel{}, {40}, false, 1);
@@ -266,6 +294,7 @@ void runAll() {
     testLongFastRtlTcp("max-payload", Channel{}, {255}, false, 6);
     testMeshCoreBr();
     testDetectionWithoutDecode();
+    testRealCapture();
     testPpmSweep();
     testNoFalsePositives();
 }
@@ -273,7 +302,7 @@ void runAll() {
 int main() {
     testTablesMatchReference();
     testMatrix();
-    for (Dsp d : {Dsp{0, false, "app default"}, Dsp{250e3, true, "options on"}}) { gDsp = d; runAll(); }
+    for (Dsp d : {Dsp{0, true, "app default (filter on)"}, Dsp{0, false, "filter off"}, Dsp{250e3, true, "offset + filter"}}) { gDsp = d; runAll(); }
     std::printf(failures ? "\n%d check(s) FAILED\n" : "\nall LoRa PHY checks passed\n", failures);
     return failures ? 1 : 0;
 }
