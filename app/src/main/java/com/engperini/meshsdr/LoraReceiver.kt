@@ -3,20 +3,18 @@ package com.engperini.meshsdr
 /**
  * Native LoRa PHY for one [LoraProfile] and spreading factor, fed with the raw rtl_tcp byte stream.
  * @param spreadingFactor one of the profile's [LoraProfile.spreadingFactors].
- * @param tuningOffsetHz how far above the channel the tuner sits (0 = on the channel).
  * @param average boxcar-average before decimating instead of keeping every Nth sample.
  */
 class LoraReceiver(
     profile: LoraProfile,
     private val spreadingFactor: Int,
-    tuningOffsetHz: Int,
     average: Boolean,
     private val onFrame: (LoraFrame) -> Unit
 ) : AutoCloseable {
     companion object { init { NativeLibrary.load() } }
     private var handle = nativeCreate(
         spreadingFactor, profile.bandwidthHz, profile.codingRate, 0, profile.frequencyHz,
-        LoraProfile.decimation(profile), tuningOffsetHz.toDouble(), LoraProfile.SAMPLE_RATE.toDouble(), average
+        LoraProfile.decimation(profile), 0.0, LoraProfile.SAMPLE_RATE.toDouble(), average
     )
     private external fun nativeCreate(
         sf: Int, bandwidth: Int, codingRate: Int, syncWord: Int, centerHz: Long,

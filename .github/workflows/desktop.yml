@@ -4,6 +4,12 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # The Release workflow calls this to attach the desktop builds.
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
 jobs:
   build:
     strategy:
@@ -21,6 +27,8 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      MESHSDR_VERSION_NAME: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -56,7 +64,7 @@ jobs:
         working-directory: desktop
         run: |
           if [ "$RUNNER_OS" = Windows ]; then gradle packageMsi createDistributable --console=plain
-          else gradle packageDeb createDistributable --console=plain; fi
+          else gradle test packageDeb createDistributable --console=plain; fi
       - name: Smoke test (native library loads)
         if: runner.os == 'Linux'
         working-directory: desktop
@@ -69,8 +77,9 @@ jobs:
           mkdir -p dist
           find desktop/build/compose/binaries -name '*.msi' -o -name '*.deb' | xargs -I{} cp {} dist/
           cd desktop/build/compose/binaries/main/app
-          if [ "$RUNNER_OS" = Windows ]; then 7z a -bd ../../../../../../dist/MeshSDR-windows-x64-portable.zip MeshSDR >/dev/null
-          else tar czf ../../../../../../dist/MeshSDR-linux-x64-portable.tar.gz MeshSDR; fi
+          v="${MESHSDR_VERSION_NAME:-dev}"
+          if [ "$RUNNER_OS" = Windows ]; then 7z a -bd "../../../../../../dist/MeshSDR-$v-windows-x64-portable.zip" MeshSDR >/dev/null
+          else tar czf "../../../../../../dist/MeshSDR-$v-linux-x64-portable.tar.gz" MeshSDR; fi
           ls -la ../../../../../../dist
       - uses: actions/upload-artifact@v4
         with:

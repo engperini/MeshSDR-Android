@@ -36,13 +36,16 @@ class MainActivity : Activity() {
     @Volatile private var captureRequested = false
     private val port = 14423
     private val sampleRate = LoraProfile.SAMPLE_RATE
-    /** LoRa channel frequency; with the DC offset option the tuner sits TUNING_OFFSET_HZ above it. */
+    /** LoRa channel frequency (the tuner is set to it). */
     private var centerHz = LoraProfile.DEFAULT.frequencyHz
     @Volatile private var profile = LoraProfile.DEFAULT
     @Volatile private var receiverStale = false
-    /** Optional DSP: offset tuning off (no measured benefit), averaging on (measured gain). */
-    @Volatile private var offsetTuning = false
+    /** Averaging filter: on by default (measured gain on a real packet). */
     @Volatile private var averaging = true
+    /** Save IQ around every LoRa event (off by default). */
+    @Volatile private var autoRecord = false
+    /** Active only while receiving with [autoRecord] on; the decoder callback triggers it. */
+    @Volatile private var autoRecorder: AutoRecorder? = null
     private lateinit var profileLabel: TextView
     /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
     private var gainTenths = 402
@@ -80,7 +83,7 @@ class MainActivity : Activity() {
         centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", profile.frequencyHz)
         if (profile.protocol == Protocol.GENERIC) profile = LoraProfile.generic(centerHz, genericSf, genericBw)
         gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
-        offsetTuning = getPreferences(MODE_PRIVATE).getBoolean("offsetTuning", false)
+        autoRecord = getPreferences(MODE_PRIVATE).getBoolean("autoRecord", false)
         // On by default since 18/10: ~9 dB more sensitivity measured on a real MeshCore packet.
         averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", true)
         val pad = dp(16)
@@ -219,13 +222,15 @@ class MainActivity : Activity() {
 
         settingsBody.addView(sectionLabel(tr("Processing (optional)", "Processamento (opcional)")))
         settingsBody.addView(Switch(this).apply {
-            text = tr("Tune 250 kHz above (avoids DC spike)", "Sintonizar 250 kHz acima (evita pico DC)")
+            text = tr("Record IQ automatically on detections (3 s before + after)",
+                "Gravar IQ automaticamente nas detecções (3 s antes + depois)")
             setTextColor(Ui.TEXT)
-            isChecked = offsetTuning
+            isChecked = autoRecord
             setOnCheckedChangeListener { _, on ->
-                offsetTuning = on
-                getPreferences(MODE_PRIVATE).edit().putBoolean("offsetTuning", on).apply()
-                applyFrequency()
+                autoRecord = on
+                getPreferences(MODE_PRIVATE).edit().putBoolean("autoRecord", on).apply()
+                log("APP", if (on) tr("Automatic recording on", "Gravação automática ligada")
+                    else tr("Automatic recording off", "Gravação automática desligada"))
                 updateSettingsSummary()
             }
         }, spaced(4))
@@ -364,8 +369,8 @@ class MainActivity : Activity() {
 
     private fun updateSettingsSummary() {
         val gain = if (gainTenths == AUTO_GAIN) tr("auto gain", "ganho auto") else "%.1f dB".format(Locale.US, gainTenths / 10.0)
-        val extras = listOfNotNull(if (offsetTuning) tr("offset", "deslocado") else null,
-            if (averaging) tr("filter", "filtro") else null)
+        val extras = listOfNotNull(if (averaging) tr("filter", "filtro") else null,
+            if (autoRecord) tr("auto rec.", "grav. auto") else null)
         settingsSummary.text = "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
             if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
     }
@@ -419,14 +424,13 @@ class MainActivity : Activity() {
     /** One decoder per spreading factor of the profile (six in generic "all SF" mode). */
     private fun newReceivers(): List<LoraReceiver> {
         val p = active()
-        val offset = tuningOffsetHz()
-        val on = tr("on", "ligado")
-        val off = tr("off", "desligado")
-        log("LORA", tr("Decoder: %s; tuner at %.3f MHz; offset %s; averaging filter %s",
-            "Decoder: %s; sintonizador em %.3f MHz; deslocamento %s; filtro de média %s").format(
-            Locale.US, p.describe(), tunedHz() / 1e6, if (offset != 0) "250 kHz" else off, if (averaging) on else off))
+        log("LORA", tr("Decoder: %s; averaging filter %s", "Decoder: %s; filtro de média %s").format(
+            Locale.US, p.describe(), if (averaging) tr("on", "ligado") else tr("off", "desligado")))
         return p.spreadingFactors.map { sf ->
-            LoraReceiver(p, sf, offset, averaging) { frame -> ui.post { onFrame(frame) } }
+            LoraReceiver(p, sf, averaging) { frame ->
+                autoRecorder?.trigger()
+                ui.post { onFrame(frame) }
+            }
         }
     }
 
@@ -453,9 +457,7 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun tuningOffsetHz(): Int = if (offsetTuning) LoraProfile.TUNING_OFFSET_HZ else 0
-
-    private fun tunedHz(): Long = centerHz + tuningOffsetHz()
+    private fun tunedHz(): Long = centerHz
 
     private fun selectProfile(p: LoraProfile) {
         profile = p
@@ -629,6 +631,13 @@ class MainActivity : Activity() {
                         captureFrom = if (streamBytes % 2 == 0L) 0 else 1
                         log("IQ", tr("Recording to $captureName", "Gravando em $captureName"))
                     }
+                    // Automatic recording: created when switched on, fed before the decoder runs.
+                    val auto = autoRecorder
+                    if (autoRecord && auto == null) autoRecorder = newAutoRecorder()
+                    else if (!autoRecord && auto != null) { auto.close(); autoRecorder = null }
+                    autoRecorder?.add(buffer, n, streamBytes) {
+                        "meshsdr-auto-${System.currentTimeMillis()}-${tunedHz()}Hz-${sampleRate}sps.cu8"
+                    }
                     // Local val: a captured `var` can't be smart-cast to non-null.
                     val activeCapture = capture
                     if (activeCapture != null) {
@@ -685,6 +694,8 @@ class MainActivity : Activity() {
                 if (running) log("ERROR", tr("IQ stream", "Fluxo IQ") + ": ${e.message}")
             } finally {
                 running = false
+                autoRecorder?.close()
+                autoRecorder = null
                 ReceiverService.stop(this)
                 try { socket?.close() } catch (_: Exception) {}
                 socket = null
@@ -693,6 +704,13 @@ class MainActivity : Activity() {
             }
         }
     }
+
+    private fun newAutoRecorder() = AutoRecorder(
+        open = { name ->
+            PublicFiles.create(this, name, "application/octet-stream").let { AutoRecorder.Output(it.stream, it.location, it::close) }
+        },
+        log = { log("IQ", it) }
+    )
 
     private fun disconnect() {
         running = false

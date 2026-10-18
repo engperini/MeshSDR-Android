@@ -39,11 +39,13 @@ LoRa radio, a PC or GNU Radio.
   assuming Meshtastic or MeshCore.
 - **English and Portuguese.** Follows the phone's language, switchable in the app.
 - **Radio controls.** Tuner gain (AGC or 20–49.6 dB), a live IQ level and clipping meter,
-  and optional DC-offset tuning and decimation filter.
+  and an optional decimation filter.
 - **Keeps listening with the screen off.** A foreground service and wake lock keep it
   running for long monitoring sessions.
 - **Records raw IQ.** 10-second `.cu8` captures and log exports go to `Download/MeshSDR`,
-  for analysis in tools like GNU Radio, inspectrum or SDR++.
+  for analysis in tools like GNU Radio, inspectrum or SDR++. Optional **automatic
+  recording** saves the 3 s before and the seconds after every LoRa detection, so each
+  packet is kept from its preamble on.
 
 ## What you need
 
@@ -65,7 +67,7 @@ LoRa radio, a PC or GNU Radio.
    details in **Technical logs**.
 
 
-## Desktop app (Windows / Linux) — preview
+## Desktop app (Windows / Linux)
 
 The same receiver as a desktop app, with the phone's interface: a Kotlin + Compose
 Multiplatform window over the same C++ LoRa PHY and the same protocol code.
@@ -80,7 +82,8 @@ Multiplatform window over the same C++ LoRa PHY and the same protocol code.
   Raspberry Pi on the roof running `rtl_tcp -a 0.0.0.0`.
 - `--connect` starts receiving at launch, for unattended monitoring stations.
 
-Builds are produced by the **Desktop app** workflow in GitHub Actions.
+Download the `.msi`, `.deb` or portable builds from the
+[latest release](https://github.com/engperini/MeshSDR-Android/releases/latest).
 
 ## How it works
 

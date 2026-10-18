@@ -8,7 +8,12 @@ on:
         description: 'Version to release, e.g. 0.3.0 (creates tag v<version> on the selected branch)'
         required: true
 jobs:
+  desktop:
+    uses: ./.github/workflows/desktop.yml
+    with:
+      version: ${{ github.event.inputs.version || github.ref_name }}
   release:
+    needs: desktop
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -46,6 +51,12 @@ jobs:
           ctest --test-dir build-host --output-on-failure
       - name: Unit tests and APK
         run: gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace --console=plain
+      - name: Desktop builds (Windows, Linux)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: MeshSDR-desktop-*
+          path: dist
+          merge-multiple: true
       - name: Package release assets
         shell: bash
         run: |
@@ -64,5 +75,8 @@ jobs:
           body_path: docs/release-notes.md
           files: |
             dist/MeshSDR-${{ env.VERSION }}.apk
+            dist/*.msi
+            dist/*.deb
+            dist/*-portable.*
             dist/meshcore_jundiai_20261017_923125000Hz_1Msps.cu8
             dist/SHA256SUMS.txt

@@ -9,7 +9,12 @@ plugins {
 // The radio and protocol code is shared with the Android app, file by file.
 val shared = listOf(
     "Lang.kt", "LoraProfile.kt", "LoraReceiver.kt", "MeshCorePacket.kt",
-    "MeshtasticAirPacket.kt", "IqLevel.kt", "RtlTcpProtocol.kt"
+    "MeshtasticAirPacket.kt", "IqLevel.kt", "RtlTcpProtocol.kt", "AutoRecorder.kt"
+)
+// ...and so are their unit tests, which run here without an Android SDK.
+val sharedTests = listOf(
+    "AutoRecorderTest.kt", "IqLevelTest.kt", "LoraProfileTest.kt", "MeshCorePacketTest.kt",
+    "MeshtasticAirPacketTest.kt", "RtlTcpProtocolTest.kt"
 )
 sourceSets.main {
     kotlin.srcDir(layout.buildDirectory.dir("generated/shared"))
@@ -19,6 +24,14 @@ val copyShared by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/shared/com/engperini/meshsdr"))
 }
 tasks.named("compileKotlin") { dependsOn(copyShared) }
+sourceSets.test {
+    kotlin.srcDir(layout.buildDirectory.dir("generated/sharedTests"))
+}
+val copySharedTests by tasks.registering(Copy::class) {
+    from("../app/src/test/java/com/engperini/meshsdr") { include(sharedTests) }
+    into(layout.buildDirectory.dir("generated/sharedTests/com/engperini/meshsdr"))
+}
+tasks.named("compileTestKotlin") { dependsOn(copySharedTests) }
 
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 java { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
@@ -26,10 +39,11 @@ java { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaV
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
-    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:4.13.2")
 }
 
-val appVersion = System.getenv("MESHSDR_VERSION_NAME") ?: "0.4.0"
+// Release builds pass the tag (v0.5.0 or 0.5.0); other builds use the next version.
+val appVersion = System.getenv("MESHSDR_VERSION_NAME")?.removePrefix("v")?.takeIf { it.isNotBlank() } ?: "0.5.0"
 
 compose.desktop {
     application {
