@@ -1,0 +1,2475 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x00007fa016e7e405, pid=6830, tid=6869
+#
+# JRE version: OpenJDK Runtime Environment (21.0.12.1+1) (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+# Java VM: OpenJDK 64-Bit Server VM (21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode, tiered, compressed oops, compressed class ptrs, g1 gc, linux-amd64)
+# Problematic frame:
+# C  [libskiko-linux-x64.so+0xc7e405]  skia_private::THashMap<SkIcuBreakIteratorCache::Request, sk_sp<SkIcuBreakIteratorCache::BreakIteratorRef>, SkIcuBreakIteratorCache::Request::Hash>::set(SkIcuBreakIteratorCache::Request, sk_sp<SkIcuBreakIteratorCache::BreakIteratorRef>)+0x255
+#
+# No core dump will be written. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
+#
+# If you would like to submit a bug report, please visit:
+#   https://bugs.launchpad.net/ubuntu/+source/openjdk-21
+# The crash happened outside the Java Virtual Machine in native code.
+# See problematic frame for where to report the bug.
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=JKS -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=45275 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes= -Djpackage.app-version=0.5.0 -Dcompose.application.resources.dir=/home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources -Dcompose.application.configure.swing.globals=true -Dskiko.library.path=/home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app -Djpackage.app-path=/home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/bin/MeshSDR com.engperini.meshsdr.desktop.MainKt --connect
+
+Host: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 cores, 13G, Ubuntu 24.04.5 LTS
+Time: Sun Oct 18 17:51:50 2026 UTC elapsed time: 25.047801 seconds (0d 0h 0m 25s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x00007fa078672500):  JavaThread "AWT-EventQueue-0"        [_thread_in_native, id=6869, stack(0x00007fa014297000,0x00007fa014397000) (1024K)]
+
+Stack: [0x00007fa014297000,0x00007fa014397000],  sp=0x00007fa0143918c0,  free space=1002k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+C  [libskiko-linux-x64.so+0xc7e405]  skia_private::THashMap<SkIcuBreakIteratorCache::Request, sk_sp<SkIcuBreakIteratorCache::BreakIteratorRef>, SkIcuBreakIteratorCache::Request::Hash>::set(SkIcuBreakIteratorCache::Request, sk_sp<SkIcuBreakIteratorCache::BreakIteratorRef>)+0x255
+Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
+J 1587  org.jetbrains.skia.paragraph.ParagraphKt._nLayout(JF)V (0 bytes) @ 0x00007fa06d5621f9 [0x00007fa06d5621a0+0x0000000000000059]
+J 2241 c1 androidx.compose.ui.text.platform.ParagraphLayouter.layoutParagraph(F)Lorg/jetbrains/skia/paragraph/Paragraph; (97 bytes) @ 0x00007fa065d5427c [0x00007fa065d53c40+0x000000000000063c]
+j  androidx.compose.ui.text.platform.SkiaParagraphIntrinsics.<init>(Ljava/lang/String;Landroidx/compose/ui/text/TextStyle;Ljava/util/List;Ljava/util/List;Landroidx/compose/ui/unit/Density;Landroidx/compose/ui/text/font/FontFamily$Resolver;)V+123
+j  androidx.compose.ui.text.platform.SkiaParagraphIntrinsics_skikoKt.ActualParagraphIntrinsics(Ljava/lang/String;Landroidx/compose/ui/text/TextStyle;Ljava/util/List;Ljava/util/List;Landroidx/compose/ui/unit/Density;Landroidx/compose/ui/text/font/FontFamily$Resolver;)Landroidx/compose/ui/text/ParagraphIntrinsics;+50
+j  androidx.compose.ui.text.ParagraphIntrinsicsKt.ParagraphIntrinsics(Ljava/lang/String;Landroidx/compose/ui/text/TextStyle;Ljava/util/List;Ljava/util/List;Landroidx/compose/ui/unit/Density;Landroidx/compose/ui/text/font/FontFamily$Resolver;)Landroidx/compose/ui/text/ParagraphIntrinsics;+46
+j  androidx.compose.ui.text.ParagraphIntrinsicsKt.ParagraphIntrinsics$default(Ljava/lang/String;Landroidx/compose/ui/text/TextStyle;Ljava/util/List;Ljava/util/List;Landroidx/compose/ui/unit/Density;Landroidx/compose/ui/text/font/FontFamily$Resolver;ILjava/lang/Object;)Landroidx/compose/ui/text/ParagraphIntrinsics;+31
+j  androidx.compose.foundation.text.modifiers.ParagraphLayoutCache.setLayoutDirection(Landroidx/compose/ui/unit/LayoutDirection;)Landroidx/compose/ui/text/ParagraphIntrinsics;+60
+j  androidx.compose.foundation.text.modifiers.ParagraphLayoutCache.layoutText-K40F9xA(JLandroidx/compose/ui/unit/LayoutDirection;)Landroidx/compose/ui/text/Paragraph;+2
+j  androidx.compose.foundation.text.modifiers.ParagraphLayoutCache.intrinsicHeight(ILandroidx/compose/ui/unit/LayoutDirection;)I+40
+j  androidx.compose.foundation.text.modifiers.TextStringSimpleNode.minIntrinsicHeight(Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+28
+J 3190 c1 androidx.compose.ui.node.LayoutModifierNodeCoordinator.minIntrinsicHeight(I)I (73 bytes) @ 0x00007fa065f8c09c [0x00007fa065f8b860+0x000000000000083c]
+J 3907 c1 androidx.compose.ui.node.NodeMeasuringIntrinsics$DefaultIntrinsicMeasurable.measure-BRTryo0(J)Landroidx/compose/ui/layout/Placeable; (156 bytes) @ 0x00007fa06614555c [0x00007fa066144be0+0x000000000000097c]
+J 3191 c1 androidx.compose.ui.graphics.SimpleGraphicsLayerModifier.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult; (52 bytes) @ 0x00007fa065f8d514 [0x00007fa065f8cee0+0x0000000000000634]
+j  androidx.compose.ui.node.LayoutModifierNode$minIntrinsicHeight$1.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult;+19
+j  androidx.compose.ui.node.NodeMeasuringIntrinsics.minHeight$ui(Landroidx/compose/ui/node/NodeMeasuringIntrinsics$MeasureBlock;Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+79
+j  androidx.compose.ui.node.LayoutModifierNode.minIntrinsicHeight(Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+29
+J 3190 c1 androidx.compose.ui.node.LayoutModifierNodeCoordinator.minIntrinsicHeight(I)I (73 bytes) @ 0x00007fa065f8c09c [0x00007fa065f8b860+0x000000000000083c]
+j  androidx.compose.ui.node.LayoutNodeLayoutDelegate$MeasurePassDelegate.minIntrinsicHeight(I)I+12
+j  androidx.compose.foundation.layout.IntrinsicMeasureBlocks.VerticalMinHeight(Ljava/util/List;II)I+102
+j  androidx.compose.foundation.layout.ColumnMeasurePolicy.minIntrinsicHeight(Landroidx/compose/ui/layout/IntrinsicMeasureScope;Ljava/util/List;I)I+32
+j  androidx.compose.ui.node.IntrinsicsPolicy.minIntrinsicHeight(I)I+26
+j  androidx.compose.ui.node.LayoutNode.minIntrinsicHeight(I)I+5
+j  androidx.compose.ui.node.InnerNodeCoordinator.minIntrinsicHeight(I)I+5
+J 3907 c1 androidx.compose.ui.node.NodeMeasuringIntrinsics$DefaultIntrinsicMeasurable.measure-BRTryo0(J)Landroidx/compose/ui/layout/Placeable; (156 bytes) @ 0x00007fa06614555c [0x00007fa066144be0+0x000000000000097c]
+j  androidx.compose.foundation.layout.PaddingNode.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult;+69
+j  androidx.compose.ui.node.LayoutModifierNode$minIntrinsicHeight$1.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult;+19
+j  androidx.compose.ui.node.NodeMeasuringIntrinsics.minHeight$ui(Landroidx/compose/ui/node/NodeMeasuringIntrinsics$MeasureBlock;Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+79
+j  androidx.compose.ui.node.LayoutModifierNode.minIntrinsicHeight(Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+29
+J 3190 c1 androidx.compose.ui.node.LayoutModifierNodeCoordinator.minIntrinsicHeight(I)I (73 bytes) @ 0x00007fa065f8c09c [0x00007fa065f8b860+0x000000000000083c]
+J 3907 c1 androidx.compose.ui.node.NodeMeasuringIntrinsics$DefaultIntrinsicMeasurable.measure-BRTryo0(J)Landroidx/compose/ui/layout/Placeable; (156 bytes) @ 0x00007fa06614555c [0x00007fa066144be0+0x000000000000097c]
+J 3191 c1 androidx.compose.ui.graphics.SimpleGraphicsLayerModifier.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult; (52 bytes) @ 0x00007fa065f8d514 [0x00007fa065f8cee0+0x0000000000000634]
+j  androidx.compose.ui.node.LayoutModifierNode$minIntrinsicHeight$1.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult;+19
+j  androidx.compose.ui.node.NodeMeasuringIntrinsics.minHeight$ui(Landroidx/compose/ui/node/NodeMeasuringIntrinsics$MeasureBlock;Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+79
+j  androidx.compose.ui.node.LayoutModifierNode.minIntrinsicHeight(Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+29
+J 3190 c1 androidx.compose.ui.node.LayoutModifierNodeCoordinator.minIntrinsicHeight(I)I (73 bytes) @ 0x00007fa065f8c09c [0x00007fa065f8b860+0x000000000000083c]
+J 3907 c1 androidx.compose.ui.node.NodeMeasuringIntrinsics$DefaultIntrinsicMeasurable.measure-BRTryo0(J)Landroidx/compose/ui/layout/Placeable; (156 bytes) @ 0x00007fa06614555c [0x00007fa066144be0+0x000000000000097c]
+J 3780 c1 androidx.compose.foundation.layout.FillNode.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult; (219 bytes) @ 0x00007fa066102184 [0x00007fa0661016e0+0x0000000000000aa4]
+j  androidx.compose.ui.node.LayoutModifierNode$minIntrinsicHeight$1.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult;+19
+j  androidx.compose.ui.node.NodeMeasuringIntrinsics.minHeight$ui(Landroidx/compose/ui/node/NodeMeasuringIntrinsics$MeasureBlock;Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+79
+j  androidx.compose.ui.node.LayoutModifierNode.minIntrinsicHeight(Landroidx/compose/ui/layout/IntrinsicMeasureScope;Landroidx/compose/ui/layout/IntrinsicMeasurable;I)I+29
+J 3190 c1 androidx.compose.ui.node.LayoutModifierNodeCoordinator.minIntrinsicHeight(I)I (73 bytes) @ 0x00007fa065f8c09c [0x00007fa065f8b860+0x000000000000083c]
+j  androidx.compose.ui.node.LayoutNodeLayoutDelegate$MeasurePassDelegate.minIntrinsicHeight(I)I+12
+j  androidx.compose.foundation.layout.IntrinsicMeasureBlocks.HorizontalMinHeight(Ljava/util/List;II)I+396
+j  androidx.compose.foundation.layout.RowMeasurePolicy.minIntrinsicHeight(Landroidx/compose/ui/layout/IntrinsicMeasureScope;Ljava/util/List;I)I+32
+j  androidx.compose.ui.node.IntrinsicsPolicy.minIntrinsicHeight(I)I+26
+j  androidx.compose.ui.node.LayoutNode.minIntrinsicHeight(I)I+5
+j  androidx.compose.ui.node.InnerNodeCoordinator.minIntrinsicHeight(I)I+5
+j  androidx.compose.foundation.layout.IntrinsicHeightNode.calculateContentConstraints-l58MMJ0(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)J+27
+j  androidx.compose.foundation.layout.IntrinsicSizeModifier.measure-3p2s80s(Landroidx/compose/ui/layout/MeasureScope;Landroidx/compose/ui/layout/Measurable;J)Landroidx/compose/ui/layout/MeasureResult;+16
+J 2558 c1 androidx.compose.ui.node.LayoutModifierNodeCoordinator.measure-BRTryo0(J)Landroidx/compose/ui/layout/Placeable; (349 bytes) @ 0x00007fa065dea1dc [0x00007fa065de7d20+0x00000000000024bc]
+J 3538 c1 androidx.compose.ui.node.LayoutNodeLayoutDelegate$performMeasureBlock$1.invoke()Ljava/lang/Object; (8 bytes) @ 0x00007fa066083ecc [0x00007fa066083ce0+0x00000000000001ec]
+J 1707 c1 androidx.compose.runtime.snapshots.Snapshot$Companion.observe(Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object; (316 bytes) @ 0x00007fa065cbd46c [0x00007fa065cbb8c0+0x0000000000001bac]
+J 1883 c1 androidx.compose.runtime.snapshots.SnapshotStateObserver$ObservedScopeMap.observe(Ljava/lang/Object;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)V (192 bytes) @ 0x00007fa065cf76cc [0x00007fa065cf5fc0+0x000000000000170c]
+J 1881 c1 androidx.compose.runtime.snapshots.SnapshotStateObserver.observeReads(Ljava/lang/Object;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)V (249 bytes) @ 0x00007fa065cf40ac [0x00007fa065cf2be0+0x00000000000014cc]
+J 3806 c1 androidx.compose.ui.node.OwnerSnapshotObserver.observeMeasureSnapshotReads$ui(Landroidx/compose/ui/node/LayoutNode;ZLkotlin/jvm/functions/Function0;)V (53 bytes) @ 0x00007fa06610c484 [0x00007fa06610ae00+0x0000000000001684]
+J 3430 c1 androidx.compose.ui.node.LayoutNodeLayoutDelegate.performMeasure-BRTryo0(J)V (96 bytes) @ 0x00007fa06603e8ec [0x00007fa06603e680+0x000000000000026c]
+J 2354 c1 androidx.compose.ui.node.LayoutNodeLayoutDelegate$MeasurePassDelegate.remeasure-BRTryo0(J)Z (288 bytes) @ 0x00007fa065d8e864 [0x00007fa065d8e0a0+0x00000000000007c4]
+j  androidx.compose.ui.node.LayoutNode.remeasure-_Sx5XlM$ui(Landroidx/compose/ui/unit/Constraints;)Z+26
+j  androidx.compose.ui.node.LayoutNode.remeasure-_Sx5XlM$ui$default(Landroidx/compose/ui/node/LayoutNode;Landroidx/compose/ui/unit/Constraints;ILjava/lang/Object;)Z+16
+j  androidx.compose.ui.node.MeasureAndLayoutDelegate.doRemeasure-sdFAvZA(Landroidx/compose/ui/node/LayoutNode;Landroidx/compose/ui/unit/Constraints;)Z+16
+j  androidx.compose.ui.node.MeasureAndLayoutDelegate.remeasureAndRelayoutIfNeeded(Landroidx/compose/ui/node/LayoutNode;ZZ)Z+153
+j  androidx.compose.ui.node.MeasureAndLayoutDelegate.remeasureAndRelayoutIfNeeded$default(Landroidx/compose/ui/node/MeasureAndLayoutDelegate;Landroidx/compose/ui/node/LayoutNode;ZZILjava/lang/Object;)Z+22
+j  androidx.compose.ui.node.MeasureAndLayoutDelegate.measureAndLayout(Lkotlin/jvm/functions/Function0;)Z+218
+j  androidx.compose.ui.node.RootNodeOwner$OwnerImpl.measureAndLayout(Z)V+74
+j  androidx.compose.ui.node.RootNodeOwner.measureAndLayout()V+5
+j  androidx.compose.ui.scene.CanvasLayersComposeSceneImpl.measureAndLayout()V+108
+j  androidx.compose.ui.scene.BaseComposeScene.doMeasureAndLayout()V+8
+j  androidx.compose.ui.scene.BaseComposeScene.access$doMeasureAndLayout(Landroidx/compose/ui/scene/BaseComposeScene;)V+1
+j  androidx.compose.ui.scene.BaseComposeScene.render(Landroidx/compose/ui/graphics/Canvas;J)V+131
+j  androidx.compose.ui.scene.ComposeSceneMediator$onRender$1$1.invoke()V+141
+j  androidx.compose.ui.scene.ComposeSceneMediator$onRender$1$1.invoke()Ljava/lang/Object;+1
+j  androidx.compose.ui.viewinterop.SwingInteropContainer.postponingExecutingScheduledUpdates(Lkotlin/jvm/functions/Function0;)V+83
+j  androidx.compose.ui.scene.ComposeSceneMediator.onRender(Lorg/jetbrains/skia/Canvas;IIJ)V+35
+j  org.jetbrains.skiko.SkiaLayer.update$skiko(J)V+223
+j  org.jetbrains.skiko.redrawer.AWTRedrawer.update(J)V+57
+j  org.jetbrains.skiko.redrawer.AbstractDirectSoftwareRedrawer$frameDispatcher$1.invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;+114
+J 2182 c1 kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(Ljava/lang/Object;)V (128 bytes) @ 0x00007fa065d3183c [0x00007fa065d31420+0x000000000000041c]
+J 2195 c1 kotlinx.coroutines.DispatchedTask.run()V (574 bytes) @ 0x00007fa065d3a03c [0x00007fa065d38a40+0x00000000000015fc]
+J 3154 c1 java.awt.event.InvocationEvent.dispatch()V java.desktop@21.0.12.1 (69 bytes) @ 0x00007fa065f716a4 [0x00007fa065f71480+0x0000000000000224]
+J 3386 c1 java.awt.EventQueue.dispatchEventImpl(Ljava/awt/AWTEvent;Ljava/lang/Object;)V java.desktop@21.0.12.1 (139 bytes) @ 0x00007fa066018264 [0x00007fa0660168c0+0x00000000000019a4]
+J 3118 c1 java.awt.EventQueue$4.run()Ljava/lang/Void; java.desktop@21.0.12.1 (60 bytes) @ 0x00007fa065f56134 [0x00007fa065f56000+0x0000000000000134]
+J 3131 c1 java.awt.EventQueue.dispatchEvent(Ljava/awt/AWTEvent;)V java.desktop@21.0.12.1 (80 bytes) @ 0x00007fa065f607fc [0x00007fa065f60260+0x000000000000059c]
+J 2697 c1 java.awt.EventDispatchThread.pumpOneEventForFilters(I)V java.desktop@21.0.12.1 (106 bytes) @ 0x00007fa065e55014 [0x00007fa065e54840+0x00000000000007d4]
+j  java.awt.EventDispatchThread.pumpEventsForFilter(ILjava/awt/Conditional;Ljava/awt/EventFilter;)V+35 java.desktop@21.0.12.1
+j  java.awt.EventDispatchThread.pumpEventsForHierarchy(ILjava/awt/Conditional;Ljava/awt/Component;)V+11 java.desktop@21.0.12.1
+j  java.awt.EventDispatchThread.pumpEvents(ILjava/awt/Conditional;)V+4 java.desktop@21.0.12.1
+j  java.awt.EventDispatchThread.pumpEvents(Ljava/awt/Conditional;)V+3 java.desktop@21.0.12.1
+j  java.awt.EventDispatchThread.run()V+9 java.desktop@21.0.12.1
+v  ~StubRoutines::call_stub 0x00007fa06cf37cc6
+
+siginfo: si_signo: 11 (SIGSEGV), si_code: 128 (SI_KERNEL), si_addr: 0x0000000000000000
+
+Registers:
+RAX=0x00007f9817719c30, RBX=0x00007fa017dffd40, RCX=0x000000000000000b, RDX=0x00007fa017df96f8
+RSP=0x00007fa0143918c0, RBP=0x00007f9fee750fd8, RSI=0x0013efc3a9c06780, RDI=0x00007f9feeb86998
+R8 =0x0000000000000005, R9 =0x00007f9feea0ee40, R10=0x00007f9feeb869c0, R11=0x0000000000000000
+R12=0x00007fa0143918e8, R13=0x00146f6398357758, R14=0x00007f9feeb86988, R15=0x00007fa017dffd60
+RIP=0x00007fa016e7e405, EFLAGS=0x0000000000010283, CSGSFS=0x002b000000000033, ERR=0x0000000000000000
+  TRAPNO=0x000000000000000d
+
+XMM[0]=0x00007f9feec504e0 0x00007f9fec0000b0
+XMM[1]=0x0000000000000000 0x00007f9feea0ee48
+XMM[2]=0x00cb000000000000 0x020000e1000e1000
+XMM[3]=0x7070707070707070 0x7070707070707070
+XMM[4]=0x740065636e65746e 0x657300656d656870
+XMM[5]=0x00000000ffe6edf7 0x0000000100000000
+XMM[6]=0x0000000000000000 0x0000000000000000
+XMM[7]=0x0000000000000003 0x0000000000000000
+XMM[8]=0x0000000000000000 0x0000000000000000
+XMM[9]=0x0000000000000000 0x0000000041000000
+XMM[10]=0x0000000000000000 0x0000000000000000
+XMM[11]=0x0000000000000000 0x0000000000000000
+XMM[12]=0x0000000000000000 0x4461000000000000
+XMM[13]=0x0000000000000000 0x000000003f800000
+XMM[14]=0x0000000000000000 0x0000000000000000
+XMM[15]=0x0000000000000000 0x0000000044610000
+  MXCSR=0x00001fa7
+
+
+Register to memory mapping:
+
+RAX=0x00007f9817719c30 is an unknown value
+RBX=0x00007fa017dffd40: <offset 0x0000000001bffd40> in /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/libskiko-linux-x64.so at 0x00007fa016200000
+RCX=0x000000000000000b is an unknown value
+RDX=0x00007fa017df96f8: <offset 0x0000000001bf96f8> in /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/libskiko-linux-x64.so at 0x00007fa016200000
+RSP=0x00007fa0143918c0 is pointing into the stack for thread: 0x00007fa078672500
+RBP=0x00007f9fee750fd8 points into unknown readable memory: 0x91b5434518a416d1 | d1 16 a4 18 45 43 b5 91
+RSI=0x0013efc3a9c06780 is an unknown value
+RDI=0x00007f9feeb86998 points into unknown readable memory: 0x00007f9fee900c20 | 20 0c 90 ee 9f 7f 00 00
+R8 =0x0000000000000005 is an unknown value
+R9 =0x00007f9feea0ee40 points into unknown readable memory: 0x00007fa017dd5fd0 | d0 5f dd 17 a0 7f 00 00
+R10=0x00007f9feeb869c0 points into unknown readable memory: 0x00007f9fee749ca0 | a0 9c 74 ee 9f 7f 00 00
+R11=0x0 is null
+R12=0x00007fa0143918e8 is pointing into the stack for thread: 0x00007fa078672500
+R13=0x00146f6398357758 is an unknown value
+R14=0x00007f9feeb86988 points into unknown readable memory: 0x000000005989383d | 3d 38 89 59 00 00 00 00
+R15=0x00007fa017dffd60: <offset 0x0000000001bffd60> in /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/libskiko-linux-x64.so at 0x00007fa016200000
+
+Top of Stack: (sp=0x00007fa0143918c0)
+0x00007fa0143918c0:   00007fa000000009 0000000000000004   ................
+0x00007fa0143918d0:   00007f9fee751128 00007f9feeb869c0   (.u......i......
+0x00007fa0143918e0:   00007f9f00000001 00007f9fee7526f0   .........&u.....
+0x00007fa0143918f0:   00007fa0247d2c4d 00007f9feec51310   M,}$............
+0x00007fa014391900:   00007fa0143919b8 dbaf3f28252f8800   ..9......./%(?..
+0x00007fa014391910:   0000000000000004 0000000000000006   ................
+0x00007fa014391920:   00007fa017dffd50 00007fa017dffd40   P.......@.......
+0x00007fa014391930:   00007fa0143919d8 00007f9feec51310   ..9.............
+0x00007fa014391940:   00007fa014391998 00007fa016e7fa9b   ..9.............
+0x00007fa014391950:   00007fa014391b50 00007fa0143919b8   P.9.......9.....
+0x00007fa014391960:   00007fa0143919d0 00007fa0143919d0   ..9.......9.....
+0x00007fa014391970:   00007fa014391998 00007f9feec916f4   ..9.............
+0x00007fa014391980:   00000000ee900c20 0000000000000000    ...............
+0x00007fa014391990:   0000000000000001 00007f9feec91770   ........p.......
+0x00007fa0143919a0:   00007f9f3833d38c 00007f9feec91688   ..38............
+0x00007fa0143919b0:   00007f9f00000001 00007f9fee7526f0   .........&u.....
+0x00007fa0143919c0:   41600000247d2c4d dbaf3f28252f8800   M,}$..`A../%(?..
+0x00007fa0143919d0:   00007f9f00000001 00007f9fee7526f0   .........&u.....
+0x00007fa0143919e0:   00000000247d2c4d 00007fa0172a2430   M,}$....0$*.....
+0x00007fa0143919f0:   00007f9feeea7760 00007f9feea0ee40   `w......@.......
+0x00007fa014391a00:   00007fa014391b24 00007fa016d87ab7   $.9......z......
+0x00007fa014391a10:   00007fa014391b24 00007fa0172a2444   $.9.....D$*.....
+0x00007fa014391a20:   00007fa0172a2430 ffffffffffffff88   0$*.............
+0x00007fa014391a30:   000000000000000b ffffffffffffff88   ................
+0x00007fa014391a40:   000000000000000b ffffffffffffff88   ................
+0x00007fa014391a50:   000000000000000b 00007f9feebbd8e0   ................
+0x00007fa014391a60:   00007fa014391aa0 ffffffffffffff88   ..9.............
+0x00007fa014391a70:   000000000000000b 00007f9feeea7750   ........Pw......
+0x00007fa014391a80:   00007fa014391ac0 00007fa014391b34   ..9.....4.9.....
+0x00007fa014391a90:   0000000000000000 dbaf3f28252f8800   ........../%(?..
+0x00007fa014391aa0:   00007f9fee749ca8 00007f9fec6edbf0   ..t.......n.....
+0x00007fa014391ab0:   0000000000000003 00007f9feea0ee40   ........@.......
+
+Instructions: (pc=0x00007fa016e7e405)
+0x00007fa016e7e305:   f6 45 0f 45 6f 08 8d 50 ff 44 21 ea 85 c0 7e cb
+0x00007fa016e7e315:   45 31 c0 eb 1b 66 0f 1f 44 00 00 8b 43 04 83 ea
+0x00007fa016e7e325:   01 8d 34 02 0f 48 d6 41 83 c0 01 41 39 c0 7d ab
+0x00007fa016e7e335:   48 63 c2 48 8d 34 80 48 8b 43 08 4c 8d 34 f0 41
+0x00007fa016e7e345:   8b 06 85 c0 0f 84 a1 02 00 00 41 39 c5 75 cc 41
+0x00007fa016e7e355:   8b 46 08 41 39 47 f8 75 c2 4d 8d 56 10 4c 89 ff
+0x00007fa016e7e365:   44 89 44 24 08 4c 89 d6 89 14 24 4c 89 54 24 18
+0x00007fa016e7e375:   e8 c6 ac 74 ff 8b 14 24 44 8b 44 24 08 84 c0 74
+0x00007fa016e7e385:   9a 41 8b 0e 4c 8b 54 24 18 85 c9 0f 85 1a 03 00
+0x00007fa016e7e395:   00 41 8b 47 f8 4c 89 fe 4c 89 d7 49 83 c7 28 41
+0x00007fa016e7e3a5:   89 46 08 e8 23 aa 74 ff 41 8b 47 e0 41 89 46 18
+0x00007fa016e7e3b5:   49 8b 47 e8 49 c7 47 e8 00 00 00 00 49 89 46 20
+0x00007fa016e7e3c5:   45 89 2e 4c 39 7c 24 10 0f 85 1c ff ff ff 0f 1f
+0x00007fa016e7e3d5:   44 00 00 48 85 ed 74 78 48 8b 45 f8 48 8d 34 80
+0x00007fa016e7e3e5:   48 c1 e6 03 4c 8d 6c 35 00 4c 39 ed 74 55 4c 8d
+0x00007fa016e7e3f5:   3d 66 19 f8 00 eb 09 0f 1f 40 00 4c 39 ed 74 37
+0x00007fa016e7e405:   41 8b 55 d8 49 83 ed 28 85 d2 74 ef 4d 8b 75 20
+0x00007fa016e7e415:   4d 85 f6 74 14 41 8b 46 08 8d 50 ff 41 89 56 08
+0x00007fa016e7e425:   83 f8 01 0f 84 42 03 00 00 49 8d 7d 10 e8 d9 ab
+0x00007fa016e7e435:   74 ff 4c 39 ed 75 c9 48 8b 45 f8 48 8d 34 80 48
+0x00007fa016e7e445:   c1 e6 03 48 83 c6 08 48 8d 7d f8 e8 9b e7 46 ff
+0x00007fa016e7e455:   8b 44 24 30 44 8b 6b 04 85 c0 b9 01 00 00 00 41
+0x00007fa016e7e465:   8d 6d ff 0f 45 c8 45 31 ff 21 cd 45 85 ed 7f 23
+0x00007fa016e7e475:   e9 a6 00 00 00 66 0f 1f 44 00 00 83 ed 01 42 8d
+0x00007fa016e7e485:   44 2d 00 0f 48 e8 41 83 c7 01 45 39 fd 0f 8e 88
+0x00007fa016e7e495:   00 00 00 48 63 c5 48 8d 14 80 48 8b 43 08 4c 8d
+0x00007fa016e7e4a5:   34 d0 41 8b 06 85 c0 0f 84 7e 01 00 00 39 c1 75
+0x00007fa016e7e4b5:   ca 41 8b 46 08 39 44 24 20 75 c0 4d 8d 6e 10 4c
+0x00007fa016e7e4c5:   89 e7 89 0c 24 4c 89 ee e8 6e ab 74 ff 8b 0c 24
+0x00007fa016e7e4d5:   84 c0 0f 84 93 00 00 00 41 8b 06 85 c0 0f 85 08
+0x00007fa016e7e4e5:   02 00 00 8b 44 24 20 4c 89 e6 4c 89 ef 89 0c 24
+0x00007fa016e7e4f5:   49 8d 6e 08 41 89 46 08 e8 ce a8 74 ff 8b 44 24
+
+
+Stack slot to memory mapping:
+
+stack at sp + 0 slots: 0x00007fa000000009 points into unknown readable memory: 00 00 00 00 00 00 00
+stack at sp + 1 slots: 0x0000000000000004 is an unknown value
+stack at sp + 2 slots: 0x00007f9fee751128 points into unknown readable memory: 0x80c0016c85270001 | 01 00 27 85 6c 01 c0 80
+stack at sp + 3 slots: 0x00007f9feeb869c0 points into unknown readable memory: 0x00007f9fee749ca0 | a0 9c 74 ee 9f 7f 00 00
+stack at sp + 4 slots: 0x00007f9f00000001 is an unknown value
+stack at sp + 5 slots: 0x00007f9fee7526f0 points into unknown readable memory: 0x0000000300000004 | 04 00 00 00 03 00 00 00
+stack at sp + 6 slots: 0x00007fa0247d2c4d is an unknown value
+stack at sp + 7 slots: 0x00007f9feec51310 points into unknown readable memory: 0x00007f9feea0ee40 | 40 ee a0 ee 9f 7f 00 00
+
+
+Compiled method (n/a) 25051 1587     n 0       org.jetbrains.skia.paragraph.ParagraphKt::_nLayout (native)
+ total in heap  [0x00007fa06d562010,0x00007fa06d562380] = 880
+ relocation     [0x00007fa06d562168,0x00007fa06d5621a0] = 56
+ main code      [0x00007fa06d5621a0,0x00007fa06d562375] = 469
+ stub code      [0x00007fa06d562375,0x00007fa06d562378] = 3
+ oops           [0x00007fa06d562378,0x00007fa06d562380] = 8
+
+[Constant Pool (empty)]
+
+[MachCode]
+[Entry Point]
+  # {method} {0x00007fa041cd3d78} '_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt'
+  # parm0:    rsi:rsi   = long
+  # parm1:    xmm0      = float
+  #           [sp+0x50]  (sp of caller)
+  0x00007fa06d5621a0: 448b 5608 | 49bb 0000 | 0000 0800 | 0000 4d03 | d349 3bc2 | 0f84 0600 
+
+  0x00007fa06d5621b8: ;   {runtime_call ic_miss_stub}
+  0x00007fa06d5621b8: 0000 e9c1 | 30a2 ff90 
+[Verified Entry Point]
+  0x00007fa06d5621c0: 8984 2400 | c0fe ff55 | 488b ec48 | 83ec 4090 | 4181 7f20 | 0500 0000 
+
+  0x00007fa06d5621d8: ;   {runtime_call StubRoutines (final stubs)}
+  0x00007fa06d5621d8: 7405 e8e1 | 99a0 ff48 
+
+  0x00007fa06d5621e0: ;   {oop(a 'java/lang/Class'{0x000000073165a190} = 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa06d5621e0: 8bd6 49be | 90a1 6531 | 0700 0000 | 4c89 7424 | 304c 8d74 | 2430 498b | f6c5 f877 
+
+  0x00007fa06d5621fc: ;   {internal_word}
+  0x00007fa06d5621fc: 49ba f921 | 566d a07f | 0000 4d89 | 97a8 0300 | 0049 89a7 | a003 0000 
+
+  0x00007fa06d562214: ;   {external_word}
+  0x00007fa06d562214: 803d 9a1e | fb12 000f | 8444 0000 | 0056 5248 | 83ec 10c5 | fb11 0424 
+
+  0x00007fa06d56222c: ;   {metadata({method} {0x00007fa041cd3d78} '_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa06d56222c: 48be 783d | cd41 a07f | 0000 498b | ff40 f6c4 | 0f0f 8412 | 0000 0048 
+
+  0x00007fa06d562244: ;   {runtime_call SharedRuntime::dtrace_method_entry(JavaThread*, Method*)}
+  0x00007fa06d562244: 83ec 08e8 | b484 8612 | 4883 c408 | e905 0000 
+
+  0x00007fa06d562254: ;   {runtime_call SharedRuntime::dtrace_method_entry(JavaThread*, Method*)}
+  0x00007fa06d562254: 00e8 a684 | 8612 c5fb | 1004 2448 | 83c4 105a | 5e49 8dbf | c003 0000 | 41c7 874c | 0400 0004 
+  0x00007fa06d562274: ;   {runtime_call Java_org_jetbrains_skia_paragraph_ParagraphKt__1nLayout}
+  0x00007fa06d562274: 0000 00e8 | 3455 daa8 | c5f8 7741 | c787 4c04 | 0000 0500 | 0000 f083 | 4424 c000 | 493b af50 
+  0x00007fa06d562294: 0400 000f | 870e 0000 | 0041 83bf | 4804 0000 | 000f 841c | 0000 00c5 | f877 498b | ff4c 8be4 
+  0x00007fa06d5622b4: 4883 ec00 | 4883 e4f0 
+
+  0x00007fa06d5622bc: ;   {runtime_call JavaThread::check_special_condition_for_native_trans(JavaThread*)}
+  0x00007fa06d5622bc: e86f 013d | 1249 8be4 | 4d33 e441 | c787 4c04 | 0000 0800 | 0000 4183 | bfc8 0400 | 0002 0f84 
+  0x00007fa06d5622dc: 7700 0000 
+
+  0x00007fa06d5622e0: ;   {external_word}
+  0x00007fa06d5622e0: 803d ce1d | fb12 000f | 842e 0000 
+
+  0x00007fa06d5622ec: ;   {metadata({method} {0x00007fa041cd3d78} '_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa06d5622ec: 0048 be78 | 3dcd 41a0 | 7f00 0049 | 8bff 40f6 | c40f 0f84 | 1200 0000 | 4883 ec08 
+
+  0x00007fa06d562308: ;   {runtime_call SharedRuntime::dtrace_method_exit(JavaThread*, Method*)}
+  0x00007fa06d562308: e8e3 8486 | 1248 83c4 | 08e9 0500 
+
+  0x00007fa06d562314: ;   {runtime_call SharedRuntime::dtrace_method_exit(JavaThread*, Method*)}
+  0x00007fa06d562314: 0000 e8d5 | 8486 1249 | c787 a003 | 0000 0000 | 0000 49c7 | 87a8 0300 | 0000 0000 | 00c5 f877 
+  0x00007fa06d562334: 498b 8f30 | 0400 00c7 | 8100 0100 | 0000 0000 | 00c9 4983 | 7f08 000f | 8501 0000 
+
+  0x00007fa06d562350: ;   {runtime_call StubRoutines (initial stubs)}
+  0x00007fa06d562350: 00c3 e9a9 | 589d ffc5 | f877 4c8b | e448 83ec | 0048 83e4 
+
+  0x00007fa06d562364: ;   {runtime_call SharedRuntime::reguard_yellow_pages()}
+  0x00007fa06d562364: f0e8 f693 | 8612 498b | e44d 33e4 | e96b ffff | fff4 f4f4 
+[/MachCode]
+
+
+Compiled method (c1) 25060 2241       3       androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph (97 bytes)
+ total in heap  [0x00007fa065d53990,0x00007fa065d54938] = 4008
+ relocation     [0x00007fa065d53ae8,0x00007fa065d53c08] = 288
+ constants      [0x00007fa065d53c20,0x00007fa065d53c40] = 32
+ main code      [0x00007fa065d53c40,0x00007fa065d544c8] = 2184
+ stub code      [0x00007fa065d544c8,0x00007fa065d54540] = 120
+ oops           [0x00007fa065d54540,0x00007fa065d54548] = 8
+ metadata       [0x00007fa065d54548,0x00007fa065d54588] = 64
+ scopes data    [0x00007fa065d54588,0x00007fa065d54770] = 488
+ scopes pcs     [0x00007fa065d54770,0x00007fa065d54900] = 400
+ dependencies   [0x00007fa065d54900,0x00007fa065d54908] = 8
+ nul chk table  [0x00007fa065d54908,0x00007fa065d54938] = 48
+
+
+[Constant Pool]
+             Address          hex4                    hex8      
+  0x00007fa065d53c20:   0x3727c5ac      0xf4f4f4f43727c5ac      
+  0x00007fa065d53c24:   0xf4f4f4f4                              
+  0x00007fa065d53c28:   0xf4f4f4f4      0xf4f4f4f4f4f4f4f4      
+  0x00007fa065d53c2c:   0xf4f4f4f4                              
+  0x00007fa065d53c30:   0xf4f4f4f4      0xf4f4f4f4f4f4f4f4      
+  0x00007fa065d53c34:   0xf4f4f4f4                              
+  0x00007fa065d53c38:   0xf4f4f4f4      0xf4f4f4f4f4f4f4f4      
+  0x00007fa065d53c3c:   0xf4f4f4f4                              
+
+[MachCode]
+[Entry Point]
+  # {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter'
+  # this:     rsi:rsi   = 'androidx/compose/ui/text/platform/ParagraphLayouter'
+  # parm0:    xmm0      = float
+  #           [sp+0xa0]  (sp of caller)
+  0x00007fa065d53c40: ;   {no_reloc}
+  0x00007fa065d53c40: 448b 5608 | 49bb 0000 | 0000 0800 | 0000 4d03 | d34c 3bd0 
+
+  0x00007fa065d53c54: ;   {runtime_call ic_miss_stub}
+  0x00007fa065d53c54: 0f85 2616 | 2307 660f | 1f44 0000 
+[Verified Entry Point]
+  0x00007fa065d53c60: 8984 2400 | c0fe ff55 | 4881 ec90 | 0000 0090 | 4181 7f20 | 0500 0000 
+
+  0x00007fa065d53c78: ;   {runtime_call StubRoutines (final stubs)}
+  0x00007fa065d53c78: 7405 e841 | 7f21 0748 | 8974 2460 | c5fa 1144 
+
+  0x00007fa065d53c88: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d53c88: 2474 48ba | 70c1 0842 | a07f 0000 | 8bba f400 | 0000 83c7 | 0289 baf4 | 0000 0081 | e7fe 0700 
+  0x00007fa065d53ca8: 0085 ff0f | 8423 0600 | 008b 7e1c | 48c1 e703 | 4889 7c24 | 6848 85ff 
+
+  0x00007fa065d53cc0: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d53cc0: 48ba 70c1 | 0842 a07f | 0000 48c7 | c338 0100 | 0074 0748 | c7c3 4801 | 0000 488b | 041a 488d 
+  0x00007fa065d53ce0: 4001 4889 | 041a 0f84 | 7604 0000 | 0fbe 5610 
+
+  0x00007fa065d53cf0: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d53cf0: 85d2 48ba | 70c1 0842 | a07f 0000 | 48c7 c368 | 0100 0075 | 0748 c7c3 | 5801 0000 | 488b 041a 
+  0x00007fa065d53d10: 488d 4001 | 4889 041a | 0f85 0a00 | 0000 bb00 | 0000 00e9 | 3601 0000 | 8b5e 1848 | c1e3 0348 
+  0x00007fa065d53d30: 3b03 488b 
+
+  0x00007fa065d53d34: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d53d34: d348 b870 | c108 42a0 | 7f00 0048 | 8380 7801 | 0000 0148 | 8bd7 488b 
+
+  0x00007fa065d53d4c: ;   {optimized virtual_call}
+  0x00007fa065d53d4c: f366 90e8 
+
+  0x00007fa065d53d50: ; ImmutableOopMap {[96]=Oop [104]=Oop }
+                      ;*invokevirtual updateForegroundPaint {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@23 (line 194)
+  0x00007fa065d53d50: 9207 0000 
+
+  0x00007fa065d53d54: ;   {other}
+  0x00007fa065d53d54: 0f1f 8400 | c403 0000 | 488b 7424 | 60c6 4610 | 0048 8b7c | 2468 483b | 0748 8bdf 
+
+  0x00007fa065d53d70: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d53d70: 48b8 70c1 | 0842 a07f | 0000 4883 | 80b0 0100 
+
+  0x00007fa065d53d80: ;   {metadata(method data for {method} {0x00007fa041cd13e8} 'markDirty' '()Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d53d80: 0001 48bb | 08c7 0842 | a07f 0000 | 8b83 f400 | 0000 83c0 | 0289 83f4 | 0000 0025 | feff 1f00 
+  0x00007fa065d53da0: 85c0 0f84 | 5705 0000 
+
+  0x00007fa065d53da8: ;   {oop(a 'org/jetbrains/skia/impl/Stats'{0x000000072a8404e0})}
+  0x00007fa065d53da8: 48bb e004 | 842a 0700 | 0000 488b 
+
+  0x00007fa065d53db4: ;   {metadata(method data for {method} {0x00007fa041cd13e8} 'markDirty' '()Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d53db4: c348 ba08 | c708 42a0 | 7f00 0048 | 8382 3801 | 0000 0148 | 8bf3 0f1f 
+
+  0x00007fa065d53dcc: ;   {optimized virtual_call}
+  0x00007fa065d53dcc: 4400 00e8 
+
+  0x00007fa065d53dd0: ; ImmutableOopMap {[96]=Oop [104]=Oop }
+                      ;*invokevirtual onNativeCall {reexecute=0 rethrow=0 return_oop=0}
+                      ; - org.jetbrains.skia.paragraph.Paragraph::markDirty@3 (line 178)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@32 (line 199)
+  0x00007fa065d53dd0: 4c32 7b07 
+
+  0x00007fa065d53dd4: ;   {other}
+  0x00007fa065d53dd4: 0f1f 8400 | 4404 0001 | 488b 7c24 
+
+  0x00007fa065d53de0: ;   {metadata(method data for {method} {0x00007fa041cd13e8} 'markDirty' '()Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d53de0: 6848 be08 | c708 42a0 | 7f00 0048 | 8386 7001 | 0000 0148 | 8b7c 2468 | 488b 7710 
+
+  0x00007fa065d53dfc: ;   {metadata(method data for {method} {0x00007fa041cd13e8} 'markDirty' '()Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d53dfc: 48bb 08c7 | 0842 a07f | 0000 4883 | 83a8 0100 
+
+  0x00007fa065d53e0c: ;   {metadata(method data for {method} {0x00007fa041cd4f40} 'access$_nMarkDirty' '(J)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d53e0c: 0001 48bb | 00c9 0842 | a07f 0000 | 8b83 f400 | 0000 83c0 | 0289 83f4 | 0000 0025 | feff 1f00 
+  0x00007fa065d53e2c: 85c0 0f84 | ec04 0000 
+
+  0x00007fa065d53e34: ;   {metadata(method data for {method} {0x00007fa041cd4f40} 'access$_nMarkDirty' '(J)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d53e34: 48bb 00c9 | 0842 a07f | 0000 4883 | 8338 0100 
+
+  0x00007fa065d53e44: ;   {static_call}
+  0x00007fa065d53e44: 0001 90e8 
+
+  0x00007fa065d53e48: ; ImmutableOopMap {[96]=Oop [104]=Oop }
+                      ;*invokestatic _nMarkDirty {reexecute=0 rethrow=0 return_oop=0}
+                      ; - org.jetbrains.skia.paragraph.ParagraphKt::access$_nMarkDirty@1 (line 1)
+                      ; - org.jetbrains.skia.paragraph.Paragraph::markDirty@10 (line 179)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@32 (line 199)
+  0x00007fa065d53e48: f414 8b07 
+
+  0x00007fa065d53e4c: ;   {other}
+  0x00007fa065d53e4c: 0f1f 8400 | bc04 0002 | bb01 0000 | 0048 8b74 | 2460 c5fa 
+
+  0x00007fa065d53e60: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d53e60: 1046 0c48 | bf70 c108 | 42a0 7f00 | 0048 8387 | e801 0000 
+
+  0x00007fa065d53e74: ;   {metadata(method data for {method} {0x00007fa041cd6558} 'access$sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d53e74: 0148 bf90 | ca08 42a0 | 7f00 008b | 87f4 0000 | 0083 c002 | 8987 f400 | 0000 25fe | ff1f 0085 
+  0x00007fa065d53e94: c00f 84a6 
+
+  0x00007fa065d53e98: ;   {metadata(method data for {method} {0x00007fa041cd6558} 'access$sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d53e98: 0400 0048 | bf90 ca08 | 42a0 7f00 | 0048 8387 | 3801 0000 
+
+  0x00007fa065d53eac: ;   {metadata(method data for {method} {0x00007fa041cd6490} 'sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d53eac: 0148 bf20 | cc08 42a0 | 7f00 008b | 87f4 0000 | 0083 c002 | 8987 f400 | 0000 25fe | ff1f 0085 
+  0x00007fa065d53ecc: c00f 848f 
+
+  0x00007fa065d53ed0: ;   {metadata(method data for {method} {0x00007fa041cd6490} 'sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d53ed0: 0400 0048 | bf20 cc08 | 42a0 7f00 | 0048 8387 | 3801 0000 | 01c5 fa5c 
+
+  0x00007fa065d53ee8: ;   {metadata(method data for {method} {0x00007fa040178f20} 'abs' '(F)F' in 'java/lang/Math')}
+  0x00007fa065d53ee8: 4424 7448 | bf80 ab91 | 41a0 7f00 | 008b 87f4 | 0000 0083 | c002 8987 | f400 0000 | 25fe ff1f 
+  0x00007fa065d53f08: 0085 c00f | 8472 0400 
+
+  0x00007fa065d53f10: ;   {metadata(method data for {method} {0x00007fa040178f20} 'abs' '(F)F' in 'java/lang/Math')}
+  0x00007fa065d53f10: 0048 bf80 | ab91 41a0 | 7f00 0048 | 8387 3801 
+
+  0x00007fa065d53f20: ;   {metadata(method data for {method} {0x00007fa040178f20} 'abs' '(F)F' in 'java/lang/Math')}
+  0x00007fa065d53f20: 0000 0148 | bf80 ab91 | 41a0 7f00 | 0048 8387 | 4801 0000 | 01c5 fa11 | 4424 708b | 7c24 7081 
+  0x00007fa065d53f40: e7ff ffff | 7f89 bc24 | 8000 0000 | c5fa 1084 | 2480 0000 
+
+  0x00007fa065d53f54: ;   {section_word}
+  0x00007fa065d53f54: 00c5 fa10 | 0dc3 fcff | ffc5 f82e | c1bf 0100 | 0000 0f8a | 1300 0000 | 0f87 0d00 | 0000 bf00 
+  0x00007fa065d53f74: 0000 000f | 8402 0000 | 00ff cf85 
+
+  0x00007fa065d53f80: ;   {metadata(method data for {method} {0x00007fa041cd6490} 'sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d53f80: ff48 bf20 | cc08 42a0 | 7f00 0048 | c7c0 4801 | 0000 7d07 | 48c7 c058 | 0100 0048 | 8b14 0748 
+  0x00007fa065d53fa0: 8d52 0148 | 8914 070f | 8d1a 0000 
+
+  0x00007fa065d53fac: ;   {metadata(method data for {method} {0x00007fa041cd6490} 'sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d53fac: 0048 bf20 | cc08 42a0 | 7f00 00ff | 8768 0100 | 00bf 0100 | 0000 e905 | 0000 00bf | 0000 0000 
+  0x00007fa065d53fcc: 83e7 0183 | e701 85ff 
+
+  0x00007fa065d53fd4: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d53fd4: 48bf 70c1 | 0842 a07f | 0000 48c7 | c0f8 0100 | 0075 0748 | c7c0 0802 | 0000 488b | 1407 488d 
+  0x00007fa065d53ff4: 5201 4889 | 1407 c5fa | 1044 2474 | 0f85 0a00 | 0000 c5fa | 1146 0cbb | 0100 0000 
+
+  0x00007fa065d54010: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d54010: 85db 48be | 70c1 0842 | a07f 0000 | 48c7 c718 | 0200 0074 | 0748 c7c7 | 2802 0000 | 488b 1c3e 
+  0x00007fa065d54030: 488d 5b01 | 4889 1c3e | 0f84 f600 | 0000 488b | 7c24 6848 | 3b07 488b 
+
+  0x00007fa065d54048: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d54048: f748 bb70 | c108 42a0 | 7f00 0048 | 8383 3802 
+
+  0x00007fa065d54058: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d54058: 0000 0148 | be68 e405 | 42a0 7f00 | 008b 9ef4 | 0000 0083 | c302 899e | f400 0000 | 81e3 feff 
+  0x00007fa065d54078: 1f00 85db | 0f84 2703 
+
+  0x00007fa065d54080: ;   {oop(a 'org/jetbrains/skia/impl/Stats'{0x000000072a8404e0})}
+  0x00007fa065d54080: 0000 48be | e004 842a | 0700 0000 
+
+  0x00007fa065d5408c: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d5408c: 488b de48 | b868 e405 | 42a0 7f00 | 0048 8380 | 3801 0000 | 0166 0f1f 
+
+  0x00007fa065d540a4: ;   {optimized virtual_call}
+  0x00007fa065d540a4: 4400 00e8 
+
+  0x00007fa065d540a8: ; ImmutableOopMap {[104]=Oop }
+                      ;*invokevirtual onNativeCall {reexecute=0 rethrow=0 return_oop=0}
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@3 (line 83)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@62 (line 207)
+  0x00007fa065d540a8: 742f 7b07 
+
+  0x00007fa065d540ac: ;   {other}
+  0x00007fa065d540ac: 0f1f 8400 | 1c07 0003 | 488b 7c24 
+
+  0x00007fa065d540b8: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d540b8: 6848 be68 | e405 42a0 | 7f00 0048 | 8386 7001 | 0000 0148 | 8b7c 2468 | 488b 7710 
+
+  0x00007fa065d540d4: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d540d4: 48bb 68e4 | 0542 a07f | 0000 4883 | 83a8 0100 
+
+  0x00007fa065d540e4: ;   {metadata(method data for {method} {0x00007fa041cd4ba0} 'access$_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d540e4: 0001 48bb | 68e6 0542 | a07f 0000 | 8b83 f400 | 0000 83c0 | 0289 83f4 | 0000 0025 | feff 1f00 
+  0x00007fa065d54104: 85c0 0f84 | be02 0000 
+
+  0x00007fa065d5410c: ;   {metadata(method data for {method} {0x00007fa041cd4ba0} 'access$_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d5410c: 48bb 68e6 | 0542 a07f | 0000 4883 | 8338 0100 | 0001 c5fa | 1044 2474 
+
+  0x00007fa065d54124: ;   {static_call}
+  0x00007fa065d54124: 6666 90e8 
+
+  0x00007fa065d54128: ; ImmutableOopMap {[104]=Oop }
+                      ;*invokestatic _nLayout {reexecute=0 rethrow=0 return_oop=0}
+                      ; - org.jetbrains.skia.paragraph.ParagraphKt::access$_nLayout@2 (line 1)
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@11 (line 84)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@62 (line 207)
+  0x00007fa065d54128: 94e0 8007 
+
+  0x00007fa065d5412c: ;   {other}
+  0x00007fa065d5412c: 0f1f 8400 | 9c07 0004 
+
+  0x00007fa065d54134: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d54134: 48b8 70c1 | 0842 a07f | 0000 ff80 | 7002 0000 | 488b 7c24 | 6848 8bc7 | 4881 c490 | 0000 005d 
+  0x00007fa065d54154: ;   {poll_return}
+  0x00007fa065d54154: 493b a750 | 0400 000f | 878a 0200 | 00c3 8b7e | 1848 c1e7 | 0348 3b07 
+
+  0x00007fa065d5416c: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d5416c: 488b df48 | b870 c108 | 42a0 7f00 | 0048 8380 | 8802 0000 | 0148 8bf7 
+
+  0x00007fa065d54184: ;   {optimized virtual_call}
+  0x00007fa065d54184: 6666 90e8 
+
+  0x00007fa065d54188: ; ImmutableOopMap {[96]=Oop }
+                      ;*invokevirtual build {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@74 (line 211)
+  0x00007fa065d54188: 3428 4000 
+
+  0x00007fa065d5418c: ;   {other}
+  0x00007fa065d5418c: 0f1f 8400 | fc07 0005 | 4889 4424 | 7848 3b00 
+
+  0x00007fa065d5419c: ;   {metadata(method data for {method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d5419c: 488b f048 | bf70 c108 | 42a0 7f00 | 0048 8387 | c002 0000 
+
+  0x00007fa065d541b0: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d541b0: 0148 be68 | e405 42a0 | 7f00 008b | bef4 0000 | 0083 c702 | 89be f400 | 0000 81e7 | feff 1f00 
+  0x00007fa065d541d0: 85ff 0f84 | 3302 0000 
+
+  0x00007fa065d541d8: ;   {oop(a 'org/jetbrains/skia/impl/Stats'{0x000000072a8404e0})}
+  0x00007fa065d541d8: 48be e004 | 842a 0700 | 0000 488b 
+
+  0x00007fa065d541e4: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d541e4: fe48 bb68 | e405 42a0 | 7f00 0048 | 8383 3801 
+
+  0x00007fa065d541f4: ;   {optimized virtual_call}
+  0x00007fa065d541f4: 0000 01e8 
+
+  0x00007fa065d541f8: ; ImmutableOopMap {[96]=Oop [120]=Oop }
+                      ;*invokevirtual onNativeCall {reexecute=0 rethrow=0 return_oop=0}
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@3 (line 83)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@80 (line 212)
+  0x00007fa065d541f8: 242e 7b07 
+
+  0x00007fa065d541fc: ;   {other}
+  0x00007fa065d541fc: 0f1f 8400 | 6c08 0006 | 488b 4424 
+
+  0x00007fa065d54208: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d54208: 7848 be68 | e405 42a0 | 7f00 0048 | 8386 7001 | 0000 0148 | 8b44 2478 | 488b 7010 
+
+  0x00007fa065d54224: ;   {metadata(method data for {method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d54224: 48bf 68e4 | 0542 a07f | 0000 4883 | 87a8 0100 
+
+  0x00007fa065d54234: ;   {metadata(method data for {method} {0x00007fa041cd4ba0} 'access$_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d54234: 0001 48bf | 68e6 0542 | a07f 0000 | 8b9f f400 | 0000 83c3 | 0289 9ff4 | 0000 0081 | e3fe ff1f 
+  0x00007fa065d54254: 0085 db0f | 84cf 0100 
+
+  0x00007fa065d5425c: ;   {metadata(method data for {method} {0x00007fa041cd4ba0} 'access$_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d5425c: 0048 bf68 | e605 42a0 | 7f00 0048 | 8387 3801 | 0000 01c5 | fa10 4424 
+
+  0x00007fa065d54274: ;   {static_call}
+  0x00007fa065d54274: 7466 90e8 
+
+  0x00007fa065d54278: ; ImmutableOopMap {[96]=Oop [120]=Oop }
+                      ;*invokestatic _nLayout {reexecute=0 rethrow=0 return_oop=0}
+                      ; - org.jetbrains.skia.paragraph.ParagraphKt::access$_nLayout@2 (line 1)
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@11 (line 84)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@80 (line 212)
+  0x00007fa065d54278: 44df 8007 
+
+  0x00007fa065d5427c: ;   {other}
+  0x00007fa065d5427c: 0f1f 8400 | ec08 0007 | 410f be47 | 4085 c048 | 8b74 2460 | 0f85 b701 | 0000 488b | 4424 784c 
+  0x00007fa065d5429c: 8bd0 49c1 | ea03 4489 | 561c 488b | fe48 33f8 | 48c1 ef15 | 4883 ff00 | 0f85 b201 | 0000 c646 
+  0x00007fa065d542bc: 1000 4881 | c490 0000 
+
+  0x00007fa065d542c4: ;   {poll_return}
+  0x00007fa065d542c4: 005d 493b | a750 0400 | 000f 87b1 | 0100 00c3 
+
+  0x00007fa065d542d4: ;   {metadata({method} {0x00007fa041c83630} 'layoutParagraph' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'androidx/compose/ui/text/platform/ParagraphLayouter')}
+  0x00007fa065d542d4: 49ba 3036 | c841 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065d542e8: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d542e8: ffff ffe8 
+
+  0x00007fa065d542ec: ; ImmutableOopMap {rsi=Oop [96]=Oop }
+                      ;*synchronization entry
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@-1 (line 190)
+  0x00007fa065d542ec: 9026 3007 | e9bc f9ff 
+
+  0x00007fa065d542f4: ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065d542f4: ffe8 26ca 
+
+  0x00007fa065d542f8: ; ImmutableOopMap {rsi=Oop rdi=Oop rbx=Oop [96]=Oop [104]=Oop }
+                      ;*invokevirtual updateForegroundPaint {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@23 (line 194)
+                      ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065d542f8: 2f07 e821 
+
+  0x00007fa065d542fc: ; ImmutableOopMap {rsi=Oop rdi=Oop [96]=Oop [104]=Oop }
+                      ;*invokevirtual markDirty {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@32 (line 199)
+                      ;   {metadata({method} {0x00007fa041cd13e8} 'markDirty' '()Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d542fc: ca2f 0749 | bae8 13cd | 41a0 7f00 | 004c 8954 | 2408 48c7 | 0424 ffff 
+
+  0x00007fa065d54314: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d54314: ffff e865 
+
+  0x00007fa065d54318: ; ImmutableOopMap {rsi=Oop rdi=Oop [96]=Oop [104]=Oop }
+                      ;*synchronization entry
+                      ; - org.jetbrains.skia.paragraph.Paragraph::markDirty@-1 (line 178)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@32 (line 199)
+  0x00007fa065d54318: 2630 07e9 | 88fa ffff 
+
+  0x00007fa065d54320: ;   {metadata({method} {0x00007fa041cd4f40} 'access$_nMarkDirty' '(J)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d54320: 49ba 404f | cd41 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065d54334: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d54334: ffff ffe8 
+
+  0x00007fa065d54338: ; ImmutableOopMap {rdi=Oop [96]=Oop [104]=Oop }
+                      ;*synchronization entry
+                      ; - org.jetbrains.skia.paragraph.ParagraphKt::access$_nMarkDirty@-1
+                      ; - org.jetbrains.skia.paragraph.Paragraph::markDirty@10 (line 179)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@32 (line 199)
+  0x00007fa065d54338: 4426 3007 | e9f3 faff 
+
+  0x00007fa065d54340: ;   {metadata({method} {0x00007fa041cd6558} 'access$sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d54340: ff49 ba58 | 65cd 41a0 | 7f00 004c | 8954 2408 | 48c7 0424 | ffff ffff 
+
+  0x00007fa065d54358: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d54358: e823 2630 
+
+  0x00007fa065d5435c: ; ImmutableOopMap {rsi=Oop [96]=Oop [104]=Oop }
+                      ;*synchronization entry
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter_skikoKt::access$sameValueAs@-1
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@43 (line 202)
+  0x00007fa065d5435c: 07e9 39fb 
+
+  0x00007fa065d54360: ;   {metadata({method} {0x00007fa041cd6490} 'sameValueAs' '(FF)Z' in 'androidx/compose/ui/text/platform/ParagraphLayouter_skikoKt')}
+  0x00007fa065d54360: ffff 49ba | 9064 cd41 | a07f 0000 | 4c89 5424 | 0848 c704 | 24ff ffff 
+
+  0x00007fa065d54378: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d54378: ffe8 0226 
+
+  0x00007fa065d5437c: ; ImmutableOopMap {rsi=Oop [96]=Oop [104]=Oop }
+                      ;*synchronization entry
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter_skikoKt::sameValueAs@-1 (line 221)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter_skikoKt::access$sameValueAs@2 (line 1)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@43 (line 202)
+  0x00007fa065d5437c: 3007 e950 
+
+  0x00007fa065d54380: ;   {metadata({method} {0x00007fa040178f20} 'abs' '(F)F' in 'java/lang/Math')}
+  0x00007fa065d54380: fbff ff49 | ba20 8f17 | 40a0 7f00 | 004c 8954 | 2408 48c7 | 0424 ffff 
+
+  0x00007fa065d54398: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d54398: ffff e8e1 
+
+  0x00007fa065d5439c: ; ImmutableOopMap {rsi=Oop [96]=Oop [104]=Oop }
+                      ;*synchronization entry
+                      ; - java.lang.Math::abs@-1
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter_skikoKt::sameValueAs@3 (line 221)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter_skikoKt::access$sameValueAs@2 (line 1)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@43 (line 202)
+  0x00007fa065d5439c: 2530 07e9 | 6dfb ffff 
+
+  0x00007fa065d543a4: ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065d543a4: e877 c92f 
+
+  0x00007fa065d543a8: ; ImmutableOopMap {rdi=Oop [104]=Oop }
+                      ;*invokevirtual layout {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@62 (line 207)
+                      ;   {metadata({method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d543a8: 0749 ba68 | 08cd 41a0 | 7f00 004c | 8954 2408 | 48c7 0424 | ffff ffff 
+
+  0x00007fa065d543c0: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d543c0: e8bb 2530 
+
+  0x00007fa065d543c4: ; ImmutableOopMap {rdi=Oop [104]=Oop }
+                      ;*synchronization entry
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@-1 (line 83)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@62 (line 207)
+  0x00007fa065d543c4: 07e9 b8fc 
+
+  0x00007fa065d543c8: ;   {metadata({method} {0x00007fa041cd4ba0} 'access$_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d543c8: ffff 49ba | a04b cd41 | a07f 0000 | 4c89 5424 | 0848 c704 | 24ff ffff 
+
+  0x00007fa065d543e0: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d543e0: ffe8 9a25 
+
+  0x00007fa065d543e4: ; ImmutableOopMap {rdi=Oop [104]=Oop }
+                      ;*synchronization entry
+                      ; - org.jetbrains.skia.paragraph.ParagraphKt::access$_nLayout@-1
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@11 (line 84)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@62 (line 207)
+  0x00007fa065d543e4: 3007 e921 
+
+  0x00007fa065d543e8: ;   {internal_word}
+  0x00007fa065d543e8: fdff ff49 | ba54 41d5 | 65a0 7f00 | 004d 8997 | 6804 0000 
+
+  0x00007fa065d543fc: ;   {runtime_call SafepointBlob}
+  0x00007fa065d543fc: e9ff 8f23 
+
+  0x00007fa065d54400: ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065d54400: 07e8 1ac9 
+
+  0x00007fa065d54404: ; ImmutableOopMap {rsi=Oop rdi=Oop [96]=Oop }
+                      ;*invokevirtual build {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@74 (line 211)
+                      ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065d54404: 2f07 e815 
+
+  0x00007fa065d54408: ; ImmutableOopMap {rax=Oop [96]=Oop [120]=Oop }
+                      ;*invokevirtual layout {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@80 (line 212)
+                      ;   {metadata({method} {0x00007fa041cd0868} 'layout' '(F)Lorg/jetbrains/skia/paragraph/Paragraph;' in 'org/jetbrains/skia/paragraph/Paragraph')}
+  0x00007fa065d54408: c92f 0749 | ba68 08cd | 41a0 7f00 | 004c 8954 | 2408 48c7 | 0424 ffff 
+
+  0x00007fa065d54420: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d54420: ffff e859 
+
+  0x00007fa065d54424: ; ImmutableOopMap {rax=Oop [96]=Oop [120]=Oop }
+                      ;*synchronization entry
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@-1 (line 83)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@80 (line 212)
+  0x00007fa065d54424: 2530 07e9 | acfd ffff 
+
+  0x00007fa065d5442c: ;   {metadata({method} {0x00007fa041cd4ba0} 'access$_nLayout' '(JF)V' in 'org/jetbrains/skia/paragraph/ParagraphKt')}
+  0x00007fa065d5442c: 49ba a04b | cd41 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065d54440: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065d54440: ffff ffe8 
+
+  0x00007fa065d54444: ; ImmutableOopMap {rax=Oop [96]=Oop [120]=Oop }
+                      ;*synchronization entry
+                      ; - org.jetbrains.skia.paragraph.ParagraphKt::access$_nLayout@-1
+                      ; - org.jetbrains.skia.paragraph.Paragraph::layout@11 (line 84)
+                      ; - androidx.compose.ui.text.platform.ParagraphLayouter::layoutParagraph@80 (line 212)
+  0x00007fa065d54444: 3825 3007 | e910 feff | ff8b 461c | 48c1 e003 | 4883 f800 | 0f84 38fe | ffff 4889 
+
+  0x00007fa065d54460: ;   {runtime_call g1_pre_barrier_slow}
+  0x00007fa065d54460: 0424 e819 | 2c30 07e9 | 2afe ffff | 4883 f800 | 0f84 44fe | ffff 4889 
+
+  0x00007fa065d54478: ;   {runtime_call g1_post_barrier_slow}
+  0x00007fa065d54478: 3424 e881 | 2f30 07e9 | 36fe ffff 
+
+  0x00007fa065d54484: ;   {internal_word}
+  0x00007fa065d54484: 49ba c642 | d565 a07f | 0000 4d89 | 9768 0400 
+
+  0x00007fa065d54494: ;   {runtime_call SafepointBlob}
+  0x00007fa065d54494: 00e9 668f | 2307 498b | 8700 0500 | 0049 c787 | 0005 0000 | 0000 0000 | 49c7 8708 | 0500 0000 
+  0x00007fa065d544b4: 0000 0048 | 81c4 9000 
+
+  0x00007fa065d544bc: ;   {runtime_call unwind_exception Runtime1 stub}
+  0x00007fa065d544bc: 0000 5de9 | 3cb9 2f07 | f4f4 f4f4 
+[Stub Code]
+  0x00007fa065d544c8: ;   {no_reloc}
+  0x00007fa065d544c8: 48bb 0000 | 0000 0000 
+
+  0x00007fa065d544d0: ;   {runtime_call nmethod}
+  0x00007fa065d544d0: 0000 e9fb 
+
+  0x00007fa065d544d4: ;   {static_stub}
+  0x00007fa065d544d4: ffff ff48 | bb28 76c8 | 41a0 7f00 
+
+  0x00007fa065d544e0: ;   {runtime_call I2C/C2I adapters}
+  0x00007fa065d544e0: 00e9 9d62 
+
+  0x00007fa065d544e4: ;   {static_stub}
+  0x00007fa065d544e4: 2307 48bb | f072 c841 | a07f 0000 
+
+  0x00007fa065d544f0: ;   {runtime_call I2C/C2I adapters}
+  0x00007fa065d544f0: e912 7323 
+
+  0x00007fa065d544f4: ;   {static_stub}
+  0x00007fa065d544f4: 0748 bb00 | 0000 0000 
+
+  0x00007fa065d544fc: ;   {runtime_call nmethod}
+  0x00007fa065d544fc: 0000 00e9 | fbff ffff 
+
+  0x00007fa065d54504: ;   {static_stub}
+  0x00007fa065d54504: 48bb 7842 | cd41 a07f 
+
+  0x00007fa065d5450c: ;   {runtime_call I2C/C2I adapters}
+  0x00007fa065d5450c: 0000 e9f0 
+
+  0x00007fa065d54510: ;   {runtime_call handle_exception_from_callee Runtime1 stub}
+  0x00007fa065d54510: c220 07e8 | e8e9 2f07 
+
+  0x00007fa065d54518: ;   {external_word}
+  0x00007fa065d54518: 48bf 5481 | 1280 a07f | 0000 4883 
+
+  0x00007fa065d54524: ;   {runtime_call MacroAssembler::debug64(char*, long, long*)}
+  0x00007fa065d54524: e4f0 e835 | dcea 19f4 
+[Deopt Handler Code]
+  0x00007fa065d5452c: ;   {section_word}
+  0x00007fa065d5452c: 49ba 2c45 | d565 a07f | 0000 4152 
+
+  0x00007fa065d54538: ;   {runtime_call DeoptimizationBlob}
+  0x00007fa065d54538: e963 a323 | 07f4 f4f4 
+[/MachCode]
+
+
+Compiled method (c1) 25072 3190       3       androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight (73 bytes)
+ total in heap  [0x00007fa065f8b590,0x00007fa065f8cbb0] = 5664
+ relocation     [0x00007fa065f8b6e8,0x00007fa065f8b858] = 368
+ main code      [0x00007fa065f8b860,0x00007fa065f8c678] = 3608
+ stub code      [0x00007fa065f8c678,0x00007fa065f8c708] = 144
+ oops           [0x00007fa065f8c708,0x00007fa065f8c718] = 16
+ metadata       [0x00007fa065f8c718,0x00007fa065f8c748] = 48
+ scopes data    [0x00007fa065f8c748,0x00007fa065f8c930] = 488
+ scopes pcs     [0x00007fa065f8c930,0x00007fa065f8cb70] = 576
+ dependencies   [0x00007fa065f8cb70,0x00007fa065f8cb78] = 8
+ nul chk table  [0x00007fa065f8cb78,0x00007fa065f8cbb0] = 56
+
+[Constant Pool (empty)]
+
+[MachCode]
+[Entry Point]
+  # {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator'
+  # this:     rsi:rsi   = 'androidx/compose/ui/node/LayoutModifierNodeCoordinator'
+  # parm0:    rdx       = int
+  #           [sp+0x100]  (sp of caller)
+  0x00007fa065f8b860: 448b 5608 | 49bb 0000 | 0000 0800 | 0000 4d03 | d34c 3bd0 
+
+  0x00007fa065f8b874: ;   {runtime_call ic_miss_stub}
+  0x00007fa065f8b874: 0f85 069a | ff06 660f | 1f44 0000 
+[Verified Entry Point]
+  0x00007fa065f8b880: 8984 2400 | c0fe ff55 | 4881 ecf0 | 0000 0090 | 4181 7f20 | 0500 0000 
+
+  0x00007fa065f8b898: ;   {runtime_call StubRoutines (final stubs)}
+  0x00007fa065f8b898: 7405 e821 | 03fe 0648 | 89b4 2498 
+
+  0x00007fa065f8b8a4: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8b8a4: 0000 0048 | bfa0 a022 | 42a0 7f00 | 008b 9ff4 | 0000 0083 | c302 899f | f400 0000 | 81e3 fe07 
+  0x00007fa065f8b8c4: 0000 85db | 0f84 460b | 0000 8bbe | 9c00 0000 | 48c1 e703 
+
+  0x00007fa065f8b8d8: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8b8d8: 4885 ff48 | bba0 a022 | 42a0 7f00 | 0048 c7c0 | 3801 0000 | 7407 48c7 | c048 0100 | 0048 8b0c 
+  0x00007fa065f8b8f8: 0348 8d49 | 0148 890c | 0389 9424 | a000 0000 | 0f84 1304 | 0000 488b | f748 89bc | 2490 0000 
+  0x00007fa065f8b918: 000f 1f40 | 0048 b8ff | ffff ffff 
+
+  0x00007fa065f8b924: ;   {virtual_call}
+  0x00007fa065f8b924: ffff ffe8 
+
+  0x00007fa065f8b928: ; ImmutableOopMap {[144]=Oop [152]=Oop }
+                      ;*invokevirtual getApproachNode {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@12 (line 216)
+  0x00007fa065f8b928: 54a3 ff06 
+
+  0x00007fa065f8b92c: ;   {other}
+  0x00007fa065f8b92c: 0f1f 8400 | 9c03 0000 | 4889 8424 | a800 0000 | 488b bc24 | 9000 0000 | 4885 ff75 
+
+  0x00007fa065f8b948: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8b948: 1648 bea0 | a022 42a0 | 7f00 0080 | 8e89 0100 | 0001 e9f4 | 0000 0090 
+
+  0x00007fa065f8b960: ;   {no_reloc}
+  0x00007fa065f8b960: e9df 0a00 | 0000 0000 | 0000 8b77 | 0849 ba00 | 0000 0008 | 0000 0049 | 03f2 483b | f10f 8427 
+  0x00007fa065f8b980: 0000 008b | 5114 483b | 0c16 0f84 | 1a00 0000 | 83fa 200f | 859e 0000 
+
+  0x00007fa065f8b998: ;   {runtime_call slow_subtype_check Runtime1 stub}
+  0x00007fa065f8b998: 0056 51e8 | 6081 0c07 | 5e59 85c9 | 0f84 8d00 
+
+  0x00007fa065f8b9a8: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8b9a8: 0000 48be | a0a0 2242 | a07f 0000 | 8b4f 0849 | ba00 0000 | 0008 0000 | 0049 03ca | 483b 8ea0 
+  0x00007fa065f8b9c8: 0100 0075 | 0d48 8386 | a801 0000 | 01e9 7900 | 0000 483b | 8eb0 0100 | 0075 0d48 | 8386 b801 
+  0x00007fa065f8b9e8: 0000 01e9 | 6300 0000 | 4883 bea0 | 0100 0000 | 7517 4889 | 8ea0 0100 | 0048 c786 | a801 0000 
+  0x00007fa065f8ba08: 0100 0000 | e942 0000 | 0048 83be | b001 0000 | 0075 1748 | 898e b001 | 0000 48c7 | 86b8 0100 
+  0x00007fa065f8ba28: 0001 0000 | 00e9 2100 | 0000 e91c 
+
+  0x00007fa065f8ba34: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8ba34: 0000 0048 | bea0 a022 | 42a0 7f00 | 0048 83ae | 9001 0000 | 01e9 000a | 0000 e900 | 0000 0048 
+  0x00007fa065f8ba54: 8bdf 488b | b424 9800 
+
+  0x00007fa065f8ba5c: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8ba5c: 0000 48ba | a0a0 2242 | a07f 0000 | 4883 82c8 | 0100 0001 
+
+  0x00007fa065f8ba70: ;   {metadata(method data for {method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8ba70: 48ba 0009 | f441 a07f | 0000 8bb2 | f400 0000 | 83c6 0289 | b2f4 0000 | 0081 e6fe | ff1f 0085 
+  0x00007fa065f8ba90: f60f 84c0 | 0900 0048 | 8bb4 2498 
+
+  0x00007fa065f8ba9c: ;   {metadata(method data for {method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8ba9c: 0000 0048 | ba00 09f4 | 41a0 7f00 | 0048 8382 | 3801 0000 | 0148 8bb4 | 2498 0000 | 0044 8b46 
+  0x00007fa065f8babc: 5c49 c1e0 
+
+  0x00007fa065f8bac0: ;   {metadata(method data for {method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8bac0: 0348 ba00 | 09f4 41a0 | 7f00 0048 | 8382 7001 
+
+  0x00007fa065f8bad0: ;   {metadata(method data for {method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bad0: 0000 0148 | ba68 c562 | 41a0 7f00 | 008b b2f4 | 0000 0083 | c602 89b2 | f400 0000 | 81e6 feff 
+  0x00007fa065f8baf0: 1f00 85f6 | 0f84 7e09 | 0000 4d85 
+
+  0x00007fa065f8bafc: ;   {metadata(method data for {method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bafc: c048 ba68 | c562 41a0 | 7f00 0048 | c7c6 3801 | 0000 7507 | 48c7 c648 | 0100 0048 | 8b3c 3248 
+  0x00007fa065f8bb1c: 8d7f 0148 | 893c 324c | 8984 24b8 | 0000 0048 | 899c 24b0 | 0000 000f | 85db 0100 
+
+  0x00007fa065f8bb38: ;   {metadata(method data for {method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bb38: 0048 ba68 | c562 41a0 | 7f00 0048 | 8382 5801 
+
+  0x00007fa065f8bb48: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bb48: 0000 0148 | ba40 c762 | 41a0 7f00 | 008b b2f4 | 0000 0083 | c602 89b2 | f400 0000 | 81e6 feff 
+  0x00007fa065f8bb68: 1f00 85f6 | 0f84 2709 | 0000 660f | 1f44 0000 
+
+  0x00007fa065f8bb78: ;   {no_reloc}
+  0x00007fa065f8bb78: e94c 0900 | 0000 0000 | 0000 498b | 87b8 0100 | 0048 8d78 | 3049 3bbf | c801 0000 | 0f87 3909 
+  0x00007fa065f8bb98: 0000 4989 | bfb8 0100 | 0048 c700 | 0100 0000 | 488b ca49 | ba00 0000 | 0008 0000 | 0049 2bca 
+  0x00007fa065f8bbb8: 8948 0848 | 33c9 8948 | 0c48 33c9 | 4889 4810 | 4889 4818 | 4889 4820 | 4889 4828 
+
+  0x00007fa065f8bbd4: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bbd4: 488b f048 | bf40 c762 | 41a0 7f00 | 0048 8387 | 3801 0000 | 0148 8bf0 | 4889 8424 | c000 0000 
+  0x00007fa065f8bbf4: ;   {optimized virtual_call}
+  0x00007fa065f8bbf4: 6666 90e8 
+
+  0x00007fa065f8bbf8: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop [192]=Oop }
+                      ;*invokespecial <init> {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@4 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8bbf8: 849b ff06 
+
+  0x00007fa065f8bbfc: ;   {other}
+  0x00007fa065f8bbfc: 0f1f 8400 | 6c06 0001 
+
+  0x00007fa065f8bc04: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bc04: 48be 40c7 | 6241 a07f | 0000 4883 | 8648 0100 
+
+  0x00007fa065f8bc14: ;   {metadata(method data for {method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bc14: 0001 48be | d88f ab40 | a07f 0000 | 8bbe f400 | 0000 83c7 | 0289 bef4 | 0000 0081 | e7fe ff1f 
+  0x00007fa065f8bc34: 0085 ff0f | 84a3 0800 
+
+  0x00007fa065f8bc3c: ;   {oop(a 'java/lang/Class'{0x000000072a89e108} = 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bc3c: 0048 be08 | e189 2a07 | 0000 0048 
+
+  0x00007fa065f8bc48: ;   {metadata(method data for {method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bc48: 8bfe 48bb | d88f ab40 | a07f 0000 | 4883 8338 | 0100 0001 
+
+  0x00007fa065f8bc5c: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bc5c: 48bf 18a2 | 6240 a07f | 0000 8b9f | f400 0000 | 83c3 0289 | 9ff4 0000 | 0081 e3fe | ff1f 0085 
+  0x00007fa065f8bc7c: db0f 847e | 0800 008b | 762c 48c1 | e603 4885 
+
+  0x00007fa065f8bc8c: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bc8c: f648 bf18 | a262 40a0 | 7f00 0048 | c7c3 3801 | 0000 7407 | 48c7 c348 | 0100 0048 | 8b04 1f48 
+  0x00007fa065f8bcac: 8d40 0148 | 8904 1f0f | 8418 0000 
+
+  0x00007fa065f8bcb8: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bcb8: 0048 bf18 | a262 40a0 | 7f00 00ff | 8758 0100 | 0048 8bfe | e936 0000 
+
+  0x00007fa065f8bcd0: ;   {oop(a 'java/lang/Class'{0x000000072a89e108} = 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bcd0: 0048 be08 | e189 2a07 | 0000 0048 
+
+  0x00007fa065f8bcdc: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bcdc: 8bfe 48bb | 18a2 6240 | a07f 0000 | 4883 8370 | 0100 0001 | 0f1f 8000 
+
+  0x00007fa065f8bcf4: ;   {optimized virtual_call}
+  0x00007fa065f8bcf4: 0000 00e8 
+
+  0x00007fa065f8bcf8: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop [192]=Oop }
+                      ;*invokevirtual initClassName {reexecute=0 rethrow=0 return_oop=0}
+                      ; - java.lang.Class::getName@14
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@3 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8bcf8: 849a ff06 
+
+  0x00007fa065f8bcfc: ;   {other}
+  0x00007fa065f8bcfc: 0f1f 8400 | 6c07 0002 | 488b f848 | 8b84 24c0 | 0000 00e9 | c805 0000 | 488b 8424 | a800 0000 
+  0x00007fa065f8bd1c: e999 0300 | 008b 9e90 | 0000 0048 | c1e3 0348 | 899c 24c8 | 0000 0048 
+
+  0x00007fa065f8bd34: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8bd34: 8bd6 48bf | a0a0 2242 | a07f 0000 | 4883 87c0 | 0200 0001 
+
+  0x00007fa065f8bd48: ;   {metadata(method data for {method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8bd48: 48ba 0009 | f441 a07f | 0000 8bba | f400 0000 | 83c7 0289 | baf4 0000 | 0081 e7fe | ff1f 0085 
+  0x00007fa065f8bd68: ff0f 84b8 | 0700 0048 
+
+  0x00007fa065f8bd70: ;   {metadata(method data for {method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8bd70: 8bd6 48bf | 0009 f441 | a07f 0000 | 4883 8738 | 0100 0001 | 448b 465c | 49c1 e003 
+
+  0x00007fa065f8bd8c: ;   {metadata(method data for {method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8bd8c: 48ba 0009 | f441 a07f | 0000 4883 | 8270 0100 
+
+  0x00007fa065f8bd9c: ;   {metadata(method data for {method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bd9c: 0001 48ba | 68c5 6241 | a07f 0000 | 8bba f400 | 0000 83c7 | 0289 baf4 | 0000 0081 | e7fe ff1f 
+  0x00007fa065f8bdbc: 0085 ff0f | 8483 0700 | 004d 85c0 
+
+  0x00007fa065f8bdc8: ;   {metadata(method data for {method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bdc8: 48ba 68c5 | 6241 a07f | 0000 48c7 | c738 0100 | 0075 0748 | c7c7 4801 | 0000 488b | 043a 488d 
+  0x00007fa065f8bde8: 4001 4889 | 043a 4c89 | 8424 d000 | 0000 0f85 | d801 0000 
+
+  0x00007fa065f8bdfc: ;   {metadata(method data for {method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bdfc: 48ba 68c5 | 6241 a07f | 0000 4883 | 8258 0100 
+
+  0x00007fa065f8be0c: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8be0c: 0001 48ba | 40c7 6241 | a07f 0000 | 8bba f400 | 0000 83c7 | 0289 baf4 | 0000 0081 | e7fe ff1f 
+  0x00007fa065f8be2c: 0085 ff0f | 8434 0700 | 0066 6690 
+
+  0x00007fa065f8be38: ;   {no_reloc}
+  0x00007fa065f8be38: e95c 0700 | 0000 0000 | 0000 498b | 87b8 0100 | 0048 8d78 | 3049 3bbf | c801 0000 | 0f87 4907 
+  0x00007fa065f8be58: 0000 4989 | bfb8 0100 | 0048 c700 | 0100 0000 | 488b ca49 | ba00 0000 | 0008 0000 | 0049 2bca 
+  0x00007fa065f8be78: 8948 0848 | 33c9 8948 | 0c48 33c9 | 4889 4810 | 4889 4818 | 4889 4820 | 4889 4828 
+
+  0x00007fa065f8be94: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8be94: 488b f048 | bf40 c762 | 41a0 7f00 | 0048 8387 | 3801 0000 | 0148 8bf0 | 4889 8424 | d800 0000 
+  0x00007fa065f8beb4: ;   {optimized virtual_call}
+  0x00007fa065f8beb4: 6666 90e8 
+
+  0x00007fa065f8beb8: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop [216]=Oop }
+                      ;*invokespecial <init> {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@4 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8beb8: c498 ff06 
+
+  0x00007fa065f8bebc: ;   {other}
+  0x00007fa065f8bebc: 0f1f 8400 | 2c09 0003 
+
+  0x00007fa065f8bec4: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bec4: 48be 40c7 | 6241 a07f | 0000 4883 | 8648 0100 
+
+  0x00007fa065f8bed4: ;   {metadata(method data for {method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bed4: 0001 48be | d88f ab40 | a07f 0000 | 8bbe f400 | 0000 83c7 | 0289 bef4 | 0000 0081 | e7fe ff1f 
+  0x00007fa065f8bef4: 0085 ff0f | 84b3 0600 
+
+  0x00007fa065f8befc: ;   {oop(a 'java/lang/Class'{0x000000072a89e108} = 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8befc: 0048 be08 | e189 2a07 | 0000 0048 
+
+  0x00007fa065f8bf08: ;   {metadata(method data for {method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bf08: 8bfe 48bb | d88f ab40 | a07f 0000 | 4883 8338 | 0100 0001 
+
+  0x00007fa065f8bf1c: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bf1c: 48bf 18a2 | 6240 a07f | 0000 8b9f | f400 0000 | 83c3 0289 | 9ff4 0000 | 0081 e3fe | ff1f 0085 
+  0x00007fa065f8bf3c: db0f 848e | 0600 008b | 762c 48c1 | e603 4885 
+
+  0x00007fa065f8bf4c: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bf4c: f648 bf18 | a262 40a0 | 7f00 0048 | c7c3 3801 | 0000 7407 | 48c7 c348 | 0100 0048 | 8b04 1f48 
+  0x00007fa065f8bf6c: 8d40 0148 | 8904 1f0f | 8418 0000 
+
+  0x00007fa065f8bf78: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bf78: 0048 bf18 | a262 40a0 | 7f00 00ff | 8758 0100 | 0048 8bfe | e936 0000 
+
+  0x00007fa065f8bf90: ;   {oop(a 'java/lang/Class'{0x000000072a89e108} = 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8bf90: 0048 be08 | e189 2a07 | 0000 0048 
+
+  0x00007fa065f8bf9c: ;   {metadata(method data for {method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8bf9c: 8bfe 48bb | 18a2 6240 | a07f 0000 | 4883 8370 | 0100 0001 | 0f1f 8000 
+
+  0x00007fa065f8bfb4: ;   {optimized virtual_call}
+  0x00007fa065f8bfb4: 0000 00e8 
+
+  0x00007fa065f8bfb8: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop [216]=Oop }
+                      ;*invokevirtual initClassName {reexecute=0 rethrow=0 return_oop=0}
+                      ; - java.lang.Class::getName@14
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@3 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8bfb8: c497 ff06 
+
+  0x00007fa065f8bfbc: ;   {other}
+  0x00007fa065f8bfbc: 0f1f 8400 | 2c0a 0004 | 488b f848 | 8b84 24d8 | 0000 00e9 | d601 0000 | 488b 9c24 | c800 0000 
+  0x00007fa065f8bfdc: ; implicit exception: dispatches to 0x00007fa065f8c5f7
+  0x00007fa065f8bfdc: 483b 0348 
+
+  0x00007fa065f8bfe0: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8bfe0: 8bd3 48b9 | a0a0 2242 | a07f 0000 | 8b52 0849 | ba00 0000 | 0008 0000 | 0049 03d2 | 483b 9140 
+  0x00007fa065f8c000: 0300 0075 | 0d48 8381 | 4803 0000 | 01e9 6000 | 0000 483b | 9150 0300 | 0075 0d48 | 8381 5803 
+  0x00007fa065f8c020: 0000 01e9 | 4a00 0000 | 4883 b940 | 0300 0000 | 7517 4889 | 9140 0300 | 0048 c781 | 4803 0000 
+  0x00007fa065f8c040: 0100 0000 | e929 0000 | 0048 83b9 | 5003 0000 | 0075 1748 | 8991 5003 | 0000 48c7 | 8158 0300 
+  0x00007fa065f8c060: 0001 0000 | 00e9 0800 | 0000 4883 | 8130 0300 | 0001 488b | 9424 9800 | 0000 488b | 8c24 d000 
+  0x00007fa065f8c080: 0000 448b | 8424 a000 | 0000 488b | f348 b800 | d86a ee9f 
+
+  0x00007fa065f8c094: ;   {virtual_call}
+  0x00007fa065f8c094: 7f00 00e8 
+
+  0x00007fa065f8c098: ; ImmutableOopMap {}
+                      ;*invokeinterface minIntrinsicHeight {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@66 (line 220)
+  0x00007fa065f8c098: ac31 0d07 
+
+  0x00007fa065f8c09c: ;   {other}
+  0x00007fa065f8c09c: 0f1f 8400 | 0c0b 0005 | 4881 c4f0 | 0000 005d 
+
+  0x00007fa065f8c0ac: ;   {poll_return}
+  0x00007fa065f8c0ac: 493b a750 | 0400 000f | 8743 0500 | 00c3 483b | 0048 8bd0 
+
+  0x00007fa065f8c0c0: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8c0c0: 48b9 a0a0 | 2242 a07f | 0000 8b52 | 0849 ba00 | 0000 0008 | 0000 0049 | 03d2 483b | 9148 0200 
+  0x00007fa065f8c0e0: 0075 0d48 | 8381 5002 | 0000 01e9 | 6000 0000 | 483b 9158 | 0200 0075 | 0d48 8381 | 6002 0000 
+  0x00007fa065f8c100: 01e9 4a00 | 0000 4883 | b948 0200 | 0000 7517 | 4889 9148 | 0200 0048 | c781 5002 | 0000 0100 
+  0x00007fa065f8c120: 0000 e929 | 0000 0048 | 83b9 5802 | 0000 0075 | 1748 8991 | 5802 0000 | 48c7 8160 | 0200 0001 
+  0x00007fa065f8c140: 0000 00e9 | 0800 0000 | 4883 8138 | 0200 0001 | 488b 9424 | b000 0000 | 488b 8c24 | b800 0000 
+  0x00007fa065f8c160: 448b 8424 | a000 0000 | 488b f066 | 9048 b8ff | ffff ffff 
+
+  0x00007fa065f8c174: ;   {virtual_call}
+  0x00007fa065f8c174: ffff ffe8 
+
+  0x00007fa065f8c178: ; ImmutableOopMap {}
+                      ;*invokeinterface minApproachIntrinsicHeight {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@34 (line 217)
+  0x00007fa065f8c178: 049b ff06 
+
+  0x00007fa065f8c17c: ;   {other}
+  0x00007fa065f8c17c: 0f1f 8400 | ec0b 0006 
+
+  0x00007fa065f8c184: ;   {metadata(method data for {method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8c184: 48be a0a0 | 2242 a07f | 0000 ff86 | 7002 0000 | 4881 c4f0 | 0000 005d 
+
+  0x00007fa065f8c19c: ;   {poll_return}
+  0x00007fa065f8c19c: 493b a750 | 0400 000f | 876e 0400 
+
+  0x00007fa065f8c1a8: ;   {metadata(method data for {method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c1a8: 00c3 48be | d88f ab40 | a07f 0000 | 4883 8670 | 0100 0001 | 488b f048 | 8bd7 0f1f 
+
+  0x00007fa065f8c1c4: ;   {static_call}
+  0x00007fa065f8c1c4: 4400 00e8 
+
+  0x00007fa065f8c1c8: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop }
+                      ;*invokestatic sanitizeStackTrace {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@6 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c1c8: b49f ff06 
+
+  0x00007fa065f8c1cc: ;   {other}
+  0x00007fa065f8c1cc: 0f1f 8400 | 3c0c 0007 | 4c8b 8424 | d000 0000 | 488b 9c24 | c800 0000 | 488b b424 | 9800 0000 
+  0x00007fa065f8c1ec: 4885 c075 
+
+  0x00007fa065f8c1f0: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c1f0: 1648 bf40 | c762 41a0 | 7f00 0080 | 8f51 0100 | 0001 e9cd 
+
+  0x00007fa065f8c204: ;   {metadata('java/lang/NullPointerException')}
+  0x00007fa065f8c204: 0000 0048 | b9a0 b705 | 0008 0000 | 008b 7808 | 49ba 0000 | 0000 0800 | 0000 4903 | fa48 3b4f 
+  0x00007fa065f8c224: 500f 858d 
+
+  0x00007fa065f8c228: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c228: 0000 0048 | bf40 c762 | 41a0 7f00 | 008b 4808 | 49ba 0000 | 0000 0800 | 0000 4903 | ca48 3b8f 
+  0x00007fa065f8c248: 6801 0000 | 750d 4883 | 8770 0100 | 0001 e979 | 0000 0048 | 3b8f 7801 | 0000 750d | 4883 8780 
+  0x00007fa065f8c268: 0100 0001 | e963 0000 | 0048 83bf | 6801 0000 | 0075 1748 | 898f 6801 | 0000 48c7 | 8770 0100 
+  0x00007fa065f8c288: 0001 0000 | 00e9 4200 | 0000 4883 | bf78 0100 | 0000 7517 | 4889 8f78 | 0100 0048 | c787 8001 
+  0x00007fa065f8c2a8: 0000 0100 | 0000 e921 | 0000 00e9 | 1c00 0000 
+
+  0x00007fa065f8c2b8: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c2b8: 48bf 40c7 | 6241 a07f | 0000 4883 | af58 0100 | 0001 e95e | 0300 00e9 | 0000 0000 
+
+  0x00007fa065f8c2d4: ; implicit exception: dispatches to 0x00007fa065f8c636
+  0x00007fa065f8c2d4: 483b 00e9 | 8a03 0000 
+
+  0x00007fa065f8c2dc: ;   {metadata(method data for {method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c2dc: 48be d88f | ab40 a07f | 0000 4883 | 8670 0100 | 0001 488b | f048 8bd7 
+
+  0x00007fa065f8c2f4: ;   {static_call}
+  0x00007fa065f8c2f4: 6666 90e8 
+
+  0x00007fa065f8c2f8: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop }
+                      ;*invokestatic sanitizeStackTrace {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@6 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c2f8: 849e ff06 
+
+  0x00007fa065f8c2fc: ;   {other}
+  0x00007fa065f8c2fc: 0f1f 8400 | 6c0d 0008 | 4c8b 8424 | b800 0000 | 488b 9c24 | b000 0000 | 488b b424 | a800 0000 
+  0x00007fa065f8c31c: 8b94 24a0 | 0000 0048 | 85c0 7516 
+
+  0x00007fa065f8c328: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c328: 48b9 40c7 | 6241 a07f | 0000 8089 | 5101 0000 | 01e9 ce00 
+
+  0x00007fa065f8c33c: ;   {metadata('java/lang/NullPointerException')}
+  0x00007fa065f8c33c: 0000 49b9 | a0b7 0500 | 0800 0000 | 8b48 0849 | ba00 0000 | 0008 0000 | 0049 03ca | 4c3b 4950 
+  0x00007fa065f8c35c: 0f85 8e00 
+
+  0x00007fa065f8c360: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c360: 0000 48b9 | 40c7 6241 | a07f 0000 | 448b 4808 | 49ba 0000 | 0000 0800 | 0000 4d03 | ca4c 3b89 
+  0x00007fa065f8c380: 6801 0000 | 750d 4883 | 8170 0100 | 0001 e979 | 0000 004c | 3b89 7801 | 0000 750d | 4883 8180 
+  0x00007fa065f8c3a0: 0100 0001 | e963 0000 | 0048 83b9 | 6801 0000 | 0075 174c | 8989 6801 | 0000 48c7 | 8170 0100 
+  0x00007fa065f8c3c0: 0001 0000 | 00e9 4200 | 0000 4883 | b978 0100 | 0000 7517 | 4c89 8978 | 0100 0048 | c781 8001 
+  0x00007fa065f8c3e0: 0000 0100 | 0000 e921 | 0000 00e9 | 1c00 0000 
+
+  0x00007fa065f8c3f0: ;   {metadata(method data for {method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c3f0: 48b9 40c7 | 6241 a07f | 0000 4883 | a958 0100 | 0001 e934 | 0200 00e9 | 0000 0000 
+
+  0x00007fa065f8c40c: ; implicit exception: dispatches to 0x00007fa065f8c644
+  0x00007fa065f8c40c: 483b 00e9 | 5202 0000 
+
+  0x00007fa065f8c414: ;   {metadata({method} {0x00007fa041867550} 'minIntrinsicHeight' '(I)I' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8c414: 49ba 5075 | 8641 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065f8c428: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c428: ffff ffe8 
+
+  0x00007fa065f8c42c: ; ImmutableOopMap {rsi=Oop [152]=Oop }
+                      ;*synchronization entry
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@-1 (line 215)
+  0x00007fa065f8c42c: 50a5 0c07 | e999 f4ff 
+
+  0x00007fa065f8c434: ;   {metadata(nullptr)}
+  0x00007fa065f8c434: ff48 b900 | 0000 0000 | 0000 00b8 | 000f 050a 
+
+  0x00007fa065f8c444: ;   {runtime_call load_klass_patching Runtime1 stub}
+  0x00007fa065f8c444: e837 900c 
+
+  0x00007fa065f8c448: ; ImmutableOopMap {rax=Oop rdi=Oop [152]=Oop [168]=Oop }
+                      ;*checkcast {reexecute=1 rethrow=0 return_oop=0}
+                      ; - (reexecute) androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@23 (line 217)
+  0x00007fa065f8c448: 07e9 12f5 | ffff 4889 
+
+  0x00007fa065f8c450: ;   {runtime_call throw_class_cast_exception Runtime1 stub}
+  0x00007fa065f8c450: 3c24 e8c9 
+
+  0x00007fa065f8c454: ; ImmutableOopMap {rax=Oop rdi=Oop [152]=Oop [168]=Oop }
+                      ;*checkcast {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@23 (line 217)
+                      ;   {metadata({method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8c454: 700c 0749 | bab8 6986 | 41a0 7f00 | 004c 8954 | 2408 48c7 | 0424 ffff 
+
+  0x00007fa065f8c46c: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c46c: ffff e80d 
+
+  0x00007fa065f8c470: ; ImmutableOopMap {rax=Oop rbx=Oop [152]=Oop [168]=Oop }
+                      ;*synchronization entry
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@-1 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c470: a50c 07e9 | 1ff6 ffff 
+
+  0x00007fa065f8c478: ;   {metadata({method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c478: 49ba 888b | 5240 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065f8c48c: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c48c: ffff ffe8 
+
+  0x00007fa065f8c490: ; ImmutableOopMap {rax=Oop rbx=Oop r8=Oop [168]=Oop }
+                      ;*synchronization entry
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@-1 (line 24)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c490: eca4 0c07 | e961 f6ff 
+
+  0x00007fa065f8c498: ;   {metadata({method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c498: ff49 ba70 | 8e52 40a0 | 7f00 004c | 8954 2408 | 48c7 0424 | ffff ffff 
+
+  0x00007fa065f8c4b0: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c4b0: e8cb a40c 
+
+  0x00007fa065f8c4b4: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop }
+                      ;*synchronization entry
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@-1 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c4b4: 07e9 b8f6 
+
+  0x00007fa065f8c4b8: ;   {metadata(nullptr)}
+  0x00007fa065f8c4b8: ffff 48ba | 0000 0000 | 0000 0000 | b800 0f05 
+
+  0x00007fa065f8c4c8: ;   {runtime_call load_klass_patching Runtime1 stub}
+  0x00007fa065f8c4c8: 0ae8 b28f 
+
+  0x00007fa065f8c4cc: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop }
+                      ;*new {reexecute=1 rethrow=0 return_oop=0}
+                      ; - (reexecute) kotlin.jvm.internal.Intrinsics::throwJavaNpe@0 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c4cc: 0c07 e9a5 | f6ff ff48 
+
+  0x00007fa065f8c4d4: ;   {runtime_call fast_new_instance Runtime1 stub}
+  0x00007fa065f8c4d4: 8bd2 e825 
+
+  0x00007fa065f8c4d8: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop }
+                      ;*new {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@0 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c4d8: 520c 07e9 | f4f6 ffff 
+
+  0x00007fa065f8c4e0: ;   {metadata({method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c4e0: 49ba b8ac | 5240 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065f8c4f4: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c4f4: ffff ffe8 
+
+  0x00007fa065f8c4f8: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop [192]=Oop }
+                      ;*synchronization entry
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@-1 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c4f8: 84a4 0c07 | e93c f7ff 
+
+  0x00007fa065f8c500: ;   {metadata({method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8c500: ff49 bae8 | 6401 40a0 | 7f00 004c | 8954 2408 | 48c7 0424 | ffff ffff 
+
+  0x00007fa065f8c518: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c518: e863 a40c 
+
+  0x00007fa065f8c51c: ; ImmutableOopMap {rsi=Oop [168]=Oop [176]=Oop [184]=Oop [192]=Oop }
+                      ;*synchronization entry
+                      ; - java.lang.Class::getName@-1
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@3 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c51c: 07e9 61f7 
+
+  0x00007fa065f8c520: ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065f8c520: ffff e8f9 
+
+  0x00007fa065f8c524: ; ImmutableOopMap {[168]=Oop [176]=Oop [184]=Oop [192]=Oop }
+                      ;*getfield name {reexecute=1 rethrow=0 return_oop=0}
+                      ; - (reexecute) java.lang.Class::getName@1
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@3 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+                      ;   {metadata({method} {0x00007fa0418669b8} 'getWrappedNonNull' '()Landroidx/compose/ui/node/NodeCoordinator;' in 'androidx/compose/ui/node/LayoutModifierNodeCoordinator')}
+  0x00007fa065f8c524: 470c 0749 | bab8 6986 | 41a0 7f00 | 004c 8954 | 2408 48c7 | 0424 ffff 
+
+  0x00007fa065f8c53c: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c53c: ffff e83d 
+
+  0x00007fa065f8c540: ; ImmutableOopMap {rsi=Oop rbx=Oop [152]=Oop [200]=Oop }
+                      ;*synchronization entry
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@-1 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c540: a40c 07e9 | 27f8 ffff 
+
+  0x00007fa065f8c548: ;   {metadata({method} {0x00007fa040528b88} 'checkNotNull' '(Ljava/lang/Object;)V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c548: 49ba 888b | 5240 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065f8c55c: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c55c: ffff ffe8 
+
+  0x00007fa065f8c560: ; ImmutableOopMap {rsi=Oop rbx=Oop r8=Oop [152]=Oop [200]=Oop }
+                      ;*synchronization entry
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@-1 (line 24)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c560: 1ca4 0c07 | e95c f8ff 
+
+  0x00007fa065f8c568: ;   {metadata({method} {0x00007fa040528e70} 'throwJavaNpe' '()V' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c568: ff49 ba70 | 8e52 40a0 | 7f00 004c | 8954 2408 | 48c7 0424 | ffff ffff 
+
+  0x00007fa065f8c580: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c580: e8fb a30c 
+
+  0x00007fa065f8c584: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop }
+                      ;*synchronization entry
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@-1 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c584: 07e9 abf8 
+
+  0x00007fa065f8c588: ;   {metadata(nullptr)}
+  0x00007fa065f8c588: ffff 48ba | 0000 0000 | 0000 0000 | b800 0f05 
+
+  0x00007fa065f8c598: ;   {runtime_call load_klass_patching Runtime1 stub}
+  0x00007fa065f8c598: 0ae8 e28e 
+
+  0x00007fa065f8c59c: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop }
+                      ;*new {reexecute=1 rethrow=0 return_oop=0}
+                      ; - (reexecute) kotlin.jvm.internal.Intrinsics::throwJavaNpe@0 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c59c: 0c07 e995 | f8ff ff48 
+
+  0x00007fa065f8c5a4: ;   {runtime_call fast_new_instance Runtime1 stub}
+  0x00007fa065f8c5a4: 8bd2 e855 
+
+  0x00007fa065f8c5a8: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop }
+                      ;*new {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@0 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c5a8: 510c 07e9 | e4f8 ffff 
+
+  0x00007fa065f8c5b0: ;   {metadata({method} {0x00007fa04052acb8} 'sanitizeStackTrace' '(Ljava/lang/Throwable;)Ljava/lang/Throwable;' in 'kotlin/jvm/internal/Intrinsics')}
+  0x00007fa065f8c5b0: 49ba b8ac | 5240 a07f | 0000 4c89 | 5424 0848 | c704 24ff 
+
+  0x00007fa065f8c5c4: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c5c4: ffff ffe8 
+
+  0x00007fa065f8c5c8: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop [216]=Oop }
+                      ;*synchronization entry
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@-1 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c5c8: b4a3 0c07 | e92c f9ff 
+
+  0x00007fa065f8c5d0: ;   {metadata({method} {0x00007fa0400164e8} 'getName' '()Ljava/lang/String;' in 'java/lang/Class')}
+  0x00007fa065f8c5d0: ff49 bae8 | 6401 40a0 | 7f00 004c | 8954 2408 | 48c7 0424 | ffff ffff 
+
+  0x00007fa065f8c5e8: ;   {runtime_call counter_overflow Runtime1 stub}
+  0x00007fa065f8c5e8: e893 a30c 
+
+  0x00007fa065f8c5ec: ; ImmutableOopMap {rsi=Oop [152]=Oop [200]=Oop [208]=Oop [216]=Oop }
+                      ;*synchronization entry
+                      ; - java.lang.Class::getName@-1
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@3 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c5ec: 07e9 51f9 
+
+  0x00007fa065f8c5f0: ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065f8c5f0: ffff e829 
+
+  0x00007fa065f8c5f4: ; ImmutableOopMap {[152]=Oop [200]=Oop [208]=Oop [216]=Oop }
+                      ;*getfield name {reexecute=1 rethrow=0 return_oop=0}
+                      ; - (reexecute) java.lang.Class::getName@1
+                      ; - kotlin.jvm.internal.Intrinsics::sanitizeStackTrace@3 (line 253)
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@7 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+                      ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065f8c5f4: 470c 07e8 
+
+  0x00007fa065f8c5f8: ; ImmutableOopMap {rbx=Oop [152]=Oop [200]=Oop [208]=Oop }
+                      ;*invokeinterface minIntrinsicHeight {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@66 (line 220)
+  0x00007fa065f8c5f8: 2447 0c07 
+
+  0x00007fa065f8c5fc: ;   {internal_word}
+  0x00007fa065f8c5fc: 49ba acc0 | f865 a07f | 0000 4d89 | 9768 0400 
+
+  0x00007fa065f8c60c: ;   {runtime_call SafepointBlob}
+  0x00007fa065f8c60c: 00e9 ee0d 
+
+  0x00007fa065f8c610: ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065f8c610: 0007 e809 
+
+  0x00007fa065f8c614: ; ImmutableOopMap {rax=Oop [168]=Oop [176]=Oop [184]=Oop }
+                      ;*invokeinterface minApproachIntrinsicHeight {reexecute=0 rethrow=0 return_oop=0}
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@34 (line 217)
+                      ;   {internal_word}
+  0x00007fa065f8c614: 470c 0749 | ba9c c1f8 | 65a0 7f00 | 004d 8997 | 6804 0000 
+
+  0x00007fa065f8c628: ;   {runtime_call SafepointBlob}
+  0x00007fa065f8c628: e9d3 0d00 | 0748 8904 
+
+  0x00007fa065f8c630: ;   {runtime_call throw_class_cast_exception Runtime1 stub}
+  0x00007fa065f8c630: 24e8 ea6e 
+
+  0x00007fa065f8c634: ; ImmutableOopMap {rbx=Oop r8=Oop rsi=Oop [152]=Oop [200]=Oop }
+                      ;*checkcast {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@10 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+                      ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065f8c634: 0c07 e8e5 
+
+  0x00007fa065f8c638: ; ImmutableOopMap {rbx=Oop r8=Oop rsi=Oop rax=Oop [152]=Oop [200]=Oop }
+                      ;*athrow {reexecute=1 rethrow=0 return_oop=0}
+                      ; - (reexecute) kotlin.jvm.internal.Intrinsics::throwJavaNpe@13 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@59 (line 220)
+  0x00007fa065f8c638: 460c 0748 
+
+  0x00007fa065f8c63c: ;   {runtime_call throw_class_cast_exception Runtime1 stub}
+  0x00007fa065f8c63c: 8904 24e8 
+
+  0x00007fa065f8c640: ; ImmutableOopMap {rsi=Oop r8=Oop rbx=Oop [168]=Oop }
+                      ;*checkcast {reexecute=0 rethrow=0 return_oop=0}
+                      ; - kotlin.jvm.internal.Intrinsics::throwJavaNpe@10 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c640: dc6e 0c07 
+
+  0x00007fa065f8c644: ;   {runtime_call throw_null_pointer_exception Runtime1 stub}
+  0x00007fa065f8c644: e8d7 460c 
+
+  0x00007fa065f8c648: ; ImmutableOopMap {rsi=Oop r8=Oop rbx=Oop rax=Oop [168]=Oop }
+                      ;*athrow {reexecute=1 rethrow=0 return_oop=0}
+                      ; - (reexecute) kotlin.jvm.internal.Intrinsics::throwJavaNpe@13 (line 45)
+                      ; - kotlin.jvm.internal.Intrinsics::checkNotNull@4 (line 25)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::getWrappedNonNull@5 (line 64)
+                      ; - androidx.compose.ui.node.LayoutModifierNodeCoordinator::minIntrinsicHeight@27 (line 217)
+  0x00007fa065f8c648: 0749 8b87 | 0005 0000 | 49c7 8700 | 0500 0000 | 0000 0049 | c787 0805 | 0000 0000 | 0000 4881 
+  0x00007fa065f8c668: c4f0 0000 
+
+  0x00007fa065f8c66c: ;   {runtime_call unwind_exception Runtime1 stub}
+  0x00007fa065f8c66c: 005d e98d | 370c 07f4 | f4f4 f4f4 
+[Stub Code]
+  0x00007fa065f8c678: ;   {no_reloc}
+  0x00007fa065f8c678: 0f1f 4400 
+
+  0x00007fa065f8c67c: ;   {static_stub}
+  0x00007fa065f8c67c: 0048 bb00 | 0000 0000 
+
+  0x00007fa065f8c684: ;   {runtime_call nmethod}
+  0x00007fa065f8c684: 0000 00e9 | fbff ffff 
+
+  0x00007fa065f8c68c: ;   {static_stub}
+  0x00007fa065f8c68c: 9048 bb00 | 0000 0000 
+
+  0x00007fa065f8c694: ;   {runtime_call nmethod}
+  0x00007fa065f8c694: 0000 00e9 | fbff ffff 
+
+  0x00007fa065f8c69c: ;   {static_stub}
+  0x00007fa065f8c69c: 9048 bb00 | 0000 0000 
+
+  0x00007fa065f8c6a4: ;   {runtime_call nmethod}
+  0x00007fa065f8c6a4: 0000 00e9 | fbff ffff 
+
+  0x00007fa065f8c6ac: ;   {static_stub}
+  0x00007fa065f8c6ac: 48bb 0000 | 0000 0000 
+
+  0x00007fa065f8c6b4: ;   {runtime_call nmethod}
+  0x00007fa065f8c6b4: 0000 e9fb 
+
+  0x00007fa065f8c6b8: ;   {static_stub}
+  0x00007fa065f8c6b8: ffff ff48 | bb00 0000 | 0000 0000 
+
+  0x00007fa065f8c6c4: ;   {runtime_call nmethod}
+  0x00007fa065f8c6c4: 00e9 fbff 
+
+  0x00007fa065f8c6c8: ;   {static_stub}
+  0x00007fa065f8c6c8: ffff 48bb | 0000 0000 | 0000 0000 
+
+  0x00007fa065f8c6d4: ;   {runtime_call nmethod}
+  0x00007fa065f8c6d4: e9fb ffff 
+
+  0x00007fa065f8c6d8: ;   {runtime_call handle_exception_from_callee Runtime1 stub}
+  0x00007fa065f8c6d8: ffe8 2268 
+
+  0x00007fa065f8c6dc: ;   {external_word}
+  0x00007fa065f8c6dc: 0c07 48bf | 5481 1280 | a07f 0000 | 4883 e4f0 
+
+  0x00007fa065f8c6ec: ;   {runtime_call MacroAssembler::debug64(char*, long, long*)}
+  0x00007fa065f8c6ec: e86f 5ac7 
+
+  0x00007fa065f8c6f0: ;   {section_word}
+  0x00007fa065f8c6f0: 19f4 49ba | f2c6 f865 | a07f 0000 
+
+  0x00007fa065f8c6fc: ;   {runtime_call DeoptimizationBlob}
+  0x00007fa065f8c6fc: 4152 e99d | 2100 07f4 | f4f4 f4f4 
+[/MachCode]
+
+
+---------------  P R O C E S S  ---------------
+
+Threads class SMR info:
+_java_thread_list=0x00007fa024022770, length=26, elements={
+0x00007fa07801bcf0, 0x00007fa0781dcc80, 0x00007fa0781de4a0, 0x00007fa0781dfdc0,
+0x00007fa0781e1340, 0x00007fa0781fa8c0, 0x00007fa0781fc410, 0x00007fa0781fda90,
+0x00007fa078267590, 0x00007fa07826d460, 0x00007fa0785134b0, 0x00007fa0785e1ff0,
+0x00007fa0785e2bc0, 0x00007fa008000fe0, 0x00007fa0785e9720, 0x00007fa00800b410,
+0x00007fa0786713a0, 0x00007fa078672500, 0x00007f9fec249cd0, 0x00007f9fee3522f0,
+0x00007f9fee9393f0, 0x00007fa01c14ba10, 0x00007fa00400e690, 0x00007fa01c002ba0,
+0x00007fa030001420, 0x00007fa0180032a0
+}
+
+Java Threads: ( => current thread )
+  0x00007fa07801bcf0 JavaThread "main"                              [_thread_blocked, id=6839, stack(0x00007fa07eb00000,0x00007fa07ec00000) (1024K)]
+  0x00007fa0781dcc80 JavaThread "Reference Handler"          daemon [_thread_blocked, id=6847, stack(0x00007fa07cbbf000,0x00007fa07ccbf000) (1024K)]
+  0x00007fa0781de4a0 JavaThread "Finalizer"                  daemon [_thread_blocked, id=6848, stack(0x00007fa07cabf000,0x00007fa07cbbf000) (1024K)]
+  0x00007fa0781dfdc0 JavaThread "Signal Dispatcher"          daemon [_thread_blocked, id=6849, stack(0x00007fa07c9bf000,0x00007fa07cabf000) (1024K)]
+  0x00007fa0781e1340 JavaThread "Service Thread"             daemon [_thread_blocked, id=6850, stack(0x00007fa07c8bf000,0x00007fa07c9bf000) (1024K)]
+  0x00007fa0781fa8c0 JavaThread "Monitor Deflation Thread"   daemon [_thread_blocked, id=6851, stack(0x00007fa07c7bf000,0x00007fa07c8bf000) (1024K)]
+  0x00007fa0781fc410 JavaThread "C2 CompilerThread0"         daemon [_thread_blocked, id=6852, stack(0x00007fa07c6bf000,0x00007fa07c7bf000) (1024K)]
+  0x00007fa0781fda90 JavaThread "C1 CompilerThread0"         daemon [_thread_blocked, id=6853, stack(0x00007fa07c5bf000,0x00007fa07c6bf000) (1024K)]
+  0x00007fa078267590 JavaThread "Notification Thread"        daemon [_thread_blocked, id=6854, stack(0x00007fa07c4bf000,0x00007fa07c5bf000) (1024K)]
+  0x00007fa07826d460 JavaThread "Common-Cleaner"             daemon [_thread_blocked, id=6855, stack(0x00007fa07c3bf000,0x00007fa07c4bf000) (1024K)]
+  0x00007fa0785134b0 JavaThread "AWT-XAWT"                   daemon [_thread_in_native, id=6859, stack(0x00007fa016100000,0x00007fa016200000) (1024K)]
+  0x00007fa0785e1ff0 JavaThread "DefaultDispatcher-worker-1" daemon [_thread_blocked, id=6860, stack(0x00007fa014b9a000,0x00007fa014c9a000) (1024K)]
+  0x00007fa0785e2bc0 JavaThread "DefaultDispatcher-worker-2" daemon [_thread_blocked, id=6861, stack(0x00007fa014a9a000,0x00007fa014b9a000) (1024K)]
+  0x00007fa008000fe0 JavaThread "DefaultDispatcher-worker-3" daemon [_thread_blocked, id=6862, stack(0x00007fa01499a000,0x00007fa014a9a000) (1024K)]
+  0x00007fa0785e9720 JavaThread "Reference Cleaner"          daemon [_thread_blocked, id=6863, stack(0x00007fa01489a000,0x00007fa01499a000) (1024K)]
+  0x00007fa00800b410 JavaThread "kotlinx.coroutines.DefaultExecutor" daemon [_thread_blocked, id=6864, stack(0x00007fa01479a000,0x00007fa01489a000) (1024K)]
+  0x00007fa0786713a0 JavaThread "AWT-Shutdown"                      [_thread_blocked, id=6868, stack(0x00007fa014397000,0x00007fa014497000) (1024K)]
+=>0x00007fa078672500 JavaThread "AWT-EventQueue-0"                  [_thread_in_native, id=6869, stack(0x00007fa014297000,0x00007fa014397000) (1024K)]
+  0x00007f9fec249cd0 JavaThread "Java2D Disposer"            daemon [_thread_blocked, id=6870, stack(0x00007fa014197000,0x00007fa014297000) (1024K)]
+  0x00007f9fee3522f0 JavaThread "pool-1-thread-1"            daemon [_thread_blocked, id=6881, stack(0x00007fa07c2bf000,0x00007fa07c3bf000) (1024K)]
+  0x00007f9fee9393f0 JavaThread "TimerQueue"                 daemon [_thread_blocked, id=6884, stack(0x00007f9fcd6c7000,0x00007f9fcd7c7000) (1024K)]
+  0x00007fa01c14ba10 JavaThread "pool-1-thread-2"            daemon [_thread_blocked, id=6885, stack(0x00007f9fcd5c7000,0x00007f9fcd6c7000) (1024K)]
+  0x00007fa00400e690 JavaThread "process reaper"             daemon [_thread_blocked, id=6886, stack(0x00007f9fd4633000,0x00007f9fd4655000) (136K)]
+  0x00007fa01c002ba0 JavaThread "pool-1-thread-3"            daemon [_thread_blocked, id=6892, stack(0x00007f9fcd3c7000,0x00007f9fcd4c7000) (1024K)]
+  0x00007fa030001420 JavaThread "SIGTERM handler"            daemon [_thread_blocked, id=6899, stack(0x00007f9fcd4c7000,0x00007f9fcd5c7000) (1024K)]
+  0x00007fa0180032a0 JavaThread "XToolkt-Shutdown-Thread"           [_thread_blocked, id=6901, stack(0x00007f9fcd1c7000,0x00007f9fcd2c7000) (1024K)]
+Total: 26
+
+Other Threads:
+  0x00007fa07819a2d0 VMThread "VM Thread"                           [id=6846, stack(0x00007fa07ccc0000,0x00007fa07cdc0000) (1024K)]
+  0x00007fa07810bf00 WatcherThread "VM Periodic Task Thread"        [id=6845, stack(0x00007fa07cdc1000,0x00007fa07cec1000) (1024K)]
+  0x00007fa0780788e0 WorkerThread "GC Thread#0"                     [id=6840, stack(0x00007fa07d6ca000,0x00007fa07d7ca000) (1024K)]
+  0x00007fa048006b70 WorkerThread "GC Thread#1"                     [id=6865, stack(0x00007fa01469a000,0x00007fa01479a000) (1024K)]
+  0x00007fa048007700 WorkerThread "GC Thread#2"                     [id=6866, stack(0x00007fa014599000,0x00007fa014699000) (1024K)]
+  0x00007fa048008290 WorkerThread "GC Thread#3"                     [id=6867, stack(0x00007fa014498000,0x00007fa014598000) (1024K)]
+  0x00007fa0780873e0 ConcurrentGCThread "G1 Main Marker"            [id=6841, stack(0x00007fa07d5c9000,0x00007fa07d6c9000) (1024K)]
+  0x00007fa078088390 WorkerThread "G1 Conc#0"                       [id=6842, stack(0x00007fa07d4c8000,0x00007fa07d5c8000) (1024K)]
+  0x00007fa0780faee0 ConcurrentGCThread "G1 Refine#0"               [id=6843, stack(0x00007fa07cfc3000,0x00007fa07d0c3000) (1024K)]
+  0x00007fa0780fbeb0 ConcurrentGCThread "G1 Service"                [id=6844, stack(0x00007fa07cec2000,0x00007fa07cfc2000) (1024K)]
+Total: 10
+
+Threads with active compile tasks:
+Total: 0
+
+VM state: not at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+Heap address: 0x000000072a400000, size: 3420 MB, Compressed Oops mode: Zero based, Oop shift amount: 3
+
+CDS archive(s) not mapped
+Compressed class space mapped at: 0x0000000800000000-0x0000000840000000, reserved size: 1073741824
+Narrow klass base: 0x0000000800000000, Narrow klass shift: 0, Narrow klass range: 0x40000000
+
+GC Precious Log:
+ CardTable entry size: 512
+ Card Set container configuration: InlinePtr #cards 4 size 8 Array Of Cards #cards 16 size 48 Howl #buckets 8 coarsen threshold 3686 Howl Bitmap #cards 512 size 80 coarsen threshold 460 Card regions per heap region 1 cards per card region 4096
+ CPUs: 4 total, 4 available
+ Memory: 13679M
+ Large Page Support: Disabled
+ NUMA Support: Disabled
+ Compressed Oops: Enabled (Zero based)
+ Heap Region Size: 2M
+ Heap Min Capacity: 8M
+ Heap Initial Capacity: 214M
+ Heap Max Capacity: 3420M
+ Pre-touch: Disabled
+ Parallel Workers: 4
+ Concurrent Workers: 1
+ Concurrent Refinement Workers: 4
+ Periodic GC: Disabled
+
+Heap:
+ garbage-first heap   total 34816K, used 19364K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 9 young (18432K), 2 survivors (4096K)
+ Metaspace       used 39265K, committed 39680K, reserved 1114112K
+  class space    used 3890K, committed 4096K, reserved 1048576K
+
+Heap Regions: E=young(eden), S=young(survivor), O=old, HS=humongous(starts), HC=humongous(continues), CS=collection set, F=free, TAMS=top-at-mark-start, PB=parsable bottom
+|   0|0x000000072a400000, 0x000000072a600000, 0x000000072a600000|100%| O|  |TAMS 0x000000072a400000| PB 0x000000072a400000| Untracked 
+|   1|0x000000072a600000, 0x000000072a600000, 0x000000072a800000|  0%| F|  |TAMS 0x000000072a600000| PB 0x000000072a600000| Untracked 
+|   2|0x000000072a800000, 0x000000072aa00000, 0x000000072aa00000|100%| O|  |TAMS 0x000000072a800000| PB 0x000000072a800000| Untracked 
+|   3|0x000000072aa00000, 0x000000072aae5128, 0x000000072ac00000| 44%| O|Cm|TAMS 0x000000072aa00000| PB 0x000000072aa00000| Complete 
+|   4|0x000000072ac00000, 0x000000072ac00000, 0x000000072ae00000|  0%| F|  |TAMS 0x000000072ac00000| PB 0x000000072ac00000| Untracked 
+|   5|0x000000072ae00000, 0x000000072ae00000, 0x000000072b000000|  0%| F|  |TAMS 0x000000072ae00000| PB 0x000000072ae00000| Untracked 
+|   6|0x000000072b000000, 0x000000072b000000, 0x000000072b200000|  0%| F|  |TAMS 0x000000072b000000| PB 0x000000072b000000| Untracked 
+|   7|0x000000072b200000, 0x000000072b200000, 0x000000072b400000|  0%| F|  |TAMS 0x000000072b200000| PB 0x000000072b200000| Untracked 
+|   8|0x000000072b400000, 0x000000072b495448, 0x000000072b600000| 29%| E|  |TAMS 0x000000072b400000| PB 0x000000072b400000| Complete 
+|   9|0x000000072b600000, 0x000000072b800000, 0x000000072b800000|100%| E|CS|TAMS 0x000000072b600000| PB 0x000000072b600000| Complete 
+|  10|0x000000072b800000, 0x000000072ba00000, 0x000000072ba00000|100%| E|CS|TAMS 0x000000072b800000| PB 0x000000072b800000| Complete 
+|  11|0x000000072ba00000, 0x000000072bc00000, 0x000000072bc00000|100%| E|CS|TAMS 0x000000072ba00000| PB 0x000000072ba00000| Complete 
+|  12|0x000000072bc00000, 0x000000072be00000, 0x000000072be00000|100%| E|CS|TAMS 0x000000072bc00000| PB 0x000000072bc00000| Complete 
+|  56|0x0000000731400000, 0x0000000731404020, 0x0000000731600000|  0%| S|CS|TAMS 0x0000000731400000| PB 0x0000000731400000| Complete 
+|  57|0x0000000731600000, 0x0000000731800000, 0x0000000731800000|100%| S|CS|TAMS 0x0000000731600000| PB 0x0000000731600000| Complete 
+| 102|0x0000000737000000, 0x0000000737200000, 0x0000000737200000|100%| E|CS|TAMS 0x0000000737000000| PB 0x0000000737000000| Complete 
+| 106|0x0000000737800000, 0x0000000737a00000, 0x0000000737a00000|100%| E|CS|TAMS 0x0000000737800000| PB 0x0000000737800000| Complete 
+
+Card table byte_map: [0x00007fa07d7ca000,0x00007fa07de78000] _byte_map_base: 0x00007fa079e78000
+
+Marking Bits: (CMBitMap*) 0x00007fa078079350
+ Bits: [0x00007fa062490000, 0x00007fa065a00000)
+
+Polling page: 0x00007fa080921000
+
+Metaspace:
+
+Usage:
+  Non-class:     34.55 MB used.
+      Class:      3.80 MB used.
+       Both:     38.35 MB used.
+
+Virtual space:
+  Non-class space:       64.00 MB reserved,      34.75 MB ( 54%) committed,  1 nodes.
+      Class space:        1.00 GB reserved,       4.00 MB ( <1%) committed,  1 nodes.
+             Both:        1.06 GB reserved,      38.75 MB (  4%) committed. 
+
+Chunk freelists:
+   Non-Class:  12.35 MB
+       Class:  12.00 MB
+        Both:  24.35 MB
+
+MaxMetaspaceSize: unlimited
+CompressedClassSpaceSize: 1.00 GB
+Initial GC threshold: 21.00 MB
+Current GC threshold: 59.69 MB
+CDS: off
+ - commit_granule_bytes: 65536.
+ - commit_granule_words: 8192.
+ - virtual_space_node_default_size: 8388608.
+ - enlarge_chunks_in_place: 1.
+ - use_allocation_guard: 0.
+
+
+Internal statistics:
+
+num_allocs_failed_limit: 11.
+num_arena_births: 348.
+num_arena_deaths: 0.
+num_vsnodes_births: 2.
+num_vsnodes_deaths: 0.
+num_space_committed: 620.
+num_space_uncommitted: 0.
+num_chunks_returned_to_freelist: 11.
+num_chunks_taken_from_freelist: 1156.
+num_chunk_merges: 6.
+num_chunk_splits: 906.
+num_chunks_enlarged: 728.
+num_inconsistent_stats: 0.
+
+CodeHeap 'non-profiled nmethods': size=120032Kb used=1394Kb max_used=1394Kb free=118637Kb
+ bounds [0x00007fa06d4c8000, 0x00007fa06d738000, 0x00007fa074a00000]
+CodeHeap 'profiled nmethods': size=120028Kb used=7666Kb max_used=7666Kb free=112361Kb
+ bounds [0x00007fa065a00000, 0x00007fa066180000, 0x00007fa06cf37000]
+CodeHeap 'non-nmethods': size=5700Kb used=2864Kb max_used=2880Kb free=2835Kb
+ bounds [0x00007fa06cf37000, 0x00007fa06d217000, 0x00007fa06d4c8000]
+CodeCache: size=245760Kb, used=11924Kb, max_used=11940Kb, free=233833Kb
+ total_blobs=5303, nmethods=3915, adapters=1293, full_count=0
+Compilation: enabled, stopped_count=0, restarted_count=0
+
+Compilation events (20 events):
+Event: 24.870 Thread 0x00007fa0781fda90 nmethod 3962 0x00007fa066166e90 code [0x00007fa066167020, 0x00007fa066167110]
+Event: 24.982 Thread 0x00007fa0781fc410 3963       4       java.lang.System::getSecurityManager (12 bytes)
+Event: 24.983 Thread 0x00007fa0781fda90 3964       3       java.security.AccessController::doPrivileged (9 bytes)
+Event: 24.983 Thread 0x00007fa0781fc410 nmethod 3963 0x00007fa06d61e490 code [0x00007fa06d61e600, 0x00007fa06d61e668]
+Event: 24.983 Thread 0x00007fa0781fda90 nmethod 3964 0x00007fa066167190 code [0x00007fa066167360, 0x00007fa066167690]
+Event: 24.985 Thread 0x00007fa0781fc410 3965       4       kotlinx.coroutines.JobSupport::getKey (7 bytes)
+Event: 24.985 Thread 0x00007fa0781fc410 nmethod 3965 0x00007fa06d61e790 code [0x00007fa06d61e900, 0x00007fa06d61e990]
+Event: 24.986 Thread 0x00007fa0781fda90 3966       3       java.lang.System::getProperty (25 bytes)
+Event: 24.986 Thread 0x00007fa0781fda90 nmethod 3966 0x00007fa066167810 code [0x00007fa066167a20, 0x00007fa066167f78]
+Event: 24.986 Thread 0x00007fa0781fda90 3967       1       com.sun.org.apache.xerces.internal.utils.XMLSecurityManager$Limit::systemProperty (5 bytes)
+Event: 24.986 Thread 0x00007fa0781fda90 nmethod 3967 0x00007fa06d61ea90 code [0x00007fa06d61ec20, 0x00007fa06d61ece8]
+Event: 24.987 Thread 0x00007fa0781fc410 3968       4       java.lang.String::equals (56 bytes)
+Event: 24.987 Thread 0x00007fa0781fda90 3969       3       java.util.ArrayList::contains (14 bytes)
+Event: 24.987 Thread 0x00007fa0781fda90 nmethod 3969 0x00007fa066168190 code [0x00007fa066168340, 0x00007fa066168548]
+Event: 24.988 Thread 0x00007fa0781fc410 nmethod 3968 0x00007fa06d61ed90 code [0x00007fa06d61ef20, 0x00007fa06d61f0f8]
+Event: 24.989 Thread 0x00007fa0781fda90 3970       3       jdk.internal.loader.URLClassPath$JarLoader::findResource (18 bytes)
+Event: 24.989 Thread 0x00007fa0781fda90 nmethod 3970 0x00007fa066168610 code [0x00007fa0661687c0, 0x00007fa0661689a8]
+Event: 24.991 Thread 0x00007fa0781fc410 3972       4       androidx.compose.runtime.ComposerImpl::rememberedValue (5 bytes)
+Event: 24.992 Thread 0x00007fa0781fc410 nmethod 3972 0x00007fa06d61f190 code [0x00007fa06d61f340, 0x00007fa06d61f5c0]
+Event: 24.992 Thread 0x00007fa0781fc410 3975       4       org.jetbrains.skia.impl.NativeKt::getPtr (19 bytes)
+
+GC Heap History (16 events):
+Event: 0.402 GC heap before
+{Heap before GC invocations=0 (full 0):
+ garbage-first heap   total 219136K, used 10240K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 6 young (12288K), 0 survivors (0K)
+ Metaspace       used 11633K, committed 11776K, reserved 1114112K
+  class space    used 1124K, committed 1216K, reserved 1048576K
+}
+Event: 0.406 GC heap after
+{Heap after GC invocations=1 (full 0):
+ garbage-first heap   total 219136K, used 3126K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 1 young (2048K), 1 survivors (2048K)
+ Metaspace       used 11633K, committed 11776K, reserved 1114112K
+  class space    used 1124K, committed 1216K, reserved 1048576K
+}
+Event: 0.550 GC heap before
+{Heap before GC invocations=1 (full 0):
+ garbage-first heap   total 219136K, used 13366K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 7 young (14336K), 1 survivors (2048K)
+ Metaspace       used 15723K, committed 16000K, reserved 1114112K
+  class space    used 1399K, committed 1536K, reserved 1048576K
+}
+Event: 0.553 GC heap after
+{Heap after GC invocations=2 (full 0):
+ garbage-first heap   total 219136K, used 3498K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 1 young (2048K), 1 survivors (2048K)
+ Metaspace       used 15723K, committed 16000K, reserved 1114112K
+  class space    used 1399K, committed 1536K, reserved 1048576K
+}
+Event: 0.751 GC heap before
+{Heap before GC invocations=2 (full 0):
+ garbage-first heap   total 219136K, used 9642K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 5 young (10240K), 1 survivors (2048K)
+ Metaspace       used 21348K, committed 21504K, reserved 1114112K
+  class space    used 2041K, committed 2112K, reserved 1048576K
+}
+Event: 0.754 GC heap after
+{Heap after GC invocations=3 (full 0):
+ garbage-first heap   total 219136K, used 4487K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 1 young (2048K), 1 survivors (2048K)
+ Metaspace       used 21348K, committed 21504K, reserved 1114112K
+  class space    used 2041K, committed 2112K, reserved 1048576K
+}
+Event: 1.398 GC heap before
+{Heap before GC invocations=4 (full 0):
+ garbage-first heap   total 20480K, used 18823K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 8 young (16384K), 1 survivors (2048K)
+ Metaspace       used 26894K, committed 27072K, reserved 1114112K
+  class space    used 2659K, committed 2752K, reserved 1048576K
+}
+Event: 1.401 GC heap after
+{Heap after GC invocations=5 (full 0):
+ garbage-first heap   total 24576K, used 5181K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 2 young (4096K), 2 survivors (4096K)
+ Metaspace       used 26894K, committed 27072K, reserved 1114112K
+  class space    used 2659K, committed 2752K, reserved 1048576K
+}
+Event: 1.528 GC heap before
+{Heap before GC invocations=5 (full 0):
+ garbage-first heap   total 24576K, used 15421K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 7 young (14336K), 2 survivors (4096K)
+ Metaspace       used 29627K, committed 29824K, reserved 1114112K
+  class space    used 2925K, committed 3008K, reserved 1048576K
+}
+Event: 1.532 GC heap after
+{Heap after GC invocations=6 (full 0):
+ garbage-first heap   total 24576K, used 5505K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 1 young (2048K), 1 survivors (2048K)
+ Metaspace       used 29627K, committed 29824K, reserved 1114112K
+  class space    used 2925K, committed 3008K, reserved 1048576K
+}
+Event: 1.688 GC heap before
+{Heap before GC invocations=6 (full 0):
+ garbage-first heap   total 24576K, used 13697K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 6 young (12288K), 1 survivors (2048K)
+ Metaspace       used 32393K, committed 32640K, reserved 1114112K
+  class space    used 3236K, committed 3328K, reserved 1048576K
+}
+Event: 1.691 GC heap after
+{Heap after GC invocations=7 (full 0):
+ garbage-first heap   total 24576K, used 5939K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 1 young (2048K), 1 survivors (2048K)
+ Metaspace       used 32393K, committed 32640K, reserved 1114112K
+  class space    used 3236K, committed 3328K, reserved 1048576K
+}
+Event: 1.917 GC heap before
+{Heap before GC invocations=7 (full 0):
+ garbage-first heap   total 24576K, used 16179K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 6 young (12288K), 1 survivors (2048K)
+ Metaspace       used 35264K, committed 35520K, reserved 1114112K
+  class space    used 3545K, committed 3648K, reserved 1048576K
+}
+Event: 1.920 GC heap after
+{Heap after GC invocations=8 (full 0):
+ garbage-first heap   total 122880K, used 6938K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 1 young (2048K), 1 survivors (2048K)
+ Metaspace       used 35264K, committed 35520K, reserved 1114112K
+  class space    used 3545K, committed 3648K, reserved 1048576K
+}
+Event: 1.979 GC heap before
+{Heap before GC invocations=8 (full 0):
+ garbage-first heap   total 122880K, used 8986K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 3 young (6144K), 1 survivors (2048K)
+ Metaspace       used 35952K, committed 36160K, reserved 1114112K
+  class space    used 3625K, committed 3712K, reserved 1048576K
+}
+Event: 1.984 GC heap after
+{Heap after GC invocations=9 (full 0):
+ garbage-first heap   total 122880K, used 7076K [0x000000072a400000, 0x0000000800000000)
+  region size 2048K, 2 young (4096K), 2 survivors (4096K)
+ Metaspace       used 35952K, committed 36160K, reserved 1114112K
+  class space    used 3625K, committed 3712K, reserved 1048576K
+}
+
+Dll operation events (20 events):
+Event: 0.065 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libnio.so
+Event: 0.065 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libnio.so
+Event: 0.070 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libzip.so
+Event: 0.070 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libzip.so
+Event: 0.130 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/libskiko-linux-x64.so
+Event: 0.148 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/libskiko-linux-x64.so
+Event: 0.182 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libjimage.so
+Event: 0.182 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libjimage.so
+Event: 0.184 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libawt.so
+Event: 0.184 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libawt.so
+Event: 0.187 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libawt_xawt.so
+Event: 0.190 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libawt_xawt.so
+Event: 0.221 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libfontmanager.so
+Event: 0.228 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libfontmanager.so
+Event: 0.559 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libprefs.so
+Event: 0.559 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libprefs.so
+Event: 1.987 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libnet.so
+Event: 1.987 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libnet.so
+Event: 2.251 Attempting to load shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources/libmeshsdr_lora.so
+Event: 2.251 Loaded shared library /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources/libmeshsdr_lora.so
+
+Deoptimization events (20 events):
+Event: 8.344 Thread 0x00007fa078672500 Uncommon trap: trap_request=0xffffffd6 fr.pc=0x00007fa06d5c2ba4 relative=0x0000000000000464
+Event: 8.344 Thread 0x00007fa078672500 Uncommon trap: reason=array_check action=maybe_recompile pc=0x00007fa06d5c2ba4 method=java.util.Arrays.fill([Ljava/lang/Object;IILjava/lang/Object;)V @ 20 c2
+Event: 8.344 Thread 0x00007fa078672500 DEOPT PACKING pc=0x00007fa06d5c2ba4 sp=0x00007fa0143941b0
+Event: 8.344 Thread 0x00007fa078672500 DEOPT UNPACKING pc=0x00007fa06cf8e619 sp=0x00007fa014394158 mode 2
+Event: 8.875 Thread 0x00007fa078672500 Uncommon trap: trap_request=0xffffffd6 fr.pc=0x00007fa06d5c2ba4 relative=0x0000000000000464
+Event: 8.875 Thread 0x00007fa078672500 Uncommon trap: reason=array_check action=maybe_recompile pc=0x00007fa06d5c2ba4 method=java.util.Arrays.fill([Ljava/lang/Object;IILjava/lang/Object;)V @ 20 c2
+Event: 8.875 Thread 0x00007fa078672500 DEOPT PACKING pc=0x00007fa06d5c2ba4 sp=0x00007fa0143941b0
+Event: 8.875 Thread 0x00007fa078672500 DEOPT UNPACKING pc=0x00007fa06cf8e619 sp=0x00007fa014394158 mode 2
+Event: 9.473 Thread 0x00007fa078672500 Uncommon trap: trap_request=0xffffffd6 fr.pc=0x00007fa06d5c2ba4 relative=0x0000000000000464
+Event: 9.473 Thread 0x00007fa078672500 Uncommon trap: reason=array_check action=maybe_recompile pc=0x00007fa06d5c2ba4 method=java.util.Arrays.fill([Ljava/lang/Object;IILjava/lang/Object;)V @ 20 c2
+Event: 9.473 Thread 0x00007fa078672500 DEOPT PACKING pc=0x00007fa06d5c2ba4 sp=0x00007fa014394200
+Event: 9.473 Thread 0x00007fa078672500 DEOPT UNPACKING pc=0x00007fa06cf8e619 sp=0x00007fa0143941a8 mode 2
+Event: 10.361 Thread 0x00007fa078672500 Uncommon trap: trap_request=0xffffffd6 fr.pc=0x00007fa06d5c2ba4 relative=0x0000000000000464
+Event: 10.361 Thread 0x00007fa078672500 Uncommon trap: reason=array_check action=maybe_recompile pc=0x00007fa06d5c2ba4 method=java.util.Arrays.fill([Ljava/lang/Object;IILjava/lang/Object;)V @ 20 c2
+Event: 10.361 Thread 0x00007fa078672500 DEOPT PACKING pc=0x00007fa06d5c2ba4 sp=0x00007fa014394220
+Event: 10.361 Thread 0x00007fa078672500 DEOPT UNPACKING pc=0x00007fa06cf8e619 sp=0x00007fa0143941c8 mode 2
+Event: 22.756 Thread 0x00007fa078672500 Uncommon trap: trap_request=0xffffff6e fr.pc=0x00007fa06d608d64 relative=0x00000000000012e4
+Event: 22.756 Thread 0x00007fa078672500 Uncommon trap: reason=loop_limit_check action=maybe_recompile pc=0x00007fa06d608d64 method=androidx.compose.runtime.CompositionImpl.addPendingInvalidationsLocked(Ljava/util/Set;Z)V @ 1713 c2
+Event: 22.756 Thread 0x00007fa078672500 DEOPT PACKING pc=0x00007fa06d608d64 sp=0x00007fa014394750
+Event: 22.756 Thread 0x00007fa078672500 DEOPT UNPACKING pc=0x00007fa06cf8e619 sp=0x00007fa014394648 mode 2
+
+Classes loaded (20 events):
+Event: 24.991 Loading class jdk/xml/internal/JdkXmlFeatures$XmlFeature
+Event: 24.991 Loading class jdk/xml/internal/JdkXmlFeatures$XmlFeature done
+Event: 24.991 Loading class jdk/xml/internal/JdkProperty$ImplPropMap
+Event: 24.991 Loading class jdk/xml/internal/JdkProperty$ImplPropMap done
+Event: 24.991 Loading class com/sun/org/apache/xalan/internal/utils/XMLSecurityPropertyManager
+Event: 24.991 Loading class com/sun/org/apache/xalan/internal/utils/FeaturePropertyBase
+Event: 24.991 Loading class com/sun/org/apache/xalan/internal/utils/FeaturePropertyBase done
+Event: 24.991 Loading class com/sun/org/apache/xalan/internal/utils/XMLSecurityPropertyManager done
+Event: 24.992 Loading class com/sun/org/apache/xalan/internal/utils/FeaturePropertyBase$State
+Event: 24.992 Loading class com/sun/org/apache/xalan/internal/utils/FeaturePropertyBase$State done
+Event: 24.992 Loading class com/sun/org/apache/xalan/internal/utils/XMLSecurityPropertyManager$Property
+Event: 24.992 Loading class com/sun/org/apache/xalan/internal/utils/XMLSecurityPropertyManager$Property done
+Event: 24.992 Loading class jdk/xml/internal/JdkProperty
+Event: 24.992 Loading class jdk/xml/internal/JdkProperty done
+Event: 24.992 Loading class javax/xml/catalog/CatalogFeatures$State
+Event: 24.992 Loading class javax/xml/catalog/CatalogFeatures$State done
+Event: 24.992 Loading class javax/xml/catalog/Util
+Event: 24.992 Loading class javax/xml/catalog/Util done
+Event: 24.992 Loading class javax/xml/catalog/CatalogMessages
+Event: 24.992 Loading class javax/xml/catalog/CatalogMessages done
+
+Classes unloaded (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (20 events):
+Event: 0.745 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x00000007372cf648}: 'void java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, java.lang.Object)'> (0x00000007372cf648) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 0.905 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072aa7af78}: 'void java.lang.invoke.DirectMethodHandle$Holder.invokeStaticInit(java.lang.Object)'> (0x000000072aa7af78) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.464 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b335ce0}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(java.lang.Object, java.lang.Object, java.lang.Object, int)'> (0x000000072b335ce0) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.464 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b33a9a8}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeSpecial(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, int)'> (0x000000072b33a9a8) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.464 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b33edd0}: 'java.lang.Object java.lang.invoke.Invokers$Holder.linkToTargetMethod(java.lang.Object, java.lang.Object, int, java.lang.Object)'> (0x000000072b33edd0) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.469 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b36a7e0}: 'float java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object)'> (0x000000072b36a7e0) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.553 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x00000007379b6a60}: 'float java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, float)'> (0x00000007379b6a60) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.553 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x00000007379baa78}: 'float java.lang.invoke.DirectMethodHandle$Holder.invokeStaticInit(java.lang.Object, float)'> (0x00000007379baa78) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.645 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b5b3668}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(java.lang.Object, java.lang.Object, java.lang.Object, int, java.lang.Object, int)'> (0x000000072b5b3668) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.654 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b25d510}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, int)'> (0x000000072b25d510) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.655 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b263d20}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(java.lang.Object, java.lang.Object, int)'> (0x000000072b263d20) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.667 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x000000072b2ef8e8}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, int, java.lang.Object, int)'> (0x000000072b2ef8e8) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.968 Thread 0x00007f9feea3b890 Exception <a 'java/lang/NoSuchMethodError'{0x00000007378edef0}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, long, java.lang.Object)'> (0x00000007378edef0) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.969 Thread 0x00007f9feea3b890 Exception <a 'java/lang/NoSuchMethodError'{0x00000007378f12d8}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStaticInit(java.lang.Object, long, java.lang.Object)'> (0x00000007378f12d8) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.969 Thread 0x00007f9feea3b890 Exception <a 'java/lang/NoSuchMethodError'{0x00000007378f65f0}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(java.lang.Object, long)'> (0x00000007378f65f0) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 1.992 Thread 0x00007f9feea3b890 Exception <a 'java/lang/ClassNotFoundException'{0x0000000737804a60}: jdk/net/ExtendedSocketOptions> (0x0000000737804a60) 
+thrown [./src/hotspot/share/classfile/systemDictionary.cpp, line 313]
+Event: 1.995 Thread 0x00007f9feea3b890 Exception <a 'java/net/ConnectException'{0x000000073780cba8}> (0x000000073780cba8) 
+thrown [./src/hotspot/share/prims/jni.cpp, line 520]
+Event: 2.883 Thread 0x00007fa078672500 Exception <a 'java/lang/NoSuchMethodError'{0x00000007371e0380}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeSpecial(java.lang.Object, java.lang.Object, java.lang.Object, int, java.lang.Object)'> (0x00000007371e0380) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 4.268 Thread 0x00007f9feea3b890 Exception <a 'java/lang/NoSuchMethodError'{0x000000073784ad88}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(java.lang.Object, java.lang.Object, double, double)'> (0x000000073784ad88) 
+thrown [./src/hotspot/share/interpreter/linkResolver.cpp, line 772]
+Event: 24.983 Thread 0x00007f9feea3b890 Exception <a 'sun/net/ConnectionResetException'{0x000000072bb0d050}: Connection reset> (0x000000072bb0d050) 
+thrown [./src/hotspot/share/prims/jni.cpp, line 539]
+
+ZGC Phase Switch (0 events):
+No events
+
+VM Operations (20 events):
+Event: 16.006 Executing safepoint VM operation: Cleanup
+Event: 16.006 Executing safepoint VM operation: Cleanup done
+Event: 17.006 Executing safepoint VM operation: Cleanup
+Event: 17.007 Executing safepoint VM operation: Cleanup done
+Event: 18.007 Executing safepoint VM operation: Cleanup
+Event: 18.007 Executing safepoint VM operation: Cleanup done
+Event: 19.007 Executing safepoint VM operation: Cleanup
+Event: 19.007 Executing safepoint VM operation: Cleanup done
+Event: 19.380 Executing non-safepoint VM operation: HandshakeAllThreads (Deoptimize)
+Event: 19.380 Executing non-safepoint VM operation: HandshakeAllThreads (Deoptimize) done
+Event: 20.380 Executing safepoint VM operation: Cleanup
+Event: 20.380 Executing safepoint VM operation: Cleanup done
+Event: 21.380 Executing safepoint VM operation: Cleanup
+Event: 21.380 Executing safepoint VM operation: Cleanup done
+Event: 22.381 Executing safepoint VM operation: Cleanup
+Event: 22.381 Executing safepoint VM operation: Cleanup done
+Event: 23.381 Executing safepoint VM operation: Cleanup
+Event: 23.381 Executing safepoint VM operation: Cleanup done
+Event: 24.381 Executing safepoint VM operation: Cleanup
+Event: 24.381 Executing safepoint VM operation: Cleanup done
+
+Memory protections (20 events):
+Event: 0.260 Protecting memory [0x00007fa016100000,0x00007fa016104000] with protection modes 0
+Event: 0.382 Protecting memory [0x00007fa014b9a000,0x00007fa014b9e000] with protection modes 0
+Event: 0.382 Protecting memory [0x00007fa014a9a000,0x00007fa014a9e000] with protection modes 0
+Event: 0.383 Protecting memory [0x00007fa01499a000,0x00007fa01499e000] with protection modes 0
+Event: 0.388 Protecting memory [0x00007fa01489a000,0x00007fa01489e000] with protection modes 0
+Event: 0.392 Protecting memory [0x00007fa01479a000,0x00007fa01479e000] with protection modes 0
+Event: 0.433 Protecting memory [0x00007fa014397000,0x00007fa01439b000] with protection modes 0
+Event: 0.433 Protecting memory [0x00007fa014297000,0x00007fa01429b000] with protection modes 0
+Event: 0.541 Protecting memory [0x00007fa014197000,0x00007fa01419b000] with protection modes 0
+Event: 0.561 Protecting memory [0x00007fa014097000,0x00007fa01409b000] with protection modes 0
+Event: 1.373 Protecting memory [0x00007fa07c2bf000,0x00007fa07c2c3000] with protection modes 0
+Event: 1.963 Protecting memory [0x00007f9fcd7c7000,0x00007f9fcd7cb000] with protection modes 0
+Event: 1.970 Protecting memory [0x00007f9fcd6c7000,0x00007f9fcd6cb000] with protection modes 0
+Event: 1.972 Protecting memory [0x00007f9fcd5c7000,0x00007f9fcd5cb000] with protection modes 0
+Event: 1.976 Protecting memory [0x00007f9fd4633000,0x00007f9fd4637000] with protection modes 0
+Event: 1.976 Protecting memory [0x00007f9fcd4c7000,0x00007f9fcd4cb000] with protection modes 0
+Event: 10.832 Protecting memory [0x00007f9fcd3c7000,0x00007f9fcd3cb000] with protection modes 0
+Event: 24.984 Protecting memory [0x00007f9fcd4c7000,0x00007f9fcd4cb000] with protection modes 0
+Event: 24.984 Protecting memory [0x00007f9fcd2c7000,0x00007f9fcd2cb000] with protection modes 0
+Event: 24.984 Protecting memory [0x00007f9fcd1c7000,0x00007f9fcd1cb000] with protection modes 0
+
+Nmethod flushes (20 events):
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a26910
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a27910
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a28210
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a28c10
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a2a910
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a34b90
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a35910
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a39190
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a4a610
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a4ab90
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a4c410
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a4cf90
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065a84610
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065acf290
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065ad0890
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065aeae10
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065b14c90
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065b4fd10
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065b55790
+Event: 1.998 Thread 0x00007fa07819a2d0 flushing  nmethod 0x00007fa065b57190
+
+Events (20 events):
+Event: 0.387 Thread 0x00007fa07801bcf0 Thread added: 0x00007fa0785e9720
+Event: 0.392 Thread 0x00007fa0785e1ff0 Thread added: 0x00007fa00800b410
+Event: 0.433 Thread 0x00007fa07801bcf0 Thread added: 0x00007fa0786713a0
+Event: 0.433 Thread 0x00007fa07801bcf0 Thread added: 0x00007fa078672500
+Event: 0.541 Thread 0x00007fa078672500 Thread added: 0x00007f9fec249cd0
+Event: 0.561 Thread 0x00007fa078672500 Thread added: 0x00007f9fec25a880
+Event: 1.363 Thread 0x00007fa020088960 Thread exited: 0x00007fa020088960
+Event: 1.373 Thread 0x00007fa078672500 Thread added: 0x00007f9fee3522f0
+Event: 1.963 Thread 0x00007fa078672500 Thread added: 0x00007f9feea3b890
+Event: 1.970 Thread 0x00007fa078672500 Thread added: 0x00007f9fee9393f0
+Event: 1.972 Thread 0x00007f9fee3522f0 Thread added: 0x00007fa01c14ba10
+Event: 1.975 Thread 0x00007f9feea3b890 Thread added: 0x00007fa00400e690
+Event: 1.976 Thread 0x00007f9feea3b890 Thread added: 0x00007fa0040109d0
+Event: 10.832 Thread 0x00007f9fee3522f0 Thread added: 0x00007fa01c002ba0
+Event: 24.981 Thread 0x00007fa0040109d0 Thread exited: 0x00007fa0040109d0
+Event: 24.983 Thread 0x00007fa0781dfdc0 Thread added: 0x00007fa030001420
+Event: 24.984 Thread 0x00007fa030001420 Thread added: 0x00007fa018001f50
+Event: 24.984 Thread 0x00007fa030001420 Thread added: 0x00007fa0180032a0
+Event: 24.985 Thread 0x00007f9fec25a880 Thread exited: 0x00007f9fec25a880
+Event: 24.986 Thread 0x00007f9feea3b890 Thread exited: 0x00007f9feea3b890
+
+
+Dynamic libraries:
+72a400000-72be00000 rw-p 00000000 00:00 0 
+72be00000-731400000 ---p 00000000 00:00 0 
+731400000-731800000 rw-p 00000000 00:00 0 
+731800000-737000000 ---p 00000000 00:00 0 
+737000000-737200000 rw-p 00000000 00:00 0 
+737200000-737800000 ---p 00000000 00:00 0 
+737800000-737a00000 rw-p 00000000 00:00 0 
+737a00000-800000000 ---p 00000000 00:00 0 
+800000000-800040000 rw-p 00000000 00:00 0 
+800040000-8000c0000 rw-p 00000000 00:00 0 
+8000c0000-800140000 rw-p 00000000 00:00 0 
+800140000-800180000 rw-p 00000000 00:00 0 
+800180000-8001c0000 rw-p 00000000 00:00 0 
+8001c0000-800240000 rw-p 00000000 00:00 0 
+800240000-800280000 rw-p 00000000 00:00 0 
+800280000-8003c0000 rw-p 00000000 00:00 0 
+8003c0000-8003f0000 rw-p 00000000 00:00 0 
+8003f0000-800400000 ---p 00000000 00:00 0 
+800400000-800410000 rw-p 00000000 00:00 0 
+800410000-840000000 ---p 00000000 00:00 0 
+5556a57c3000-5556a57c4000 r--p 00000000 fe:00 745855                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/bin/MeshSDR
+5556a57c4000-5556a57c6000 r-xp 00001000 fe:00 745855                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/bin/MeshSDR
+5556a57c6000-5556a57c7000 r--p 00003000 fe:00 745855                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/bin/MeshSDR
+5556a57c7000-5556a57c8000 r--p 00003000 fe:00 745855                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/bin/MeshSDR
+5556a57c8000-5556a57c9000 rw-p 00004000 fe:00 745855                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/bin/MeshSDR
+5556d8459000-5556d84a4000 rw-p 00000000 00:00 0                          [heap]
+7f9fccb5c000-7f9fcd1c7000 rw-p 00000000 00:00 0 
+7f9fcd1c7000-7f9fcd1cb000 ---p 00000000 00:00 0 
+7f9fcd1cb000-7f9fcd2c7000 rw-p 00000000 00:00 0 
+7f9fcd2c7000-7f9fcd2cb000 ---p 00000000 00:00 0 
+7f9fcd2cb000-7f9fcd3c7000 rw-p 00000000 00:00 0 
+7f9fcd3c7000-7f9fcd3cb000 ---p 00000000 00:00 0 
+7f9fcd3cb000-7f9fcd4c7000 rw-p 00000000 00:00 0 
+7f9fcd4c7000-7f9fcd4cb000 ---p 00000000 00:00 0 
+7f9fcd4cb000-7f9fcd5c7000 rw-p 00000000 00:00 0 
+7f9fcd5c7000-7f9fcd5cb000 ---p 00000000 00:00 0 
+7f9fcd5cb000-7f9fcd6c7000 rw-p 00000000 00:00 0 
+7f9fcd6c7000-7f9fcd6cb000 ---p 00000000 00:00 0 
+7f9fcd6cb000-7f9fcd7c7000 rw-p 00000000 00:00 0 
+7f9fcd7c7000-7f9fcd7cb000 ---p 00000000 00:00 0 
+7f9fcd7cb000-7f9fcd8c7000 rw-p 00000000 00:00 0 
+7f9fcd8c7000-7f9fcda5c000 rw-p 00000000 00:00 0 
+7f9fcdb0a000-7f9fcdbb8000 r--p 00000000 fe:00 198659                     /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+7f9fcdc72000-7f9fcdd2c000 r--p 00000000 fe:00 198660                     /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+7f9fcdd2c000-7f9fcddf7000 rw-p 00000000 00:00 0 
+7f9fcddf7000-7f9fcddf8000 ---p 00000000 00:00 0 
+7f9fcddf8000-7f9fce5f8000 rw-p 00000000 00:00 0 
+7f9fce5f8000-7f9fce5f9000 ---p 00000000 00:00 0 
+7f9fce5f9000-7f9fcedf9000 rw-p 00000000 00:00 0 
+7f9fcedf9000-7f9fcedfa000 ---p 00000000 00:00 0 
+7f9fcedfa000-7f9fcf5fa000 rw-p 00000000 00:00 0 
+7f9fcf5fa000-7f9fcf5fb000 ---p 00000000 00:00 0 
+7f9fcf5fb000-7f9fcfdfb000 rw-p 00000000 00:00 0 
+7f9fcfdfb000-7f9fcfdfc000 ---p 00000000 00:00 0 
+7f9fcfdfc000-7f9fd05fc000 rw-p 00000000 00:00 0 
+7f9fd05fc000-7f9fd05fd000 ---p 00000000 00:00 0 
+7f9fd05fd000-7f9fd0dfd000 rw-p 00000000 00:00 0 
+7f9fd0dfd000-7f9fd0dfe000 ---p 00000000 00:00 0 
+7f9fd0dfe000-7f9fd15fe000 rw-p 00000000 00:00 0 
+7f9fd15fe000-7f9fd15ff000 ---p 00000000 00:00 0 
+7f9fd15ff000-7f9fd1dff000 rw-p 00000000 00:00 0 
+7f9fd1dff000-7f9fd1e00000 ---p 00000000 00:00 0 
+7f9fd1e00000-7f9fd2600000 rw-p 00000000 00:00 0 
+7f9fd2600000-7f9fd2601000 r--p 00000000 fe:00 191048                     /usr/lib/x86_64-linux-gnu/libicudata.so.74.2
+7f9fd2601000-7f9fd2602000 r-xp 00001000 fe:00 191048                     /usr/lib/x86_64-linux-gnu/libicudata.so.74.2
+7f9fd2602000-7f9fd435e000 r--p 00002000 fe:00 191048                     /usr/lib/x86_64-linux-gnu/libicudata.so.74.2
+7f9fd435e000-7f9fd435f000 r--p 01d5d000 fe:00 191048                     /usr/lib/x86_64-linux-gnu/libicudata.so.74.2
+7f9fd435f000-7f9fd4360000 rw-p 01d5e000 fe:00 191048                     /usr/lib/x86_64-linux-gnu/libicudata.so.74.2
+7f9fd4365000-7f9fd4379000 r--p 00000000 fe:00 745891                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources/libmeshsdr_lora.so
+7f9fd4379000-7f9fd439e000 r-xp 00014000 fe:00 745891                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources/libmeshsdr_lora.so
+7f9fd439e000-7f9fd43a9000 r--p 00039000 fe:00 745891                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources/libmeshsdr_lora.so
+7f9fd43a9000-7f9fd43ab000 r--p 00043000 fe:00 745891                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources/libmeshsdr_lora.so
+7f9fd43ab000-7f9fd43ac000 rw-p 00045000 fe:00 745891                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/app/resources/libmeshsdr_lora.so
+7f9fd4400000-7f9fd4468000 r--p 00000000 fe:00 191058                     /usr/lib/x86_64-linux-gnu/libicuuc.so.74.2
+7f9fd4468000-7f9fd456d000 r-xp 00068000 fe:00 191058                     /usr/lib/x86_64-linux-gnu/libicuuc.so.74.2
+7f9fd456d000-7f9fd45f7000 r--p 0016d000 fe:00 191058                     /usr/lib/x86_64-linux-gnu/libicuuc.so.74.2
+7f9fd45f7000-7f9fd460a000 r--p 001f7000 fe:00 191058                     /usr/lib/x86_64-linux-gnu/libicuuc.so.74.2
+7f9fd460a000-7f9fd460b000 rw-p 0020a000 fe:00 191058                     /usr/lib/x86_64-linux-gnu/libicuuc.so.74.2
+7f9fd460b000-7f9fd460d000 rw-p 00000000 00:00 0 
+7f9fd4633000-7f9fd4637000 ---p 00000000 00:00 0 
+7f9fd4637000-7f9fd4655000 rw-p 00000000 00:00 0 
+7f9fd4655000-7f9fd46a9000 r--p 00000000 fe:00 198664                     /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf
+7f9fd46a9000-7f9fd47ea000 rw-s 00000000 fe:00 704746                     /root/.cache/mesa_shader_cache/index
+7f9fd47ea000-7f9fd47f8000 r--p 00000000 fe:00 211644                     /usr/lib/x86_64-linux-gnu/libtinfo.so.6.4
+7f9fd47f8000-7f9fd480b000 r-xp 0000e000 fe:00 211644                     /usr/lib/x86_64-linux-gnu/libtinfo.so.6.4
+7f9fd480b000-7f9fd4819000 r--p 00021000 fe:00 211644                     /usr/lib/x86_64-linux-gnu/libtinfo.so.6.4
+7f9fd4819000-7f9fd481d000 r--p 0002e000 fe:00 211644                     /usr/lib/x86_64-linux-gnu/libtinfo.so.6.4
+7f9fd481d000-7f9fd481e000 rw-p 00032000 fe:00 211644                     /usr/lib/x86_64-linux-gnu/libtinfo.so.6.4
+7f9fd481e000-7f9fd484d000 r--p 00000000 fe:00 191526                     /usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14
+7f9fd484d000-7f9fd49b3000 r-xp 0002f000 fe:00 191526                     /usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14
+7f9fd49b3000-7f9fd49f5000 r--p 00195000 fe:00 191526                     /usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14
+7f9fd49f5000-7f9fd49fe000 r--p 001d6000 fe:00 191526                     /usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14
+7f9fd49fe000-7f9fd49ff000 rw-p 001df000 fe:00 191526                     /usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14
+7f9fd49ff000-7f9fd4a00000 rw-p 00000000 00:00 0 
+7f9fd4a00000-7f9fdcc08000 r-xp 00000000 fe:00 190499                     /usr/lib/x86_64-linux-gnu/libLLVM.so.20.1
+7f9fdcc08000-7f9fdcc09000 ---p 08208000 fe:00 190499                     /usr/lib/x86_64-linux-gnu/libLLVM.so.20.1
+7f9fdcc09000-7f9fdd29e000 r--p 08208000 fe:00 190499                     /usr/lib/x86_64-linux-gnu/libLLVM.so.20.1
+7f9fdd29e000-7f9fdd2e6000 rw-p 0889d000 fe:00 190499                     /usr/lib/x86_64-linux-gnu/libLLVM.so.20.1
+7f9fdd2e6000-7f9fdd38e000 rw-p 00000000 00:00 0 
+7f9fdd3a2000-7f9fdd3aa000 r--p 00000000 fe:00 190847                     /usr/lib/x86_64-linux-gnu/libedit.so.2.0.72
+7f9fdd3aa000-7f9fdd3c9000 r-xp 00008000 fe:00 190847                     /usr/lib/x86_64-linux-gnu/libedit.so.2.0.72
+7f9fdd3c9000-7f9fdd3d5000 r--p 00027000 fe:00 190847                     /usr/lib/x86_64-linux-gnu/libedit.so.2.0.72
+7f9fdd3d5000-7f9fdd3d7000 r--p 00033000 fe:00 190847                     /usr/lib/x86_64-linux-gnu/libedit.so.2.0.72
+7f9fdd3d7000-7f9fdd3d8000 rw-p 00035000 fe:00 190847                     /usr/lib/x86_64-linux-gnu/libedit.so.2.0.72
+7f9fdd3d8000-7f9fdd3dc000 rw-p 00000000 00:00 0 
+7f9fdd3dc000-7f9fdd3df000 r--p 00000000 fe:00 190840                     /usr/lib/x86_64-linux-gnu/libdrm_intel.so.1.125.0
+7f9fdd3df000-7f9fdd3f5000 r-xp 00003000 fe:00 190840                     /usr/lib/x86_64-linux-gnu/libdrm_intel.so.1.125.0
+7f9fdd3f5000-7f9fdd3fe000 r--p 00019000 fe:00 190840                     /usr/lib/x86_64-linux-gnu/libdrm_intel.so.1.125.0
+7f9fdd3fe000-7f9fdd3ff000 r--p 00021000 fe:00 190840                     /usr/lib/x86_64-linux-gnu/libdrm_intel.so.1.125.0
+7f9fdd3ff000-7f9fdd400000 rw-p 00022000 fe:00 190840                     /usr/lib/x86_64-linux-gnu/libdrm_intel.so.1.125.0
+7f9fdd400000-7f9fdd4cf000 r--p 00000000 fe:00 190934                     /usr/lib/x86_64-linux-gnu/libgallium-25.2.8-0ubuntu0.24.04.4.so
+7f9fdd4cf000-7f9fdece2000 r-xp 000cf000 fe:00 190934                     /usr/lib/x86_64-linux-gnu/libgallium-25.2.8-0ubuntu0.24.04.4.so
+7f9fdece2000-7f9fdfc21000 r--p 018e2000 fe:00 190934                     /usr/lib/x86_64-linux-gnu/libgallium-25.2.8-0ubuntu0.24.04.4.so
+7f9fdfc21000-7f9fdfd47000 r--p 02821000 fe:00 190934                     /usr/lib/x86_64-linux-gnu/libgallium-25.2.8-0ubuntu0.24.04.4.so
+7f9fdfd47000-7f9fdfd69000 rw-p 02947000 fe:00 190934                     /usr/lib/x86_64-linux-gnu/libgallium-25.2.8-0ubuntu0.24.04.4.so
+7f9fdfd69000-7f9fdff33000 rw-p 00000000 00:00 0 
+7f9fdff39000-7f9fdff3b000 r--p 00000000 fe:00 191227                     /usr/lib/x86_64-linux-gnu/libpciaccess.so.0.11.1
+7f9fdff3b000-7f9fdff40000 r-xp 00002000 fe:00 191227                     /usr/lib/x86_64-linux-gnu/libpciaccess.so.0.11.1
+7f9fdff40000-7f9fdff42000 r--p 00007000 fe:00 191227                     /usr/lib/x86_64-linux-gnu/libpciaccess.so.0.11.1
+7f9fdff42000-7f9fdff43000 r--p 00008000 fe:00 191227                     /usr/lib/x86_64-linux-gnu/libpciaccess.so.0.11.1
+7f9fdff43000-7f9fdff44000 rw-p 00009000 fe:00 191227                     /usr/lib/x86_64-linux-gnu/libpciaccess.so.0.11.1
+7f9fdff44000-7f9fdff47000 r--p 00000000 fe:00 190848                     /usr/lib/x86_64-linux-gnu/libelf-0.190.so
+7f9fdff47000-7f9fdff5d000 r-xp 00003000 fe:00 190848                     /usr/lib/x86_64-linux-gnu/libelf-0.190.so
+7f9fdff5d000-7f9fdff61000 r--p 00019000 fe:00 190848                     /usr/lib/x86_64-linux-gnu/libelf-0.190.so
+7f9fdff61000-7f9fdff62000 r--p 0001c000 fe:00 190848                     /usr/lib/x86_64-linux-gnu/libelf-0.190.so
+7f9fdff62000-7f9fdff63000 rw-p 0001d000 fe:00 190848                     /usr/lib/x86_64-linux-gnu/libelf-0.190.so
+7f9fdff63000-7f9fdff66000 r--p 00000000 fe:00 190838                     /usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1.125.0
+7f9fdff66000-7f9fdff6c000 r-xp 00003000 fe:00 190838                     /usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1.125.0
+7f9fdff6c000-7f9fdff6e000 r--p 00009000 fe:00 190838                     /usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1.125.0
+7f9fdff6e000-7f9fdff6f000 r--p 0000a000 fe:00 190838                     /usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1.125.0
+7f9fdff6f000-7f9fdff70000 rw-p 0000b000 fe:00 190838                     /usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1.125.0
+7f9fdff70000-7f9fdff71000 r--p 00000000 fe:00 191534                     /usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
+7f9fdff71000-7f9fdff72000 r-xp 00001000 fe:00 191534                     /usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
+7f9fdff72000-7f9fdff73000 r--p 00002000 fe:00 191534                     /usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
+7f9fdff73000-7f9fdff74000 r--p 00002000 fe:00 191534                     /usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
+7f9fdff74000-7f9fdff75000 rw-p 00003000 fe:00 191534                     /usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
+7f9fdff75000-7f9fdff78000 r--p 00000000 fe:00 191516                     /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0
+7f9fdff78000-7f9fdff7b000 r-xp 00003000 fe:00 191516                     /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0
+7f9fdff7b000-7f9fdff7c000 r--p 00006000 fe:00 191516                     /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0
+7f9fdff7c000-7f9fdff7d000 r--p 00007000 fe:00 191516                     /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0
+7f9fdff7d000-7f9fdff7e000 rw-p 00008000 fe:00 191516                     /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0
+7f9fdff7e000-7f9fdff85000 r--p 00000000 fe:00 191504                     /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0
+7f9fdff85000-7f9fdff8a000 r-xp 00007000 fe:00 191504                     /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0
+7f9fdff8a000-7f9fdff8d000 r--p 0000c000 fe:00 191504                     /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0
+7f9fdff8d000-7f9fdff8e000 r--p 0000f000 fe:00 191504                     /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0
+7f9fdff8e000-7f9fdff8f000 rw-p 00010000 fe:00 191504                     /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0
+7f9fdff8f000-7f9fdff91000 r--p 00000000 fe:00 191335                     /usr/lib/x86_64-linux-gnu/libsensors.so.5.0.0
+7f9fdff91000-7f9fdff98000 r-xp 00002000 fe:00 191335                     /usr/lib/x86_64-linux-gnu/libsensors.so.5.0.0
+7f9fdff98000-7f9fdff9c000 r--p 00009000 fe:00 191335                     /usr/lib/x86_64-linux-gnu/libsensors.so.5.0.0
+7f9fdff9c000-7f9fdff9d000 r--p 0000d000 fe:00 191335                     /usr/lib/x86_64-linux-gnu/libsensors.so.5.0.0
+7f9fdff9d000-7f9fdff9e000 rw-p 0000e000 fe:00 191335                     /usr/lib/x86_64-linux-gnu/libsensors.so.5.0.0
+7f9fdff9e000-7f9fdffa1000 r--p 00000000 fe:00 191518                     /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
+7f9fdffa1000-7f9fdffa4000 r-xp 00003000 fe:00 191518                     /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
+7f9fdffa4000-7f9fdffa6000 r--p 00006000 fe:00 191518                     /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
+7f9fdffa6000-7f9fdffa7000 r--p 00007000 fe:00 191518                     /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
+7f9fdffa7000-7f9fdffa8000 rw-p 00008000 fe:00 191518                     /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
+7f9fdffa8000-7f9fdffa9000 r--p 00000000 fe:00 191502                     /usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0
+7f9fdffa9000-7f9fdffaa000 r-xp 00001000 fe:00 191502                     /usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0
+7f9fdffaa000-7f9fdffab000 r--p 00002000 fe:00 191502                     /usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0
+7f9fdffab000-7f9fdffac000 r--p 00002000 fe:00 191502                     /usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0
+7f9fdffac000-7f9fdffad000 rw-p 00003000 fe:00 191502                     /usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0
+7f9fdffad000-7f9fdffaf000 r--p 00000000 fe:00 191498                     /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.1.0
+7f9fdffaf000-7f9fdffb1000 r-xp 00002000 fe:00 191498                     /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.1.0
+7f9fdffb1000-7f9fdffb2000 r--p 00004000 fe:00 191498                     /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.1.0
+7f9fdffb2000-7f9fdffb3000 r--p 00004000 fe:00 191498                     /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.1.0
+7f9fdffb3000-7f9fdffb4000 rw-p 00005000 fe:00 191498                     /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.1.0
+7f9fdffb4000-7f9fdffbf000 r--p 00000000 fe:00 190483                     /usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
+7f9fdffbf000-7f9fdffec000 r-xp 0000b000 fe:00 190483                     /usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
+7f9fdffec000-7f9fdfffb000 r--p 00038000 fe:00 190483                     /usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
+7f9fdfffb000-7f9fdfffe000 r--p 00047000 fe:00 190483                     /usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
+7f9fdfffe000-7f9fdffff000 rw-p 0004a000 fe:00 190483                     /usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
+7f9fdffff000-7f9fe0021000 rw-p 00000000 00:00 0 
+7f9fe0021000-7f9fe4000000 ---p 00000000 00:00 0 
+7f9fe4000000-7f9fe4021000 rw-p 00000000 00:00 0 
+7f9fe4021000-7f9fe8000000 ---p 00000000 00:00 0 
+7f9fe8000000-7f9fe8021000 rw-p 00000000 00:00 0 
+7f9fe8021000-7f9fec000000 ---p 00000000 00:00 0 
+7f9fec000000-7f9fef010000 rw-p 00000000 00:00 0 
+7f9fef010000-7f9ff0000000 ---p 00000000 00:00 0 
+7f9ff0000000-7f9ff0021000 rw-p 00000000 00:00 0 
+7f9ff0021000-7f9ff4000000 ---p 00000000 00:00 0 
+7f9ff4000000-7f9ff4021000 rw-p 00000000 00:00 0 
+7f9ff4021000-7f9ff8000000 ---p 00000000 00:00 0 
+7f9ff8000000-7f9ff8021000 rw-p 00000000 00:00 0 
+7f9ff8021000-7f9ffc000000 ---p 00000000 00:00 0 
+7f9ffc000000-7f9ffc021000 rw-p 00000000 00:00 0 
+7f9ffc021000-7fa000000000 ---p 00000000 00:00 0 
+7fa000000000-7fa000021000 rw-p 00000000 00:00 0 
+7fa000021000-7fa004000000 ---p 00000000 00:00 0 
+7fa004000000-7fa00414a000 rw-p 00000000 00:00 0 
+7fa00414a000-7fa008000000 ---p 00000000 00:00 0 
+7fa008000000-7fa008021000 rw-p 00000000 00:00 0 
+7fa008021000-7fa00c000000 ---p 00000000 00:00 0 
+7fa00c000000-7fa00c021000 rw-p 00000000 00:00 0 
+7fa00c021000-7fa010000000 ---p 00000000 00:00 0 
+7fa010000000-7fa010021000 rw-p 00000000 00:00 0 
+7fa010021000-7fa014000000 ---p 00000000 00:00 0 
+7fa014003000-7fa014004000 r--p 00000000 fe:00 190558                     /usr/lib/x86_64-linux-gnu/libXxf86vm.so.1.0.0
+7fa014004000-7fa014007000 r-xp 00001000 fe:00 190558                     /usr/lib/x86_64-linux-gnu/libXxf86vm.so.1.0.0
+7fa014007000-7fa014008000 r--p 00004000 fe:00 190558                     /usr/lib/x86_64-linux-gnu/libXxf86vm.so.1.0.0
+7fa014008000-7fa014009000 r--p 00004000 fe:00 190558                     /usr/lib/x86_64-linux-gnu/libXxf86vm.so.1.0.0
+7fa014009000-7fa01400a000 rw-p 00005000 fe:00 190558                     /usr/lib/x86_64-linux-gnu/libXxf86vm.so.1.0.0
+7fa01400a000-7fa01400b000 r--p 00000000 fe:00 190522                     /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0
+7fa01400b000-7fa01400c000 r-xp 00001000 fe:00 190522                     /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0
+7fa01400c000-7fa01400d000 r--p 00002000 fe:00 190522                     /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0
+7fa01400d000-7fa01400e000 r--p 00002000 fe:00 190522                     /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0
+7fa01400e000-7fa01400f000 rw-p 00003000 fe:00 190522                     /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0
+7fa01400f000-7fa01401a000 r--p 00000000 fe:00 191500                     /usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0
+7fa01401a000-7fa014023000 r-xp 0000b000 fe:00 191500                     /usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0
+7fa014023000-7fa014028000 r--p 00014000 fe:00 191500                     /usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0
+7fa014028000-7fa01402a000 r--p 00019000 fe:00 191500                     /usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0
+7fa01402a000-7fa01402b000 rw-p 0001b000 fe:00 191500                     /usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0
+7fa01402b000-7fa014030000 r--p 00000000 fe:00 190836                     /usr/lib/x86_64-linux-gnu/libdrm.so.2.125.0
+7fa014030000-7fa01403c000 r-xp 00005000 fe:00 190836                     /usr/lib/x86_64-linux-gnu/libdrm.so.2.125.0
+7fa01403c000-7fa014040000 r--p 00011000 fe:00 190836                     /usr/lib/x86_64-linux-gnu/libdrm.so.2.125.0
+7fa014040000-7fa014041000 r--p 00015000 fe:00 190836                     /usr/lib/x86_64-linux-gnu/libdrm.so.2.125.0
+7fa014041000-7fa014042000 rw-p 00016000 fe:00 190836                     /usr/lib/x86_64-linux-gnu/libdrm.so.2.125.0
+7fa014043000-7fa014047000 rw-s 00000000 00:01 1                          /SYSV00000000 (deleted)
+7fa014047000-7fa014048000 r--p 00000000 00:00 0 
+7fa014048000-7fa014049000 r-xp 00000000 00:00 0 
+7fa014049000-7fa01404a000 r--p 00000000 00:00 0 
+7fa01404a000-7fa01404b000 r-xp 00000000 00:00 0 
+7fa01404b000-7fa01404c000 r--p 00000000 00:00 0 
+7fa01404c000-7fa01404d000 r-xp 00000000 00:00 0 
+7fa01404d000-7fa01404e000 r--p 00000000 fe:00 745836                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libjawt.so
+7fa01404e000-7fa01404f000 r-xp 00001000 fe:00 745836                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libjawt.so
+7fa01404f000-7fa014050000 r--p 00002000 fe:00 745836                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libjawt.so
+7fa014050000-7fa014051000 r--p 00002000 fe:00 745836                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libjawt.so
+7fa014051000-7fa014052000 rw-p 00003000 fe:00 745836                     /home/user/MeshSDR-Android/desktop/build/compose/binaries/main/app/MeshSDR/lib/runtime/lib/libjawt.so
+7fa014052000-7fa014058000 r--s 00000000 fe:00 207149                     /var/cache/fontconfig/3047814df9a2f067bd2d96a2b9c36e5a-le64.cache-9
+7fa014058000-7fa01406f000 r--s 00000000 fe:00 52492                      /var/cache/fontconfig/d52a8644073d54c13679302ca1180695-le64.cache-9
+7fa01406f000-7fa014075000 r--s 00000000 fe:00 207153                     /var/cache/fontconfig/d589a48862398ed80a3d6066f4f56f4c-le64.cache-9
+7fa014075000-7fa014079000 r--s 00000000 fe:00 207148                     /var/cache/fontconfig/246184dc75a16901ca37d96895904249-le64.cache-9
+7fa014079000-7fa014082000 r--s 00000000 fe:00 52490                      /var/cache/fontconfig/bb9ef35e7661cc55c3d6e0d2d8cc2051-le64.cache-9
+7fa014082000-7fa014086000 r--s 00000000 fe:00 52483                      /var/cache/fontconfig/4d6aee6d44eccb37054d3216e945f618-le64.cache-9
+7fa014086000-7fa014097000 r--s 00000000 fe:00 207152                     /var/cache/fontconfig/cadc3060d3cbe99d6aa4dd880095be12-le64.cache-9
+7fa014097000-7fa01409b000 ---p 00000000 00:00 0 
+7fa01409b000-7fa014197000 rw-p 00000000 00:00 0 
+7fa014197000-7fa01419b000 ---p 00000000 00:00 0 
+7fa01419b000-7fa014297000 rw-p 00000000 00:00 0 
+7fa014297000-7fa01429b000 ---p 00000000 00:00 0 
+7fa01429b000-7fa014397000 rw-p 00000000 00:00 0 
+7fa014397000-7fa01439b000 ---p 00000000 00:00 0 
+7fa01439b000-7fa014497000 rw-p 00000000 00:00 0 
+7fa014497000-7fa014498000 ---p 00000000 00:00 0 
+7fa014498000-7fa014598000 rw-p 00000000 00:00 0 
+7fa014598000-7fa014599000 ---p 00000000 00:00 0 
+7fa014599000-7fa014699000 rw-p 00000000 00:00 0 
+7fa014699000-7fa01469a000 ---p 00000000 00:00 0 
+7fa01469a000-7fa01479a000 rw-p 00000000 00:00 0 
+7fa01479a000-7fa01479e000 ---p 00000000 00:00 0 
+7fa01479e000-7fa01489a000 rw-p 00000000 00:00 0 
+7fa01489a000-7fa01489e000 ---p 00000000 00:00 0 
+7fa01489e000-7fa01499a000 rw-p 00000000 00:00 0 
+7fa01499a000-7fa01499e000 ---p 00000000 00:00 0 
+7fa01499e000-7fa014a9a000 rw-p 00000000 00:00 0 
+7fa014a9a000-7fa014a9e000 ---p 00000000 00:00 0 
+7fa014a9e000-7fa014b9a000 rw-p 00000000 00:00 0 
+7fa014b9a000-7fa014b9e000 ---p 00000000 00:00 0 
+7fa014b9e000-7fa014c9a000 rw-p 00000000 00:00 0 
+7fa014c9a000-7fa014c9e000 r--p 00000000 fe:00 211576                     /usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0
+7fa014c9e000-7fa014cb4000 r-xp 00004000 fe:00 211576                     /usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0
+7fa014cb4000-7fa014cbd000 r--p 0001a000 fe:00 211576                     /usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0
+7fa014cbd000-7fa014cbe000 r--p 00023000 fe:00 211576                     /usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0
+7fa014cbe000-7fa014cbf000 rw-p 00024000 fe:00 211576                     /usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0
+7fa014cbf000-7fa014cc3000 r--p 00000000 fe:00 211657                     /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5
+7fa014cc3000-7fa014d6a000 r-xp 00004000 fe:00 211657                     /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5
+7fa014d6a000-7fa014d77000 r--p 000ab000 fe:00 211657                     /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5
+7fa014d77000-7fa014d78000 r--p 000b7000 fe:00 211657                     /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5
+7fa014d78000-7fa014d79000 rw-p 000b8000 fe:00 211657                     /usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5
+7fa014d79000-7fa014d7c000 r--p 00000000 fe:00 211584                     /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5
+7fa014d7c000-7fa014d9e000 r-xp 00003000 fe:00 211584                     /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5
+7fa014d9e000-7fa014da9000 r--p 00025000 fe:00 211584                     /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5
+7fa014da9000-7fa014daa000 r--p 00030000 fe:00 211584                     /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5
+7fa014daa000-7fa014dab000 rw-p 00031000 fe:00 211584                     /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5
+7fa014dab000-7fa014dae000 r--p 00000000 fe:00 211582                     /usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4
+7fa014dae000-7fa014dc9000 r-xp 00003000 fe:00 211582                     /usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4
+7fa014dc9000-7fa014dcb000 r--p 0001e000 fe:00 211582                     /usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4
+7fa014dcb000-7fa014dcc000 r--p 00020000 fe:00 211582                     /usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4
+7fa014dcc000-7fa014dcd000 rw-p 00021000 fe:00 211582                     /usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4
+7fa014dcd000-7fa014ddc000 r--p 00000000 fe:00 211570                     /usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3
+7fa014ddc000-7fa014ed1000 r-xp 0000f000 fe:00 211570                     /usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3
+7fa014ed1000-7fa014f0c000 r--p 00104000 fe:00 211570                     /usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3
+7fa014f0c000-7fa014f11000 r--p 0013f000 fe:00 211570                     /usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3
+7fa014f11000-7fa014f15000 rw-p 00144000 fe:00 211570                     /usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3
+7fa014f15000-7fa014f16000 rw-p 00000000 00:00 0 
+7fa014f16000-7fa014f19000 r--p 00000000 fe:00 211549                     /usr/lib/x86_64-linux-gnu/libcap.so.2.66
+7fa014f19000-7fa014f1f000 r-xp 00003000 fe:00 211549                     /usr/lib/x86_64-linux-gnu/libcap.so.2.66
+7fa014f1f000-7fa014f21000 r--p 00009000 fe:00 211549                     /usr/lib/x86_64-linux-gnu/libcap.so.2.66
+7fa014f21000-7fa014f22000 r--p 0000b000 fe:00 211549                     /usr/lib/x86_64-linux-gnu/libcap.so.2.66
+7fa014f22000-7fa014f23000 rw-p 0000c000 fe:00 211549                     /usr/lib/x86_64-linux-gnu/libcap.so.2.66
+7fa014f23000-7fa014f39000 r--p 00000000 fe:00 211637                     /usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0
+7fa014f39000-7fa014fc8000 r-xp 00016000 fe:00 211637                     /usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0
+7fa014fc8000-7fa014ff6000 r--p 000a5000 fe:00 211637                     /usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0
+7fa014ff6000-7fa015001000 r--p 000d2000 fe:00 211637                     /usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0
+7fa015001000-7fa015002000 rw-p 000dd000 fe:00 211637                     /usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0
+7fa015002000-7fa015003000 rw-p 00000000 00:00 0 
+7fa015003000-7fa015005000 r--p 00000000 fe:00 190821                     /usr/lib/x86_64-linux-gnu/libdatrie.so.1.4.0
+7fa015005000-7fa015009000 r-xp 00002000 fe:00 190821                     /usr/lib/x86_64-linux-gnu/libdatrie.so.1.4.0
+7fa015009000-7fa01500a000 r--p 00006000 fe:00 190821                     /usr/lib/x86_64-linux-gnu/libdatrie.so.1.4.0
+7fa01500a000-7fa01500b000 r--p 00006000 fe:00 190821                     /usr/lib/x86_64-linux-gnu/libdatrie.so.1.4.0
+7fa01500b000-7fa01500c000 rw-p 00007000 fe:00 190821                     /usr/lib/x86_64-linux-gnu/libdatrie.so.1.4.0
+7fa01500c000-7fa015013000 r--p 00000000 fe:00 211540                     /usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0
+7fa015013000-7fa015037000 r-xp 00007000 fe:00 211540                     /usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0
+7fa015037000-7fa015040000 r--p 0002b000 fe:00 211540                     /usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0
+7fa015040000-7fa015046000 r--p 00033000 fe:00 211540                     /usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0
+7fa015046000-7fa015047000 rw-p 00039000 fe:00 211540                     /usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0
+7fa015047000-7fa015053000 r--p 00000000 fe:00 190825                     /usr/lib/x86_64-linux-gnu/libdbus-1.so.3.32.4
+7fa015053000-7fa015083000 r-xp 0000c000 fe:00 190825                     /usr/lib/x86_64-linux-gnu/libdbus-1.so.3.32.4
+7fa015083000-7fa015094000 r--p 0003c000 fe:00 190825                     /usr/lib/x86_64-linux-gnu/libdbus-1.so.3.32.4
+7fa015094000-7fa015095000 r--p 0004c000 fe:00 190825                     /usr/lib/x86_64-linux-gnu/libdbus-1.so.3.32.4
+7fa015095000-7fa015096000 rw-p 0004d000 fe:00 190825                     /usr/lib/x86_64-linux-gnu/libdbus-1.so.3.32.4
+7fa015096000-7fa0150a6000 r--p 00000000 fe:00 108593                     /usr/lib/x86_64-linux-gnu/libatspi.so.0.0.1
+7fa0150a6000-7fa0150bf000 r-xp 00010000 fe:00 108593                     /usr/lib/x86_64-linux-gnu/libatspi.so.0.0.1
+7fa0150bf000-7fa0150cc000 r--p 00029000 fe:00 108593                     /usr/lib/x86_64-linux-gnu/libatspi.so.0.0.1
+7fa0150cc000-7fa0150cf000 r--p 00036000 fe:00 108593                     /usr/lib/x86_64-linux-gnu/libatspi.so.0.0.1
+7fa0150cf000-7fa0150d0000 rw-p 00039000 fe:00 108593                     /usr/lib/x86_64-linux-gnu/libatspi.so.0.0.1
+7fa0150d0000-7fa0150d4000 r--p 00000000 fe:00 191077                     /usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2
+7fa0150d4000-7fa015121000 r-xp 00004000 fe:00 191077                     /usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2
+7fa015121000-7fa015151000 r--p 00051000 fe:00 191077                     /usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2
+7fa015151000-7fa015152000 r--p 00081000 fe:00 191077                     /usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2
+7fa015152000-7fa015153000 rw-p 00082000 fe:00 191077                     /usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2
+7fa015153000-7fa01515d000 r--p 00000000 fe:00 191249                     /usr/lib/x86_64-linux-gnu/libpixman-1.so.0.42.2
+7fa01515d000-7fa0151ea000 r-xp 0000a000 fe:00 191249                     /usr/lib/x86_64-linux-gnu/libpixman-1.so.0.42.2
+7fa0151ea000-7fa0151f9000 r--p 00097000 fe:00 191249                     /usr/lib/x86_64-linux-gnu/libpixman-1.so.0.42.2
+7fa0151f9000-7fa015201000 r--p 000a5000 fe:00 191249                     /usr/lib/x86_64-linux-gnu/libpixman-1.so.0.42.2
+7fa015201000-7fa015202000 rw-p 000ad000 fe:00 191249                     /usr/lib/x86_64-linux-gnu/libpixman-1.so.0.42.2
+7fa015202000-7fa015207000 r--p 00000000 fe:00 191508                     /usr/lib/x86_64-linux-gnu/libxcb-render.so.0.0.0
+7fa015207000-7fa01520c000 r-xp 00005000 fe:00 191508                     /usr/lib/x86_64-linux-gnu/libxcb-render.so.0.0.0
+7fa01520c000-7fa01520f000 r--p 0000a000 fe:00 191508                     /usr/lib/x86_64-linux-gnu/libxcb-render.so.0.0.0
+7fa01520f000-7fa015210000 r--p 0000c000 fe:00 191508                     /usr/lib/x86_64-linux-gnu/libxcb-render.so.0.0.0
+7fa015210000-7fa015211000 rw-p 0000d000 fe:00 191508                     /usr/lib/x86_64-linux-gnu/libxcb-render.so.0.0.0
+7fa015211000-7fa015213000 r--p 00000000 fe:00 191401                     /usr/lib/x86_64-linux-gnu/libthai.so.0.3.1
+7fa015213000-7fa015217000 r-xp 00002000 fe:00 191401                     /usr/lib/x86_64-linux-gnu/libthai.so.0.3.1
+7fa015217000-7fa01521a000 r--p 00006000 fe:00 191401                     /usr/lib/x86_64-linux-gnu/libthai.so.0.3.1
+7fa01521a000-7fa01521b000 r--p 00008000 fe:00 191401                     /usr/lib/x86_64-linux-gnu/libthai.so.0.3.1
+7fa01521b000-7fa01521c000 rw-p 00009000 fe:00 191401                     /usr/lib/x86_64-linux-gnu/libthai.so.0.3.1
+7fa01521c000-7fa015222000 r--p 00000000 fe:00 211627                     /usr/lib/x86_64-linux-gnu/libselinux.so.1
+7fa015222000-7fa01523f000 r-xp 00006000 fe:00 211627                     /usr/lib/x86_64-linux-gnu/libselinux.so.1
+7fa01523f000-7fa015245000 r--p 00023000 fe:00 211627                     /usr/lib/x86_64-linux-gnu/libselinux.so.1
+7fa015245000-7fa015246000 r--p 00029000 fe:00 211627                     /usr/lib/x86_64-linux-gnu/libselinux.so.1
+7fa015246000-7fa015247000 rw-p 0002a000 fe:00 211627                     /usr/lib/x86_64-linux-gnu/libselinux.so.1
+7fa015247000-7fa015249000 rw-p 00000000 00:00 0 
+7fa015249000-7fa015252000 r--p 00000000 fe:00 211592                     /usr/lib/x86_64-linux-gnu/libmount.so.1.1.0
+7fa015252000-7fa015286000 r-xp 00009000 fe:00 211592                     /usr/lib/x86_64-linux-gnu/libmount.so.1.1.0
+7fa015286000-7fa015293000 r--p 0003d000 fe:00 211592                     /usr/lib/x86_64-linux-gnu/libmount.so.1.1.0
+7fa015293000-7fa015295000 r--p 00049000 fe:00 211592                     /usr/lib/x86_64-linux-gnu/libmount.so.1.1.0
+7fa015295000-7fa015296000 rw-p 0004b000 fe:00 211592                     /usr/lib/x86_64-linux-gnu/libmount.so.1.1.0
+7fa015296000-7fa015298000 r--p 00000000 fe:00 211565                     /usr/lib/x86_64-linux-gnu/libffi.so.8.1.4
+7fa015298000-7fa01529f000 r-xp 00002000 fe:00 211565                     /usr/lib/x86_64-linux-gnu/libffi.so.8.1.4
+7fa01529f000-7fa0152a0000 r--p 00009000 fe:00 211565                     /usr/lib/x86_64-linux-gnu/libffi.so.8.1.4
+7fa0152a0000-7fa0152a1000 r--p 0000a000 fe:00 211565                     /usr/lib/x86_64-linux-gnu/libffi.so.8.1.4
+7fa0152a1000-7fa0152a2000 rw-p 0000b000 fe:00 211565                     /usr/lib/x86_64-linux-gnu/libffi.so.8.1.4
+7fa0152a2000-7fa0152a4000 r--p 00000000 fe:00 190548                     /usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0
+7fa0152a4000-7fa0152ab000 r-xp 00002000 fe:00 190548                     /usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0
+7fa0152ab000-7fa0152ad000 r--p 00009000 fe:00 190548                     /usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0
+7fa0152ad000-7fa0152ae000 r--p 0000a000 fe:00 190548                     /usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0
+7fa0152ae000-7fa0152af000 rw-p 0000b000 fe:00 190548                     /usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0
+7fa0152af000-7fa0152b4000 r--p 00000000 fe:00 191524                     /usr/lib/x86_64-linux-gnu/libxkbcom

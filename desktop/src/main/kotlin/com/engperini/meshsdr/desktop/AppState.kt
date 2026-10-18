@@ -46,6 +46,10 @@ class AppState {
     var centerHz by mutableStateOf(LoraProfile.DEFAULT.frequencyHz)
         private set
     var freqText by mutableStateOf("")
+    var ppmText by mutableStateOf("0")
+    /** Crystal correction for dongles without TCXO (signed ppm). */
+    var ppm by mutableIntStateOf(0)
+        private set
     var bwText by mutableStateOf("")
     /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
     var gainTenths by mutableIntStateOf(402)
@@ -100,6 +104,8 @@ class AppState {
         centerHz = prefs.getLong("frequency", profile.frequencyHz)
         if (profile.protocol == Protocol.GENERIC) profile = LoraProfile.generic(centerHz, genericSf, genericBw)
         gainTenths = prefs.getInt("gainTenths", gainTenths)
+        ppm = prefs.getInt("ppm", 0)
+        ppmText = "$ppm"
         autoRecord = prefs.getBoolean("autoRecord", false)
         averaging = prefs.getBoolean("averaging", true)
         autoStartRtlTcp = prefs.getBoolean("autoStartRtlTcp", true)
@@ -166,6 +172,18 @@ class AppState {
         receiverStale = true
     }
 
+    fun applyPpm() {
+        val value = ppmText.trim().toIntOrNull()
+        if (value == null || value !in -200..200) {
+            log("UI", tr("Invalid ppm: use a whole number from -200 to 200", "ppm inválido: use um número inteiro de -200 a 200"))
+            return
+        }
+        ppm = value
+        prefs.putInt("ppm", value)
+        log("SDR", tr("Frequency correction: $value ppm", "Correção de frequência: $value ppm"))
+        sendCommands(listOf(RtlTcpProtocol.ppmCommand(value)), "ppm")
+    }
+
     fun applyGain(tenths: Int) {
         gainTenths = tenths
         prefs.putInt("gainTenths", tenths)
@@ -193,7 +211,8 @@ class AppState {
 
     fun settingsSummary(): String {
         val gain = if (gainTenths == AUTO_GAIN) tr("auto gain", "ganho auto") else "%.1f dB".format(Locale.US, gainTenths / 10.0)
-        val extras = listOfNotNull(if (averaging) tr("filter", "filtro") else null,
+        val extras = listOfNotNull(if (ppm != 0) "%+d ppm".format(Locale.US, ppm) else null,
+            if (averaging) tr("filter", "filtro") else null,
             if (autoRecord) tr("auto rec.", "grav. auto") else null)
         return "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
             if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
@@ -361,6 +380,7 @@ class AppState {
                 // A remote server may run at another rate or frequency: set both.
                 out.write(RtlTcpProtocol.command(0x02, sampleRate.toLong()))
                 out.write(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, tunedHz()))
+                if (ppm != 0) out.write(RtlTcpProtocol.ppmCommand(ppm))
                 RtlTcpProtocol.gainCommands(gainOrNull()).forEach { out.write(it) }
                 out.flush()
             }

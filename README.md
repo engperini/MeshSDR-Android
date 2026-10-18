@@ -39,7 +39,8 @@ LoRa radio, a PC or GNU Radio.
   assuming Meshtastic or MeshCore.
 - **English and Portuguese.** Follows the phone's language, switchable in the app.
 - **Radio controls.** Tuner gain (AGC or 20–49.6 dB), a live IQ level and clipping meter,
-  and an optional decimation filter.
+  an optional decimation filter, and **ppm correction** for dongles without TCXO. Every
+  detection shows the measured carrier offset and the ppm that would cancel it.
 - **Keeps listening with the screen off.** A foreground service and wake lock keep it
   running for long monitoring sessions.
 - **Records raw IQ.** 10-second `.cu8` captures and log exports go to `Download/MeshSDR`,

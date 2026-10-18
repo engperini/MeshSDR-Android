@@ -67,6 +67,9 @@ class MainActivity : Activity() {
     private val languageChips = mutableMapOf<Boolean, Button>()
     private lateinit var genericBox: LinearLayout
     private lateinit var bwInput: EditText
+    private lateinit var ppmInput: EditText
+    /** Crystal correction for dongles without TCXO (signed ppm). */
+    @Volatile private var ppm = 0
     private lateinit var channelLabel: TextView
     /** Generic LoRa settings, kept while another profile is selected. */
     private var genericSf = LoraProfile.ALL_SF
@@ -83,6 +86,7 @@ class MainActivity : Activity() {
         centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", profile.frequencyHz)
         if (profile.protocol == Protocol.GENERIC) profile = LoraProfile.generic(centerHz, genericSf, genericBw)
         gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
+        ppm = getPreferences(MODE_PRIVATE).getInt("ppm", 0)
         autoRecord = getPreferences(MODE_PRIVATE).getBoolean("autoRecord", false)
         // On by default since 18/10: ~9 dB more sensitivity measured on a real MeshCore packet.
         averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", true)
@@ -219,6 +223,20 @@ class MainActivity : Activity() {
             chip(label) { applyGain(tenths) }.also { gainChips[tenths] = it }
         }
         settingsBody.addView(row(this, *gainButtons.toTypedArray(), gapDp = 6))
+
+        // Dongles without TCXO can be 15+ kHz off at 900 MHz; each message shows the measured offset.
+        settingsBody.addView(sectionLabel(tr("Frequency correction (ppm) — see \"offset\" in messages",
+            "Correção de frequência (ppm) — veja o \"desvio\" nas mensagens")))
+        ppmInput = numberInput("$ppm").apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_SIGNED
+        }
+        settingsBody.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(ppmInput, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(pill(tr("Apply", "Aplicar"), UiStyle.TONAL) { applyPpm() },
+                LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
+        })
 
         settingsBody.addView(sectionLabel(tr("Processing (optional)", "Processamento (opcional)")))
         settingsBody.addView(Switch(this).apply {
@@ -369,7 +387,8 @@ class MainActivity : Activity() {
 
     private fun updateSettingsSummary() {
         val gain = if (gainTenths == AUTO_GAIN) tr("auto gain", "ganho auto") else "%.1f dB".format(Locale.US, gainTenths / 10.0)
-        val extras = listOfNotNull(if (averaging) tr("filter", "filtro") else null,
+        val extras = listOfNotNull(if (ppm != 0) "%+d ppm".format(Locale.US, ppm) else null,
+            if (averaging) tr("filter", "filtro") else null,
             if (autoRecord) tr("auto rec.", "grav. auto") else null)
         settingsSummary.text = "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
             if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
@@ -510,6 +529,19 @@ class MainActivity : Activity() {
         if (::settingsSummary.isInitialized) updateSettingsSummary()
     }
 
+    private fun applyPpm() {
+        val value = ppmInput.text.toString().trim().toIntOrNull()
+        if (value == null || value !in -200..200) {
+            log("UI", tr("Invalid ppm: use a whole number from -200 to 200", "ppm inválido: use um número inteiro de -200 a 200"))
+            return
+        }
+        ppm = value
+        getPreferences(MODE_PRIVATE).edit().putInt("ppm", value).apply()
+        log("SDR", tr("Frequency correction: $value ppm", "Correção de frequência: $value ppm"))
+        updateSettingsSummary()
+        sendCommands(listOf(RtlTcpProtocol.ppmCommand(value)), "ppm")
+    }
+
     private fun applyGain(tenths: Int) {
         gainTenths = tenths
         getPreferences(MODE_PRIVATE).edit().putInt("gainTenths", tenths).apply()
@@ -596,9 +628,11 @@ class MainActivity : Activity() {
                 log("SDR", tr("RTL0 received; tuner $tuner; IQ samples flowing", "RTL0 recebido; sintonizador $tuner; amostras IQ ativas"))
                 synchronized(s) {
                     val out = s.getOutputStream()
+                    if (ppm != 0) out.write(RtlTcpProtocol.ppmCommand(ppm))
                     RtlTcpProtocol.gainCommands(gainOrNull()).forEach { out.write(it) }
                     out.flush()
                 }
+                if (ppm != 0) log("SDR", tr("Frequency correction $ppm ppm applied", "Correção de frequência $ppm ppm aplicada"))
                 log("SDR", if (gainTenths == AUTO_GAIN) tr("Automatic gain (AGC) applied", "Ganho automático (AGC) aplicado")
                     else tr("Manual gain %.1f dB applied", "Ganho manual %.1f dB aplicado").format(Locale.US, gainTenths / 10.0))
                 val level = IqLevel()

@@ -11,10 +11,12 @@ struct Receiver {
     jmethodID onFrame;
     JNIEnv* env = nullptr;
     std::vector<lora_lite::Cx> samples;
+    /** Hz per FFT bin, to report the carrier offset in Hz. */
+    float hzPerBin = 0;
     Receiver(JNIEnv* e, jobject callback, int decimation, double shiftHz, double sampleRate, bool average)
         : frontEnd(decimation, shiftHz, sampleRate, average), listener(e->NewGlobalRef(callback)) {
         jclass cls = e->GetObjectClass(callback);
-        onFrame = e->GetMethodID(cls, "onFrame", "([BIIZZFI)V");
+        onFrame = e->GetMethodID(cls, "onFrame", "([BIIZZFIF)V");
         e->DeleteLocalRef(cls);
         samples.reserve(16384);
     }
@@ -30,7 +32,8 @@ struct Receiver {
         e->CallVoidMethod(self->listener, self->onFrame, data, static_cast<jint>(p.status),
                           static_cast<jint>(p.hdr_len), static_cast<jboolean>(p.crc_ok),
                           static_cast<jboolean>(p.has_crc),
-                          static_cast<jfloat>(p.snr), static_cast<jint>(p.sync));
+                          static_cast<jfloat>(p.snr), static_cast<jint>(p.sync),
+                          static_cast<jfloat>(p.cfo * self->hzPerBin));
         e->DeleteLocalRef(data);
     }
 };
@@ -43,6 +46,7 @@ Java_com_engperini_meshsdr_LoraReceiver_nativeCreate(JNIEnv* env, jobject thiz, 
     if (sf < 6 || sf > LORA_LITE_MAX_SF || decimation < 1) return 0;
     auto* r = new Receiver(env, thiz, decimation, shiftHz, sampleRate, average == JNI_TRUE);
     if (!r->onFrame) { env->DeleteGlobalRef(r->listener); delete r; return 0; }
+    r->hzPerBin = static_cast<float>(bandwidth) / static_cast<float>(1 << sf);
     // syncWord 0 accepts any sync word; the detected one is reported per frame.
     r->demod.init(sf, codingRate, true, static_cast<uint16_t>(syncWord), Receiver::received, r,
                   static_cast<uint32_t>(bandwidth), static_cast<uint32_t>(centerHz));

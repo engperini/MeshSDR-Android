@@ -91,7 +91,9 @@ class LoraFrame(
     /** False when the LoRa header says the frame carries no CRC: nothing could be verified. */
     val hasCrc: Boolean = true,
     /** Spreading factor of the decoder that produced it; 0 when unknown. */
-    val spreadingFactor: Int = 0
+    val spreadingFactor: Int = 0,
+    /** Carrier offset measured on the preamble (sender + dongle error), in Hz. */
+    val offsetHz: Float = 0f
 ) {
     /** Payload actually verified by CRC. Meshtastic and MeshCore always send one. */
     val verified: Boolean get() = status == DECODED && hasCrc
@@ -106,7 +108,12 @@ class LoraFrame(
         if (profile != null && profile.syncWord >= 0 && syncWord != profile.syncWord)
             sync += String.format(Locale.US, tr(" (expected 0x%02X; reading may be wrong)",
                 " (esperado 0x%02X; leitura pode estar errada)"), profile.syncWord)
-        val snr = String.format(Locale.US, "SNR %.1f dB", snrDb)
+        var snr = String.format(Locale.US, "SNR %.1f dB", snrDb)
+        // The offset is mostly the dongle's crystal error: show it with the ppm
+        // correction that would cancel it, from the profile's frequency.
+        if (offsetHz != 0f && profile != null)
+            snr += String.format(Locale.US, tr(" • offset %+.1f kHz (ppm %+.1f)", " • desvio %+.1f kHz (ppm %+.1f)"),
+                offsetHz / 1000f, -offsetHz / profile.frequencyHz * 1e6)
         // Which decoder heard it matters when several spreading factors run at once.
         val sf = if (spreadingFactor > 0 && profile?.protocol == Protocol.GENERIC) "SF$spreadingFactor • " else ""
         return sf + when (status) {
