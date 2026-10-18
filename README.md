@@ -45,7 +45,7 @@ LoRa radio, a PC or GNU Radio.
 
 | Item | Notes |
 | --- | --- |
-| Android 8.0+ phone with USB OTG | Field-tested on a current Samsung phone |
+| Android 8.0+ phone with USB OTG | Field-tested on a recent Android phone |
 | RTL-SDR dongle (RTL2832U) | Tested with R820T/R820T2 tuners |
 | OTG adapter + an antenna tuned for 900 MHz | Mount it outside or near a window; a car body costs 10–20 dB |
 | [RTL-SDR Driver](https://play.google.com/store/apps/details?id=marto.rtl_tcp_andro) (`marto.rtl_tcp_andro`) | Free app that opens the USB dongle and serves IQ over a local `rtl_tcp` socket |
