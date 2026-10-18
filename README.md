@@ -94,6 +94,22 @@ Every commit runs the PHY suite in CI:
   recover its 70 bytes exactly. The capture is also attached to each release, so you can try
   it yourself.
 
+### Field-tested hardware
+
+![Dongles and antenna used in field tests](docs/hardware.jpg)
+
+| | Hardware | Result |
+| --- | --- | --- |
+| **A** | Blue aluminium RTL-SDR stick, R820T2 tuner, 1 ppm TCXO | Cleanest signal: 0.06% clipping on auto gain, 41 dB image rejection |
+| **B** | Black aluminium box "Software Define Radio", HF + 25 MHz–1.7 GHz inputs, mini-USB | ~1.3% clipping on auto gain (triggers the app's saturation warning), extra internal spurs |
+| | SMA whip antenna | Used with both dongles |
+
+Both dongles were recorded on the same MeshCore channel (923.125 MHz). A synthetic MeshCore
+frame (SF8 / BW 62.5 kHz) injected into each recording at decreasing levels decoded **at the
+same threshold on both**: every time down to −18 dB below the background, half the time at
+−21 dB. Dongle B's mild clipping did not cost decoding sensitivity. Dongle A did receive an
+external carrier about 12 dB stronger, so it is the better choice for range.
+
 ## Roadmap
 
 - **Desktop (Windows / Linux / Raspberry Pi):** a command-line receiver that reuses the same
