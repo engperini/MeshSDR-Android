@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.engperini.meshsdr.AutoRecorder
 import com.engperini.meshsdr.IqLevel
 import com.engperini.meshsdr.Lang
 import com.engperini.meshsdr.LoraFrame
@@ -41,7 +42,7 @@ class AppState {
         private set
     var profile by mutableStateOf(LoraProfile.DEFAULT)
         private set
-    /** LoRa channel frequency; with offset tuning the tuner sits TUNING_OFFSET_HZ above it. */
+    /** LoRa channel frequency (the tuner is set to it). */
     var centerHz by mutableStateOf(LoraProfile.DEFAULT.frequencyHz)
         private set
     var freqText by mutableStateOf("")
@@ -49,7 +50,8 @@ class AppState {
     /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
     var gainTenths by mutableIntStateOf(402)
         private set
-    var offsetTuning by mutableStateOf(false)
+    /** Save IQ around every LoRa event (off by default). */
+    var autoRecord by mutableStateOf(false)
         private set
     var averaging by mutableStateOf(true)
         private set
@@ -82,6 +84,8 @@ class AppState {
     @Volatile private var captureRequested = false
     @Volatile private var socket: Socket? = null
     @Volatile private var rtlTcp: Process? = null
+    /** Active only while receiving with [autoRecord] on; the decoder callback triggers it. */
+    @Volatile private var autoRecorder: AutoRecorder? = null
 
     init {
         portuguese = when (prefs.get("language", null)) {
@@ -96,7 +100,7 @@ class AppState {
         centerHz = prefs.getLong("frequency", profile.frequencyHz)
         if (profile.protocol == Protocol.GENERIC) profile = LoraProfile.generic(centerHz, genericSf, genericBw)
         gainTenths = prefs.getInt("gainTenths", gainTenths)
-        offsetTuning = prefs.getBoolean("offsetTuning", false)
+        autoRecord = prefs.getBoolean("autoRecord", false)
         averaging = prefs.getBoolean("averaging", true)
         autoStartRtlTcp = prefs.getBoolean("autoStartRtlTcp", true)
         serverText = prefs.get("server", serverText)
@@ -168,10 +172,11 @@ class AppState {
         sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), tr("gain", "ganho"))
     }
 
-    fun changeOffsetTuning(on: Boolean) {
-        offsetTuning = on
-        prefs.putBoolean("offsetTuning", on)
-        applyFrequency()
+    fun changeAutoRecord(on: Boolean) {
+        autoRecord = on
+        prefs.putBoolean("autoRecord", on)
+        log("APP", if (on) tr("Automatic recording on", "Gravação automática ligada")
+            else tr("Automatic recording off", "Gravação automática desligada"))
     }
 
     fun changeAveraging(on: Boolean) {
@@ -188,8 +193,8 @@ class AppState {
 
     fun settingsSummary(): String {
         val gain = if (gainTenths == AUTO_GAIN) tr("auto gain", "ganho auto") else "%.1f dB".format(Locale.US, gainTenths / 10.0)
-        val extras = listOfNotNull(if (offsetTuning) tr("offset", "deslocado") else null,
-            if (averaging) tr("filter", "filtro") else null)
+        val extras = listOfNotNull(if (averaging) tr("filter", "filtro") else null,
+            if (autoRecord) tr("auto rec.", "grav. auto") else null)
         return "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
             if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
     }
@@ -236,21 +241,19 @@ class AppState {
 
     // ---- radio ----------------------------------------------------------
 
-    private fun tuningOffsetHz(): Int = if (offsetTuning) LoraProfile.TUNING_OFFSET_HZ else 0
-    private fun tunedHz(): Long = centerHz + tuningOffsetHz()
+    private fun tunedHz(): Long = centerHz
     private fun gainOrNull(): Int? = if (gainTenths == AUTO_GAIN) null else gainTenths
 
     /** One decoder per spreading factor of the profile (six in generic "all SF" mode). */
     private fun newReceivers(): List<LoraReceiver> {
         val p = active()
-        val offset = tuningOffsetHz()
-        val on = tr("on", "ligado")
-        val off = tr("off", "desligado")
-        log("LORA", tr("Decoder: %s; tuner at %.3f MHz; offset %s; averaging filter %s",
-            "Decoder: %s; sintonizador em %.3f MHz; deslocamento %s; filtro de média %s").format(
-            Locale.US, p.describe(), tunedHz() / 1e6, if (offset != 0) "250 kHz" else off, if (averaging) on else off))
+        log("LORA", tr("Decoder: %s; averaging filter %s", "Decoder: %s; filtro de média %s").format(
+            Locale.US, p.describe(), if (averaging) tr("on", "ligado") else tr("off", "desligado")))
         return p.spreadingFactors.map { sf ->
-            LoraReceiver(p, sf, offset, averaging) { frame -> ui { onFrame(frame) } }
+            LoraReceiver(p, sf, averaging) { frame ->
+                autoRecorder?.trigger()
+                ui { onFrame(frame) }
+            }
         }
     }
 
@@ -391,6 +394,13 @@ class AppState {
                     captureFrom = if (streamBytes % 2 == 0L) 0 else 1
                     log("IQ", tr("Recording to ${file.absolutePath}", "Gravando em ${file.absolutePath}"))
                 }
+                // Automatic recording: created when switched on, fed before the decoder runs.
+                val auto = autoRecorder
+                if (autoRecord && auto == null) autoRecorder = newAutoRecorder()
+                else if (!autoRecord && auto != null) { auto.close(); autoRecorder = null }
+                autoRecorder?.add(buffer, n, streamBytes) {
+                    "meshsdr-auto-${System.currentTimeMillis()}-${tunedHz()}Hz-${sampleRate}sps.cu8"
+                }
                 val activeCapture = capture
                 if (activeCapture != null) {
                     try {
@@ -446,6 +456,8 @@ class AppState {
             if (running) log("ERROR", tr("IQ stream", "Fluxo IQ") + ": ${e.message}")
         } finally {
             running = false
+            autoRecorder?.close()
+            autoRecorder = null
             try { socket?.close() } catch (_: Exception) {}
             socket = null
             rtlTcp?.let { it.destroy(); if (!it.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) it.destroyForcibly() }
@@ -457,6 +469,14 @@ class AppState {
             log("SDR", tr("Reception stopped", "Recepção encerrada"))
         }
     }
+
+    private fun newAutoRecorder() = AutoRecorder(
+        open = { name ->
+            val file = File(outputDir(), name)
+            FileOutputStream(file).let { AutoRecorder.Output(it, file.absolutePath, it::close) }
+        },
+        log = { log("IQ", it) }
+    )
 
     private fun parseServer(): Pair<String, Int>? {
         val text = serverText.trim()

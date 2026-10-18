@@ -253,9 +253,9 @@ private fun SettingsBody(state: AppState) {
     }
 
     Section(tr("Processing (optional)", "Processamento (opcional)"))
-    SwitchRow(tr("Tune 250 kHz above (avoids DC spike)", "Sintonizar 250 kHz acima (evita pico DC)"),
-        state.offsetTuning) { state.changeOffsetTuning(it) }
     SwitchRow(tr("Averaging filter when decimating", "Filtro de média na decimação"), state.averaging) { state.changeAveraging(it) }
+    SwitchRow(tr("Record IQ automatically on detections (3 s before + after)",
+        "Gravar IQ automaticamente nas detecções (3 s antes + depois)"), state.autoRecord) { state.changeAutoRecord(it) }
 
     Section("RTL-SDR (rtl_tcp)")
     SwitchRow(tr("Start rtl_tcp with the dongle on this computer", "Iniciar rtl_tcp com o dongle neste computador"),

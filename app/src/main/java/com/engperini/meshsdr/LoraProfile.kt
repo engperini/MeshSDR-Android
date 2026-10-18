@@ -32,8 +32,6 @@ data class LoraProfile(
 
     companion object {
         const val SAMPLE_RATE = 1_000_000
-        /** Optional (off by default): tuner this far above the channel, keeping the RTL DC spike off it. */
-        const val TUNING_OFFSET_HZ = 250_000
 
         // Brazil: the Meshtastic community uses region ANZ (915-928 MHz) with
         // LongFast, whose default slot there is 919.875 MHz. MeshCore groups in
