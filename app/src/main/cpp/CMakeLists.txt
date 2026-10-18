@@ -5,3 +5,6 @@ target_compile_features(meshsdr_lora PRIVATE cxx_std_17)
 target_compile_definitions(meshsdr_lora PRIVATE LORA_LITE_MAX_SF=12 LORA_LITE_MAX_PAYLOAD=255)
 target_include_directories(meshsdr_lora PRIVATE upstream)
 target_link_libraries(meshsdr_lora log)
+# Optimise even in debug APKs (the ones CI publishes): the PHY runs in real time,
+# and generic "all SF" mode runs six decoders at once.
+target_compile_options(meshsdr_lora PRIVATE -O2)

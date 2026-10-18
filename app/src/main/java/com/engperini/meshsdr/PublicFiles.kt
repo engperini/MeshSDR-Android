@@ -35,9 +35,9 @@ object PublicFiles {
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: throw IllegalStateException("MediaStore recusou criar $name")
+                ?: throw IllegalStateException(tr("MediaStore refused to create $name", "MediaStore recusou criar $name"))
             val stream = resolver.openOutputStream(uri)
-                ?: throw IllegalStateException("Não foi possível abrir $name")
+                ?: throw IllegalStateException(tr("Could not open $name", "Não foi possível abrir $name"))
             return Target(stream, "Download/$FOLDER/$name") {
                 resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
             }

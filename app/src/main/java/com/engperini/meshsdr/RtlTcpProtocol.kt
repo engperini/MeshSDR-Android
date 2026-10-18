@@ -40,7 +40,7 @@ object RtlTcpProtocol {
             ((header[6].toInt() and 0xff) shl 8) or (header[7].toInt() and 0xff)
         return when (type) {
             1 -> "E4000"; 2 -> "FC0012"; 3 -> "FC0013"; 4 -> "FC2580"; 5 -> "R820T/R820T2"; 6 -> "R828D"
-            else -> "desconhecido ($type)"
+            else -> tr("unknown ($type)", "desconhecido ($type)")
         }
     }
 

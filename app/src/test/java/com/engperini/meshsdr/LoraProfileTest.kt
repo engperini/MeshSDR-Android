@@ -2,9 +2,13 @@ package com.engperini.meshsdr
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class LoraProfileTest {
+    // Assertions below use the Portuguese texts.
+    @Before fun portuguese() { Lang.portuguese = true }
+
     @Test fun defaultIsMeshtasticBrazil() {
         assertEquals(LoraProfile.MESHTASTIC_BR, LoraProfile.DEFAULT)
         assertEquals(919_875_000L, LoraProfile.DEFAULT.frequencyHz)
@@ -50,5 +54,32 @@ class LoraProfileTest {
         assertTrue(frame.describe(), frame.describe().startsWith("Meshtastic"))
         val other = LoraFrame(bytes, LoraFrame.DECODED, 20, true, 5f, 0x34)
         assertTrue(other.describe(), other.describe().contains("0x34 LoRaWAN"))
+    }
+
+    @Test fun genericProfileRunsEverySpreadingFactorAndShowsRawBytes() {
+        val all = LoraProfile.generic(915_000_000)
+        assertEquals(listOf(7, 8, 9, 10, 11, 12), all.spreadingFactors)
+        assertTrue(all.describe(), all.describe().contains("SF7–12 / BW125 kHz"))
+        assertEquals(listOf(9), LoraProfile.generic(915_000_000, 9, 250_000).spreadingFactors)
+        for (bw in LoraProfile.GENERIC_BANDWIDTHS) LoraProfile.decimation(LoraProfile.generic(915_000_000, 7, bw))
+        assertEquals(LoraProfile.GENERIC_ID, LoraProfile.byId(LoraProfile.GENERIC_ID).id)
+
+        // Bytes that would parse as Meshtastic are not interpreted, and no sync word is "expected".
+        val bytes = ByteArray(20).also { for (i in 0..3) it[i] = 0xff.toByte() }
+        val text = LoraFrame(bytes, LoraFrame.DECODED, 20, true, 5f, 0x2B, spreadingFactor = 9).describe(all)
+        assertTrue(text, text.startsWith("SF9 • Quadro LoRa CRC-ok") && text.contains("ffffffff"))
+        val header = LoraFrame(ByteArray(0), LoraFrame.HEADER_ONLY, 30, false, 1f, 0x34, spreadingFactor = 7)
+        assertTrue(!header.describe(all).contains("esperado"))
+    }
+
+    @Test fun englishTexts() {
+        Lang.portuguese = false
+        try {
+            val header = LoraFrame(ByteArray(0), LoraFrame.HEADER_ONLY, 40, false, -3.5f, 0x12)
+            assertTrue(header.describe(), header.describe().startsWith("LoRa detected"))
+            assertTrue(LoraProfile.generic(915_000_000).describe().startsWith("Generic LoRa"))
+        } finally {
+            Lang.portuguese = true
+        }
     }
 }

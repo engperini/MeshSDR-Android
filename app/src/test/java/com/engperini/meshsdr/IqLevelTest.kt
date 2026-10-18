@@ -1,9 +1,13 @@
 package com.engperini.meshsdr
 
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class IqLevelTest {
+    // Assertions below use the Portuguese texts.
+    @Before fun portuguese() { Lang.portuguese = true }
+
     @Test fun flagsNearSilentInputAsLowGain() {
         // What the first hardware recordings looked like: only 127/128.
         val level = IqLevel()

@@ -23,21 +23,25 @@ data class MeshCorePacket(
     val typeName: String get() = TYPES.getOrElse(payloadType) { "TYPE_$payloadType" }
 
     fun summary(): String {
-        val hops = if (path.isEmpty()) "direto" else
-            "${path.size} salto${if (path.size > 1) "s" else ""} via ${path.joinToString("›") { hex(it) }}"
+        val hops = if (path.isEmpty()) tr("direct", "direto") else
+            "${path.size} " + (if (path.size > 1) tr("hops", "saltos") else tr("hop", "salto")) +
+                " via ${path.joinToString("›") { hex(it) }}"
         return "MeshCore $typeName • $routeName • $hops • ${describePayload()}"
     }
 
     private fun describePayload(): String = when (payloadType) {
-        TYPE_ADVERT -> advert()?.describe() ?: "anúncio incompleto (${payload.size} B)"
+        TYPE_ADVERT -> advert()?.describe() ?: tr("incomplete advert (${payload.size} B)", "anúncio incompleto (${payload.size} B)")
         TYPE_REQ, TYPE_RESPONSE, TYPE_TXT_MSG, TYPE_PATH ->
-            if (payload.size >= 4) "destino ${hx(payload[0])} • origem ${hx(payload[1])} • ${payload.size - 4} B cifrados"
+            if (payload.size >= 4) tr("to ${hx(payload[0])} • from ${hx(payload[1])} • ${payload.size - 4} B encrypted",
+                "destino ${hx(payload[0])} • origem ${hx(payload[1])} • ${payload.size - 4} B cifrados")
             else "${payload.size} B"
         TYPE_ANON_REQ ->
-            if (payload.size >= 35) "destino ${hx(payload[0])} • remetente ${hex(payload.copyOfRange(1, 5))}… • ${payload.size - 35} B cifrados"
+            if (payload.size >= 35) tr("to ${hx(payload[0])} • sender ${hex(payload.copyOfRange(1, 5))}… • ${payload.size - 35} B encrypted",
+                "destino ${hx(payload[0])} • remetente ${hex(payload.copyOfRange(1, 5))}… • ${payload.size - 35} B cifrados")
             else "${payload.size} B"
         TYPE_GRP_TXT, TYPE_GRP_DATA ->
-            if (payload.size >= 3) "canal ${hx(payload[0])} • ${payload.size - 3} B cifrados" else "${payload.size} B"
+            if (payload.size >= 3) tr("channel ${hx(payload[0])} • ${payload.size - 3} B encrypted",
+                "canal ${hx(payload[0])} • ${payload.size - 3} B cifrados") else "${payload.size} B"
         TYPE_ACK -> if (payload.size >= 4) "checksum ${hex(payload.copyOfRange(0, 4))}" else "${payload.size} B"
         else -> "${payload.size} B"
     }
@@ -51,11 +55,14 @@ data class MeshCorePacket(
         val name: String?
     ) {
         fun describe(): String {
-            val kind = when (nodeType) { 1 -> "Nó (chat)"; 2 -> "Repetidora"; 3 -> "Sala"; 4 -> "Sensor"; else -> "Nó" }
+            val kind = when (nodeType) {
+                1 -> tr("Node (chat)", "Nó (chat)"); 2 -> tr("Repeater", "Repetidora"); 3 -> tr("Room", "Sala")
+                4 -> "Sensor"; else -> tr("Node", "Nó")
+            }
             val where = if (latitude != null && longitude != null)
-                String.format(Locale.US, " em %.5f, %.5f", latitude, longitude) else ""
+                String.format(Locale.US, tr(" at %.5f, %.5f", " em %.5f, %.5f"), latitude, longitude) else ""
             val who = name?.let { " \"$it\"" } ?: ""
-            return "$kind$who$where • chave ${hex(publicKey.copyOfRange(0, 4))}…"
+            return "$kind$who$where • " + tr("key", "chave") + " ${hex(publicKey.copyOfRange(0, 4))}…"
         }
     }
 

@@ -21,7 +21,7 @@ LoRa radio, a PC or GNU Radio.
 
 - **Real-time LoRa demodulation on the phone.** Preamble and sync detection, CFO, STO and
   SFO compensation, deinterleaving, Hamming FEC and CRC, from the RTL-SDR's raw IQ stream.
-  SF7–SF12, BW 62.5/125/250 kHz, CR 4/5–4/8, explicit header.
+  SF7–SF12, BW 62.5/125/250/500 kHz, CR 4/5–4/8, explicit header.
 - **Sees traffic it can't fully decode.** A valid LoRa header is reported as a *detection*,
   with length, SNR and sync word, even when the payload is too weak to pass CRC.
 - **MeshCore interpretation.** Route type, payload type, hop count, the repeaters in the
@@ -34,6 +34,10 @@ LoRa radio, a PC or GNU Radio.
 - **Ready-made profiles.** Meshtastic BR (ANZ LongFast, 919.875 MHz) and MeshCore BR
   (923.125 MHz, SF8 / BW 62.5 kHz) for Brazil, plus Meshtastic US (906.875 MHz). The
   frequency can be edited.
+- **Generic LoRa mode.** Listen on any frequency for any LoRa transmission: pick one SF or
+  run **SF7–12 at once**, choose the bandwidth, and see the frames as raw bytes, without
+  assuming Meshtastic or MeshCore.
+- **English and Portuguese.** Follows the phone's language, switchable in the app.
 - **Radio controls.** Tuner gain (AGC or 20–49.6 dB), a live IQ level and clipping meter,
   and optional DC-offset tuning and decimation filter.
 - **Keeps listening with the screen off.** A foreground service and wake lock keep it
@@ -56,11 +60,10 @@ LoRa radio, a PC or GNU Radio.
 2. Download `MeshSDR-<version>.apk` from the
    [latest release](https://github.com/engperini/MeshSDR-Android/releases/latest) and install it.
 3. Plug in the dongle, open MeshSDR, pick a profile (for example **MeshCore BR**) and tap
-   **Conectar** (Connect).
-4. Leave it listening. Detections and decoded packets appear in **Mensagens** (Messages),
-   and radio details in **Logs técnicos** (Technical logs).
+   **Connect**.
+4. Leave it listening. Detections and decoded packets appear in **Messages**, and radio
+   details in **Technical logs**.
 
-> The UI is currently in Portuguese (Brazil). An English UI is on the roadmap.
 
 ## How it works
 
@@ -120,7 +123,7 @@ external carrier about 12 dB stronger, so it is the better choice for range.
   default key.
 - **MeshCore:** decryption of the public group channel; a map of nodes learned from ADVERTs.
 - **Scanning:** several profiles and channels at once.
-- **English UI**, signed releases and a Play Store / F-Droid build.
+- Signed releases and a Play Store / F-Droid build.
 
 Ideas and pull requests are welcome. Please open an issue first for larger changes.
 
