@@ -24,12 +24,12 @@ data class LoraProfile(
         get() = if (spreadingFactor == ALL_SF) GENERIC_SFS else listOf(spreadingFactor)
 
     /**
-     * Decimation phases decoded in parallel: 4 recover packets that only one
-     * sample phase decodes (dongles with a drifting oscillator); "all SF" mode
-     * keeps 1, as it already runs six decoders.
+     * Run the extra decoders of diversity.h (every decimation phase, both
+     * filter settings, drift tracking): they recover packets from dongles with
+     * a drifting oscillator. "All SF" mode keeps one decoder per SF.
      */
-    val decodePhases: Int
-        get() = if (spreadingFactor == ALL_SF) 1 else 4
+    val diversity: Boolean
+        get() = spreadingFactor != ALL_SF
 
     fun describe(): String {
         val sf = if (spreadingFactor == ALL_SF) "SF7–12" else "SF$spreadingFactor"

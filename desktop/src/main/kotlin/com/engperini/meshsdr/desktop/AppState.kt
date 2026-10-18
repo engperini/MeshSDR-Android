@@ -269,7 +269,7 @@ class AppState {
         log("LORA", tr("Decoder: %s; averaging filter %s", "Decoder: %s; filtro de média %s").format(
             Locale.US, p.describe(), if (averaging) tr("on", "ligado") else tr("off", "desligado")))
         return p.spreadingFactors.map { sf ->
-            LoraReceiver(p, sf, averaging, p.decodePhases) { frame ->
+            LoraReceiver(p, sf, averaging, p.diversity) { frame ->
                 autoRecorder?.trigger()
                 ui { onFrame(frame) }
             }

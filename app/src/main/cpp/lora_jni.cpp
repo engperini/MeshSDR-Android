@@ -40,14 +40,14 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_engperini_meshsdr_LoraReceiver_nativeCreate(JNIEnv* env, jobject thiz, jint sf, jint bandwidth,
                                                      jint codingRate, jint syncWord, jlong centerHz,
                                                      jint decimation, jdouble shiftHz, jdouble sampleRate,
-                                                     jboolean average, jint phases) {
+                                                     jboolean average, jboolean diversity) {
     if (sf < 6 || sf > LORA_LITE_MAX_SF || decimation < 1) return 0;
     auto* r = new Receiver(env, thiz);
     if (!r->onFrame) { env->DeleteGlobalRef(r->listener); delete r; return 0; }
     r->hzPerBin = static_cast<float>(bandwidth) / static_cast<float>(1 << sf);
     // syncWord 0 accepts any sync word; the detected one is reported per frame.
     r->decoders = std::make_unique<meshsdr::PhaseDiversity>(
-        phases, decimation, shiftHz, sampleRate, average == JNI_TRUE, sf, codingRate,
+        diversity == JNI_TRUE, decimation, shiftHz, sampleRate, average == JNI_TRUE, sf, codingRate,
         static_cast<uint16_t>(syncWord), static_cast<uint32_t>(bandwidth), static_cast<uint32_t>(centerHz),
         Receiver::received, r);
     return reinterpret_cast<jlong>(r);

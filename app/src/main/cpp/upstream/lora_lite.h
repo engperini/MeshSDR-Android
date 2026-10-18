@@ -115,6 +115,12 @@ class Demod {
 public:
     typedef void (*PacketCb)(const Packet&, void* user);
 
+    // MeshSDR: track the residual offset symbol by symbol (gain per symbol,
+    // 0 = off). Rescues receivers whose oscillator drifts during a packet;
+    // used only by the extra decoders in diversity.h, since alone it costs
+    // some clean-signal cases (see docs/engineering-notes.pt-BR.md).
+    void set_tracking(float gain) { track_gain_ = gain; }
+
     void init(int sf, int cr, bool has_crc, uint16_t sync_word,
               PacketCb cb, void* user, uint32_t bw = 62500, uint32_t freq = 869618000) {
         sf_ = sf; N_ = 1 << sf; sps_ = N_ * OS;
@@ -218,6 +224,9 @@ private:
     int symbol_cnt_, preamb_[8], k_hat_, net_ids_[2], down_val_;
     uint32_t bin_idx_;
     float m_cfo_frac_, m_sto_frac_, sfo_hat_, sfo_cum_, cur_snr_;
+    // MeshSDR: optional per-symbol tracking of the residual offset (bins),
+    // see set_tracking(). Gain 0 (default) leaves the decoder unchanged.
+    float track_gain_ = 0.0f, trk_ = 0.0f;
     int m_cfo_int_, additional_up_;
     int sync_syms_ = 0;   // MeshSDR: symbols consumed in SYNC, for SFO pre-compensation
     bool cfo_est_;
@@ -239,7 +248,7 @@ private:
 
     void reset() {
         state_ = DETECT; symbol_cnt_ = 1; bin_idx_ = 0; k_hat_ = 0;
-        m_sto_frac_ = m_cfo_frac_ = 0; m_cfo_int_ = 0; sfo_hat_ = sfo_cum_ = 0;
+        m_sto_frac_ = m_cfo_frac_ = 0; m_cfo_int_ = 0; sfo_hat_ = sfo_cum_ = 0; trk_ = 0;
         cfo_est_ = false; additional_up_ = 0; down_val_ = 0;
         net_ids_[0] = net_ids_[1] = 0;
         payload_sym_cnt_ = 0; total_payload_symbols_ = 0;
@@ -496,6 +505,25 @@ private:
         }
     }
 
+    // Moves the tracked offset toward the fractional position of a confident
+    // peak (parabolic interpolation of the amplitude spectrum).
+    void update_tracking() {
+        float mean = 0;
+        int pk = 0;
+        for (int i = 0; i < N_; i++) {
+            mean += mag_[i];
+            if (mag_[i] > mag_[pk]) pk = i;
+        }
+        mean /= (float)N_;
+        const float l = mag_[(pk + N_ - 1) % N_], c = mag_[pk], r = mag_[(pk + 1) % N_];
+        const float den = l - 2.0f * c + r;
+        if (c > 4.0f * mean && den < 0) {
+            float d = 0.5f * (l - r) / den;
+            d = d > 0.5f ? 0.5f : (d < -0.5f ? -0.5f : d);
+            trk_ += track_gain_ * d;
+        }
+    }
+
     void demod_symbol(const Cx* sym) {
         int block = 4 + (is_header_ ? 4 : pay_cr_);
         compute_llrs(sym, llr_block_[llr_block_n_],
@@ -505,11 +533,23 @@ private:
     }
 
     void compute_llrs(const Cx* sym, float* out, float* out_rot) {
-        for (int i = 0; i < N_; i++) dech_[i] = cxmul(sym[i], demod_down_[i]);
+        if (track_gain_ > 0) {
+            // Remove the tracked residual offset before the FFT.
+            const float w = -2.0f * (float)LORA_PI * trk_ / (float)N_;
+            const Cx step = {cosf(w), sinf(w)};
+            Cx rot = {1.0f, 0.0f};
+            for (int i = 0; i < N_; i++) {
+                dech_[i] = cxmul(cxmul(sym[i], demod_down_[i]), rot);
+                rot = cxmul(rot, step);
+            }
+        } else {
+            for (int i = 0; i < N_; i++) dech_[i] = cxmul(sym[i], demod_down_[i]);
+        }
         fftN(dech_, fout_, N_);
         // Amplitude (not power) bin metric: closer to the noncoherent LLR and
         // avoids overweighting strong symbols inside a deinterleaved codeword.
         for (int i = 0; i < N_; i++) mag_[i] = sqrtf(cxnorm(fout_[i]));
+        if (track_gain_ > 0) update_tracking();
         const uint16_t* map = (is_header_ || ldro_) ? demap_hdr_ : demap_pay_;
         for (int i = 0; i < sf_; i++) {
             float x1 = -1, x0 = -1, r1 = -1, r0 = -1;

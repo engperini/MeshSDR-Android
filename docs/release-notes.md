@@ -9,7 +9,7 @@
 - **Generic LoRa mode:** any frequency, one SF or SF7–12 at once, typed bandwidth (default 125 kHz); frames shown raw.
 - **Automatic IQ recording** (optional): the 3 s before and the seconds after every detection are saved as `.cu8`.
 - **ppm correction** for dongles without TCXO; each detection shows the measured offset and the ppm that cancels it.
-- **Decimation-phase diversity:** four decoders per profile, one per sample phase, so packets that only some phases decode are no longer lost (field-tested with a dongle without TCXO).
+- **Decoder diversity:** 32 decoders per profile (every decimation phase, filter on/off, with and without drift tracking) on several CPU cores, so packets that only some of them decode are no longer lost. With a dongle without TCXO: 4 real MeshCore packets decoded from the field captures, against 0 with a single decoder.
 - English and Portuguese UI.
 - Profiles for Brazil (Meshtastic ANZ LongFast 919.875 MHz, MeshCore 923.125 MHz) and the US (906.875 MHz).
 - Gain control, live IQ level meter, screen-off reception on Android.

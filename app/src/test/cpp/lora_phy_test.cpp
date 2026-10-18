@@ -188,6 +188,25 @@ void testNoFalsePositives() {
     CHECK(sink.headers == 0, "noise produced %d false header detections", sink.headers);
 }
 
+// The app's 32 MeshCore decoders (diversity.h) must not turn noise into frames either.
+void testDiversityNoise() {
+    std::printf("[noise-diversity] 20 s of noise through the MeshCore decoder diversity\n");
+    std::mt19937 rng(7);
+    std::normal_distribution<double> n(0.0, 0.2);
+    std::vector<uint8_t> bytes(2 * 20000000);
+    for (auto& b : bytes) { long x = std::lround(127.5 + 127.5 * n(rng)); b = static_cast<uint8_t>(x < 0 ? 0 : x > 255 ? 255 : x); }
+    Sink sink;
+    meshsdr::PhaseDiversity d(true, 8, 0, kFs, true, 8, 4, 0, 62500, 923125000, Sink::cb, &sink);
+    const auto t0 = std::chrono::steady_clock::now();
+    for (size_t i = 0; i < bytes.size(); i += 65536) d.push(bytes.data() + i, (int)std::min<size_t>(65536, bytes.size() - i));
+    const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    int decoded = 0;
+    for (const auto& p : sink.decoded) decoded += p.status == lora_lite::PKT_DECODED;
+    std::printf("  %d decoders, %.1fx real time on this host; %d header detections, %d decoded\n",
+                d.decoders(), 20.0 / secs, sink.headers, decoded);
+    CHECK(decoded == 0, "noise produced %d decoded frames", decoded);
+}
+
 // MeshCore Brazil: 923.125 MHz, BW 62.5 kHz, SF8, CR 4/8, private sync 0x12.
 void testMeshCoreBr() {
     // Without the averaging filter, decimating 8x folds the whole 1 MHz of
@@ -285,7 +304,7 @@ void testRealCapture() {
 }
 
 // Real packet from a dongle without TCXO (data/README.md): one decoder finds it
-// only at some decimation phases; the app's 4-phase diversity at all of them.
+// only at some decimation phases; the app's decoder diversity at all of them.
 void testPhaseDiversity() {
     std::printf("[phase-diversity] drifting dongle, MeshCore PATH, Jundiai 18/10/2026\n");
     const std::string path = std::string(MESHSDR_TEST_DATA) + "/meshcore_jundiai_20261018_driftingdongle_923125000Hz_1Msps.cu8";
@@ -302,9 +321,9 @@ void testPhaseDiversity() {
     for (size_t i = 0; want[i] && want[i + 1]; i += 2) expected.push_back((uint8_t)std::strtol(std::string(want + i, 2).c_str(), nullptr, 16));
     int single = 0, diverse = 0;
     for (int start = 0; start < 8; ++start) {   // where the stream happens to begin, in samples
-        for (int phases : {1, 4}) {
+        for (bool extended : {false, true}) {
             Sink sink;
-            meshsdr::PhaseDiversity d(phases, 8, 0, kFs, true, 8, 4, 0, 62500, 923125000, Sink::cb, &sink);
+            meshsdr::PhaseDiversity d(extended, 8, 0, kFs, true, 8, 4, 0, 62500, 923125000, Sink::cb, &sink);
             for (size_t i = 2 * start; i < bytes.size(); i += 65536)
                 d.push(bytes.data() + i, (int)std::min<size_t>(65536, bytes.size() - i));
             // Phase 0 may also report the CRC failure; exactly one decoded frame is expected.
@@ -312,11 +331,11 @@ void testPhaseDiversity() {
             for (const auto& p : sink.decoded)
                 if (p.status == lora_lite::PKT_DECODED) (sameBytes(p, expected) ? good : other)++;
             const bool ok = good == 1 && other == 0;
-            (phases == 1 ? single : diverse) += ok;
+            (extended ? diverse : single) += ok;
         }
     }
-    std::printf("  start offsets decoded: 1 phase %d/8, 4 phases %d/8\n", single, diverse);
-    CHECK(diverse == 8, "4-phase diversity decoded %d/8 start offsets", diverse);
+    std::printf("  start offsets decoded: single decoder %d/8, diversity %d/8\n", single, diverse);
+    CHECK(diverse == 8, "diversity decoded %d/8 start offsets", diverse);
 }
 
 void runAll() {
@@ -339,6 +358,7 @@ void runAll() {
 int main() {
     testTablesMatchReference();
     testMatrix();
+    testDiversityNoise();
     for (Dsp d : {Dsp{0, true, "app default (filter on)"}, Dsp{0, false, "filter off"}, Dsp{250e3, true, "offset + filter"}}) { gDsp = d; runAll(); }
     std::printf(failures ? "\n%d check(s) FAILED\n" : "\nall LoRa PHY checks passed\n", failures);
     return failures ? 1 : 0;
