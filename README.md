@@ -1,6 +1,6 @@
 # MeshSDR-Android
 
-> **Estado em 17/10/2026: protótipo experimental.** CI **verde** (Android APK #42 e Quality gates #38, PR #1). O decoder LoRa passa em **teste automatizado de bytes exatos** (modulador de referência → IQ u8 do `rtl_tcp` → decoder), mas **ainda não decodificou um pacote real no ar**, e a interpretação Meshtastic se limita ao cabeçalho de 16 bytes (sem protobuf/descriptografia).
+> **Estado em 18/10/2026: protótipo funcional.** CI verde. **Primeiros pacotes LoRa reais recebidos e decodificados** (MeshCore, Jundiaí, 17/10), com bytes confirmados offline e um deles virou teste de regressão. A interpretação MeshCore mostra rota, tipo, saltos e, em ADVERTs, nome e posição do nó. Meshtastic ainda não foi recebido no ar e a camada Meshtastic se limita ao cabeçalho de 16 bytes (sem protobuf/descriptografia).
 
 ## Objetivo do produto
 
@@ -67,6 +67,25 @@ A documentação oficial do Meshtastic também lista `BR_902` (902–907,5 MHz),
 
 O ganho é enviado ao `rtl_tcp` ao conectar (padrão 40,2 dB) e o log mostra nível RMS e saturação a cada 2 s. A gravação IQ sempre começa num byte I (antes podia começar num Q e trocar I/Q no arquivo inteiro).
 
+### Recepção real: MeshCore em Jundiaí (17/10/2026)
+
+Antena dentro do carro (perda típica de 10–20 dB), perfil MeshCore BR, ganho AGC. Seis eventos LoRa, todos com sync 0x12 (MeshCore):
+
+| Hora | Filtro | Resultado | SNR | Interpretação |
+| --- | --- | --- | --- | --- |
+| 22:08:45 | não | CRC inválido, 139 B | −14,6 dB | — |
+| 22:09:23 | não | **CRC-ok, 70 B** | −0,8 dB | DIRECT **RESPONSE**, sem saltos (hash 2 B), destino `b6`, origem `78`, 64 B cifrados |
+| 22:15:35 | sim | CRC inválido, 59 B | −15,7 dB | — |
+| 22:16:17 | sim | **CRC-ok, 59 B** | −12,7 dB | FLOOD **ANON_REQ**, 3 saltos `83b0›e28a›786a`, 16 B cifrados |
+
+Os trechos cifrados têm tamanho múltiplo de 16 bytes (bloco AES do MeshCore), o que confirma que os bytes estão corretos. O pacote das 22:09:23 está numa gravação do app; offline ele decodifica nos mesmos 70 bytes. **Atenuando esse pacote real**, ele decodifica até 9 dB de atenuação sem filtro e até **18 dB com o filtro de média**, por isso o filtro passou a vir **ligado por padrão**. 0,9 s dessa gravação estão em `app/src/test/cpp/data/` e o teste `real-capture` exige os 70 bytes exatos.
+
+O segundo pacote foi rotulado com sync **0xD2** apesar de ser MeshCore (CRC-ok e estrutura válida): provável erro de leitura do 1º símbolo de net ID em sinal fraco (não há gravação desse pacote para confirmar). Agora o app interpreta o quadro pelo **perfil ativo** e marca o sync divergente como "esperado 0x12; leitura pode estar errada".
+
+### Interpretação MeshCore
+
+`MeshCorePacket.kt` segue a especificação oficial ([formato](https://docs.meshcore.io/packet_format/), [payloads](https://docs.meshcore.io/payloads/)): cabeçalho `0bVVPPPPRR`, códigos de transporte, `path_len` (bits 6-7 tamanho do hash, 0-5 saltos), caminho e payload. Conteúdo cifrado é só descrito (hashes e tamanhos). **ADVERT** é assinado mas não cifrado: o app mostra tipo de nó (repetidora, chat, sala, sensor), nome, latitude/longitude e prefixo da chave pública. Testes usam os dois pacotes reais.
+
 ### Recepção com a tela apagada
 
 Ao conectar, o app inicia `ReceiverService` (serviço em primeiro plano do tipo `connectedDevice`, com notificação fixa e *partial wake lock* de até 12 h). Antes disso, com a tela apagada o Android congelava o processo e a recepção caía com `Read timed out` (visto em campo em 17/10).
@@ -75,12 +94,12 @@ Ao conectar, o app inicia `ReceiverService` (serviço em primeiro plano do tipo 
 
 Portadora em 433,500 MHz com o sintonizador em 433,400 MHz: apareceu em **+100,570 kHz** (lado correto; orientação I/Q validada), erro combinado dongle + rádio de **+1,3 ppm**, estabilidade de ±3 Hz em 3 s, rejeição de imagem de **67 dB**. Com o ganho em AGC, o nível medido varia quando o transmissor liga e desliga; para medir nível, use ganho fixo. **Validação às cegas:** demodulando o FM da gravação, a tecla DTMF apertada durante o PTT foi identificada como **5** (770,0 + 1336,1 Hz) sem que o analista soubesse qual era, e o usuário confirmou. Isso mostra que gravação e I/Q chegam sem perda nem desalinhamento. Há também uma portadora contínua local em 433,496 MHz, sem relação com o app.
 
-### Opções do front-end (ambas **desligadas** por padrão, caixas na tela)
+### Opções do front-end (caixas na tela)
 
 | Opção | O que faz | Evidência |
 | --- | --- | --- |
 | Sintonizar 250 kHz acima | Tira o pico DC do RTL de cima do canal e desloca de volta em software | **Nenhuma diferença medida** nos testes (com ou sem pico DC simulado). Nas gravações reais de 17/10 o pico DC não era o sinal dominante. |
-| Filtro de média na decimação | Média de N amostras em vez de descartar N−1 | Sensibilidade medida (sintético, 4 sementes): LongFast decodifica a partir de **≈ −8 dB com filtro** vs ≈ +4 dB sem (falhas esparsas abaixo); MeshCore BR (decimação 8×) **−6 dB com filtro vs +2 dB sem** (≈ 8 dB). |
+| Filtro de média na decimação (**ligado por padrão desde 18/10**) | Média de N amostras em vez de descartar N−1 | Sensibilidade medida (sintético, 4 sementes): LongFast decodifica a partir de **≈ −8 dB com filtro** vs ≈ +4 dB sem (falhas esparsas abaixo); MeshCore BR (decimação 8×) **−6 dB com filtro vs +2 dB sem** (≈ 8 dB). |
 
 ### Correção no decoder: deriva de relógio (SFO)
 
