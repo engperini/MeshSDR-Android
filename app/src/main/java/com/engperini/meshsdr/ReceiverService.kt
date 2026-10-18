@@ -25,15 +25,15 @@ class ReceiverService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL, "Recepção LoRa", NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(CHANNEL, tr("LoRa reception", "Recepção LoRa"), NotificationManager.IMPORTANCE_LOW)
         )
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE
         )
         val notification = Notification.Builder(this, CHANNEL)
-            .setContentTitle("MeshSDR recebendo")
-            .setContentText(intent?.getStringExtra(EXTRA_TEXT) ?: "Escutando LoRa pelo RTL-SDR")
+            .setContentTitle(tr("MeshSDR receiving", "MeshSDR recebendo"))
+            .setContentText(intent?.getStringExtra(EXTRA_TEXT) ?: tr("Listening for LoRa via RTL-SDR", "Escutando LoRa pelo RTL-SDR"))
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentIntent(open)
             .setOngoing(true)

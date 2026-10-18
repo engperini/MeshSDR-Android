@@ -59,12 +59,24 @@ class MainActivity : Activity() {
     private lateinit var outputScroll: ScrollView
     private val profileChips = mutableMapOf<String, Button>()
     private val gainChips = mutableMapOf<Int, Button>()
+    private val sfChips = mutableMapOf<Int, Button>()
+    private val bwChips = mutableMapOf<Int, Button>()
+    private val languageChips = mutableMapOf<Boolean, Button>()
+    private lateinit var genericBox: LinearLayout
+    /** Generic LoRa settings, kept while another profile is selected. */
+    private var genericSf = LoraProfile.ALL_SF
+    private var genericBw = 125_000
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Lang.apply(getPreferences(MODE_PRIVATE).getString("language", null))
+        genericSf = getPreferences(MODE_PRIVATE).getInt("genericSf", genericSf)
+        genericBw = getPreferences(MODE_PRIVATE).getInt("genericBw", genericBw)
+            .takeIf { it in LoraProfile.GENERIC_BANDWIDTHS } ?: 125_000
         profile = LoraProfile.byId(getPreferences(MODE_PRIVATE).getString("profile", null))
         centerHz = getPreferences(MODE_PRIVATE).getLong("frequency", profile.frequencyHz)
+        if (profile.protocol == Protocol.GENERIC) profile = LoraProfile.generic(centerHz, genericSf, genericBw)
         gainTenths = getPreferences(MODE_PRIVATE).getInt("gainTenths", gainTenths)
         offsetTuning = getPreferences(MODE_PRIVATE).getBoolean("offsetTuning", false)
         // On by default since 18/10: ~9 dB more sensitivity measured on a real MeshCore packet.
@@ -115,8 +127,8 @@ class MainActivity : Activity() {
         root.addView(header)
 
         // Live numbers.
-        val (detTile, detValue) = statTile("Detecções")
-        val (decTile, decValue) = statTile("Decodificados")
+        val (detTile, detValue) = statTile(tr("Detections", "Detecções"))
+        val (decTile, decValue) = statTile(tr("Decoded", "Decodificados"))
         detectionsValue = detValue
         decodedValue = decValue
         levelValue = label("—", 13f, Ui.TEXT, bold = true)
@@ -125,7 +137,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             background = rounded(Ui.SURFACE, 16f, Ui.OUTLINE, 1f)
             setPadding(dp(12), dp(8), dp(12), dp(10))
-            addView(label("Sinal (IQ)", 11f))
+            addView(label(tr("Signal (IQ)", "Sinal (IQ)"), 11f))
             addView(levelValue)
             addView(levelMeter, LinearLayout.LayoutParams(-1, dp(6)).apply { topMargin = dp(6) })
         }
@@ -139,7 +151,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             val texts = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(label("Configuração", 15f, Ui.TEXT, bold = true))
+                addView(label(tr("Settings", "Configuração"), 15f, Ui.TEXT, bold = true))
                 addView(settingsSummary)
             }
             addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
@@ -151,16 +163,40 @@ class MainActivity : Activity() {
         settingsBody = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         settings.addView(settingsBody)
 
-        settingsBody.addView(sectionLabel("Perfil LoRa"))
+        settingsBody.addView(sectionLabel(tr("LoRa profile", "Perfil LoRa")))
         profileLabel = label("", 12f)
         val profileButtons = listOf("Meshtastic BR" to LoraProfile.MESHTASTIC_BR, "MeshCore BR" to LoraProfile.MESHCORE_BR,
             "Meshtastic US" to LoraProfile.MESHTASTIC_US).map { (label, p) ->
             chip(label) { selectProfile(p) }.also { profileChips[p.id] = it }
         }
-        settingsBody.addView(row(this, *profileButtons.toTypedArray(), gapDp = 6))
+        val genericChip = chip(tr("Generic LoRa", "LoRa genérico")) {
+            selectProfile(LoraProfile.generic(centerHz, genericSf, genericBw))
+        }.also { profileChips[LoraProfile.GENERIC_ID] = it }
+        settingsBody.addView(row(this, profileButtons[0], profileButtons[1], gapDp = 6))
+        settingsBody.addView(row(this, profileButtons[2], genericChip, gapDp = 6), spaced(6))
         settingsBody.addView(profileLabel, spaced(6))
 
-        settingsBody.addView(sectionLabel("Frequência do canal LoRa (MHz)"))
+        // Generic LoRa: any SF (or all at once) and bandwidth; bytes are shown raw.
+        genericBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        genericBox.addView(sectionLabel(tr("Spreading factor", "Fator de espalhamento (SF)")))
+        val sfButtons = LoraProfile.GENERIC_SFS.map { sf ->
+            chip("$sf") { selectGeneric(sf, genericBw) }.also { sfChips[sf] = it }
+        }
+        genericBox.addView(row(this, *sfButtons.toTypedArray(), gapDp = 4))
+        val allSf = chip(tr("All SF (7–12) at once", "Todos os SF (7–12) juntos")) {
+            selectGeneric(LoraProfile.ALL_SF, genericBw)
+        }.also { sfChips[LoraProfile.ALL_SF] = it }
+        genericBox.addView(allSf, spaced(6))
+        genericBox.addView(sectionLabel(tr("Bandwidth (kHz)", "Largura de banda (kHz)")))
+        val bwButtons = LoraProfile.GENERIC_BANDWIDTHS.map { bw ->
+            chip(if (bw % 1000 == 0) "${bw / 1000}" else "%.1f".format(Locale.US, bw / 1000.0)) {
+                selectGeneric(genericSf, bw)
+            }.also { bwChips[bw] = it }
+        }
+        genericBox.addView(row(this, *bwButtons.toTypedArray(), gapDp = 6))
+        settingsBody.addView(genericBox)
+
+        settingsBody.addView(sectionLabel(tr("LoRa channel frequency (MHz)", "Frequência do canal LoRa (MHz)")))
         freqInput = EditText(this).apply {
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
@@ -171,7 +207,7 @@ class MainActivity : Activity() {
             background = rounded(Ui.SURFACE_2, 14f, Ui.OUTLINE, 1f)
             setPadding(dp(14), dp(10), dp(14), dp(10))
         }
-        val apply = pill("Aplicar", UiStyle.TONAL) { applyFrequency() }
+        val apply = pill(tr("Apply", "Aplicar"), UiStyle.TONAL) { applyFrequency() }
         settingsBody.addView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -186,9 +222,9 @@ class MainActivity : Activity() {
         }
         settingsBody.addView(row(this, *gainButtons.toTypedArray(), gapDp = 6))
 
-        settingsBody.addView(sectionLabel("Processamento (opcional)"))
+        settingsBody.addView(sectionLabel(tr("Processing (optional)", "Processamento (opcional)")))
         settingsBody.addView(Switch(this).apply {
-            text = "Sintonizar 250 kHz acima (evita pico DC)"
+            text = tr("Tune 250 kHz above (avoids DC spike)", "Sintonizar 250 kHz acima (evita pico DC)")
             setTextColor(Ui.TEXT)
             isChecked = offsetTuning
             setOnCheckedChangeListener { _, on ->
@@ -199,36 +235,44 @@ class MainActivity : Activity() {
             }
         }, spaced(4))
         settingsBody.addView(Switch(this).apply {
-            text = "Filtro de média na decimação"
+            text = tr("Averaging filter when decimating", "Filtro de média na decimação")
             setTextColor(Ui.TEXT)
             isChecked = averaging
             setOnCheckedChangeListener { _, on ->
                 averaging = on
                 getPreferences(MODE_PRIVATE).edit().putBoolean("averaging", on).apply()
                 receiverStale = true
-                log("APP", if (on) "Filtro de média ligado" else "Filtro de média desligado")
+                log("APP", if (on) tr("Averaging filter on", "Filtro de média ligado") else tr("Averaging filter off", "Filtro de média desligado"))
                 updateSettingsSummary()
             }
         }, spaced(8))
+
+        settingsBody.addView(sectionLabel("Idioma / Language"))
+        val languageButtons = listOf("Português" to true, "English" to false).map { (label, pt) ->
+            chip(label) { selectLanguage(pt) }.also { languageChips[pt] = it }
+        }
+        settingsBody.addView(row(this, *languageButtons.toTypedArray(), gapDp = 6))
+        languageChips.forEach { (pt, chip) -> setChipSelected(chip, pt == Lang.portuguese) }
         root.addView(settings, spaced(12))
         updateGainLabel()
         updateProfileLabel()
 
         // Main actions.
-        val connect = pill("Conectar", UiStyle.PRIMARY) { launchDriver() }
-        val stop = pill("Parar", UiStyle.OUTLINED) { disconnect() }
-        val record = pill("● Gravar IQ 10 s", UiStyle.OUTLINED) {
-            if (!running) log("IQ", "Conecte o RTL-SDR antes de gravar")
+        val connect = pill(tr("Connect", "Conectar"), UiStyle.PRIMARY) { launchDriver() }
+        val stop = pill(tr("Stop", "Parar"), UiStyle.OUTLINED) { disconnect() }
+        val record = pill(tr("● Record IQ 10 s", "● Gravar IQ 10 s"), UiStyle.OUTLINED) {
+            if (!running) log("IQ", tr("Connect the RTL-SDR before recording", "Conecte o RTL-SDR antes de gravar"))
             else {
                 captureRequested = true
-                log("IQ", "Gravação IQ solicitada: 10 segundos, formato unsigned IQ 8-bit")
+                log("IQ", tr("IQ recording requested: 10 seconds, unsigned 8-bit IQ",
+                    "Gravação IQ solicitada: 10 segundos, formato unsigned IQ 8-bit"))
             }
         }
         root.addView(row(this, connect, stop, record), spaced(12))
 
         // Output: segmented tabs + monospace panel.
-        messagesTab = chip("Mensagens") { showLogs = false; render() }
-        logsTab = chip("Logs técnicos") { showLogs = true; render() }
+        messagesTab = chip(tr("Messages", "Mensagens")) { showLogs = false; render() }
+        logsTab = chip(tr("Technical logs", "Logs técnicos")) { showLogs = true; render() }
         root.addView(row(this, messagesTab, logsTab, gapDp = 6), spaced(12))
         outputScroll = ScrollView(this).apply {
             background = rounded(Color.argb(200, 5, 9, 17), 16f, Ui.OUTLINE, 1f)
@@ -245,25 +289,26 @@ class MainActivity : Activity() {
         outputScroll.addView(output)
         root.addView(outputScroll, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
 
-        val copy = pill("Copiar", UiStyle.TEXT) {
+        val copy = pill(tr("Copy", "Copiar"), UiStyle.TEXT) {
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
             clipboard.setPrimaryClip(android.content.ClipData.newPlainText("MeshSDR", output.text))
-            Toast.makeText(this, "Copiado", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, tr("Copied", "Copiado"), Toast.LENGTH_SHORT).show()
         }
-        val save = pill("Salvar logs", UiStyle.TEXT) { saveLogs() }
-        val clear = pill("Limpar aba", UiStyle.TEXT) {
+        val save = pill(tr("Save logs", "Salvar logs"), UiStyle.TEXT) { saveLogs() }
+        val clear = pill(tr("Clear tab", "Limpar aba"), UiStyle.TEXT) {
             if (showLogs) logs.clear() else messages.clear()
             render()
         }
         root.addView(row(this, copy, save, clear, gapDp = 4), spaced(6))
         setContentView(root)
         updateStatus()
-        log("APP", "Perfil LoRa: ${profile.describe()}. Qualquer sync word é aceito e mostrado.")
+        log("APP", tr("LoRa profile: ${active().describe()}. Any sync word is accepted and shown.",
+            "Perfil LoRa: ${active().describe()}. Qualquer sync word é aceito e mostrado."))
         render()
     }
 
     private fun saveLogs() {
-        val text = (logs + listOf("", "--- Mensagens ---") + messages).joinToString("\n")
+        val text = (logs + listOf("", tr("--- Messages ---", "--- Mensagens ---")) + messages).joinToString("\n")
         thread(name = "save-logs") {
             try {
                 val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
@@ -271,9 +316,10 @@ class MainActivity : Activity() {
                     target.stream.write(text.toByteArray(Charsets.UTF_8))
                     target.location
                 }
-                log("APP", "Logs salvos em $location")
-                ui.post { Toast.makeText(this, "Logs salvos em $location", Toast.LENGTH_LONG).show() }
-            } catch (e: Exception) { log("ERROR", "Salvar logs: ${e.message}") }
+                val saved = tr("Logs saved to $location", "Logs salvos em $location")
+                log("APP", saved)
+                ui.post { Toast.makeText(this, saved, Toast.LENGTH_LONG).show() }
+            } catch (e: Exception) { log("ERROR", tr("Save logs", "Salvar logs") + ": ${e.message}") }
         }
     }
 
@@ -287,10 +333,13 @@ class MainActivity : Activity() {
 
     private fun render() {
         output.text = if (showLogs) logs.joinToString("\n") else
-            if (messages.isEmpty()) "Aguardando LoRa: ${profile.describe()}.\nDetecções (cabeçalho válido) também aparecem aqui." else messages.joinToString("\n")
+            if (messages.isEmpty()) tr("Waiting for LoRa: ${active().describe()}.\nDetections (valid header) also show up here.",
+                "Aguardando LoRa: ${active().describe()}.\nDetecções (cabeçalho válido) também aparecem aqui.")
+            else messages.joinToString("\n")
         setChipSelected(logsTab, showLogs)
         setChipSelected(messagesTab, !showLogs)
-        messagesTab.text = if (messages.isEmpty()) "Mensagens" else "Mensagens (${messages.size})"
+        val messagesName = tr("Messages", "Mensagens")
+        messagesTab.text = if (messages.isEmpty()) messagesName else "$messagesName (${messages.size})"
         // Follow new lines only when the reader is already at the bottom.
         val atBottom = outputScroll.scrollY + outputScroll.height >= output.height - dp(48)
         if (atBottom) outputScroll.post { outputScroll.fullScroll(View.FOCUS_DOWN) }
@@ -308,8 +357,9 @@ class MainActivity : Activity() {
     }
 
     private fun updateSettingsSummary() {
-        val gain = if (gainTenths == AUTO_GAIN) "ganho auto" else "%.1f dB".format(Locale.US, gainTenths / 10.0)
-        val extras = listOfNotNull(if (offsetTuning) "deslocado" else null, if (averaging) "filtro" else null)
+        val gain = if (gainTenths == AUTO_GAIN) tr("auto gain", "ganho auto") else "%.1f dB".format(Locale.US, gainTenths / 10.0)
+        val extras = listOfNotNull(if (offsetTuning) tr("offset", "deslocado") else null,
+            if (averaging) tr("filter", "filtro") else null)
         settingsSummary.text = "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
             if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
     }
@@ -322,7 +372,7 @@ class MainActivity : Activity() {
             rms < 3.0 -> Ui.AMBER
             else -> Ui.GREEN
         }
-        levelValue.text = "%.0f LSB • sat. %.1f%%".format(Locale.US, rms, clipPct)
+        levelValue.text = tr("%.0f LSB • clip %.1f%%", "%.0f LSB • sat. %.1f%%").format(Locale.US, rms, clipPct)
         levelValue.setTextColor(color)
         setMeter(levelMeter, (rms / 64.0 * 100).toInt(), color)
     }
@@ -330,29 +380,39 @@ class MainActivity : Activity() {
     private fun applyFrequency() {
         val mhz = freqInput.text.toString().replace(',', '.').toDoubleOrNull()
         if (mhz == null || mhz !in 24.0..1766.0) {
-            log("UI", "Frequência inválida ou fora da faixa típica R820T: 24–1766 MHz")
+            log("UI", tr("Invalid frequency or outside the typical R820T range: 24–1766 MHz",
+                "Frequência inválida ou fora da faixa típica R820T: 24–1766 MHz"))
             return
         }
         centerHz = (mhz * 1e6).toLong()
         getPreferences(MODE_PRIVATE).edit().putLong("frequency", centerHz).apply()
-        log("SDR", "Frequência solicitada: $centerHz Hz")
-        updateSettingsSummary()
+        log("SDR", tr("Frequency requested: $centerHz Hz", "Frequência solicitada: $centerHz Hz"))
+        updateProfileLabel()
         sendCommands(listOf(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, tunedHz())), "SET_FREQ")
         receiverStale = true
     }
 
-    private fun newReceiver(): LoraReceiver {
-        val p = profile.copy(frequencyHz = centerHz)
+    /** Profile with the frequency actually in use. */
+    private fun active(): LoraProfile = profile.copy(frequencyHz = centerHz)
+
+    /** One decoder per spreading factor of the profile (six in generic "all SF" mode). */
+    private fun newReceivers(): List<LoraReceiver> {
+        val p = active()
         val offset = tuningOffsetHz()
-        log("LORA", "Decoder: ${p.describe()}; sintonizador em %.3f MHz; deslocamento %s; filtro de média %s".format(
-            Locale.US, tunedHz() / 1e6, if (offset != 0) "250 kHz" else "desligado", if (averaging) "ligado" else "desligado"))
-        return LoraReceiver(p, offset, averaging) { frame -> ui.post { onFrame(frame) } }
+        val on = tr("on", "ligado")
+        val off = tr("off", "desligado")
+        log("LORA", tr("Decoder: %s; tuner at %.3f MHz; offset %s; averaging filter %s",
+            "Decoder: %s; sintonizador em %.3f MHz; deslocamento %s; filtro de média %s").format(
+            Locale.US, p.describe(), tunedHz() / 1e6, if (offset != 0) "250 kHz" else off, if (averaging) on else off))
+        return p.spreadingFactors.map { sf ->
+            LoraReceiver(p, sf, offset, averaging) { frame -> ui.post { onFrame(frame) } }
+        }
     }
 
     /** UI thread. */
     private fun onFrame(frame: LoraFrame) {
         if (frame.verified) decoded++ else detections++
-        val text = frame.describe(profile)
+        val text = frame.describe(active())
         messages.addLast("[${timeFormat.format(Date())}] $text")
         while (messages.size > 200) messages.removeFirst()
         log("LORA", text)
@@ -361,7 +421,8 @@ class MainActivity : Activity() {
     }
 
     private fun updateStatus() {
-        if (running) setStatus(status, "Recebendo", Ui.GREEN) else setStatus(status, "Desconectado", Ui.MUTED)
+        if (running) setStatus(status, tr("Receiving", "Recebendo"), Ui.GREEN)
+        else setStatus(status, tr("Disconnected", "Desconectado"), Ui.MUTED)
         detectionsValue.text = detections.toString()
         decodedValue.text = decoded.toString()
         if (!running) {
@@ -379,23 +440,47 @@ class MainActivity : Activity() {
         profile = p
         getPreferences(MODE_PRIVATE).edit().putString("profile", p.id).apply()
         updateProfileLabel()
-        freqInput.setText("%.6f".format(Locale.US, p.frequencyHz / 1e6))
-        log("APP", "Perfil LoRa: ${p.describe()}")
+        // The generic profile keeps whatever frequency is being explored.
+        if (p.protocol != Protocol.GENERIC) freqInput.setText("%.6f".format(Locale.US, p.frequencyHz / 1e6))
+        log("APP", tr("LoRa profile: ", "Perfil LoRa: ") + p.copy(frequencyHz = centerHz).describe())
         applyFrequency()
         render()
     }
 
+    private fun selectGeneric(sf: Int, bw: Int) {
+        genericSf = sf
+        genericBw = bw
+        getPreferences(MODE_PRIVATE).edit().putInt("genericSf", sf).putInt("genericBw", bw).apply()
+        selectProfile(LoraProfile.generic(centerHz, sf, bw))
+        receiverStale = true
+    }
+
+    private fun selectLanguage(portuguese: Boolean) {
+        if (portuguese == Lang.portuguese) return
+        if (running) {
+            log("APP", tr("Stop reception before changing the language", "Pare a recepção antes de trocar o idioma"))
+            return
+        }
+        getPreferences(MODE_PRIVATE).edit().putString("language", if (portuguese) "pt" else "en").apply()
+        Lang.portuguese = portuguese
+        recreate()
+    }
+
     private fun updateProfileLabel() {
-        profileLabel.text = profile.describe()
+        profileLabel.text = active().describe()
         profileChips.forEach { (id, chip) -> setChipSelected(chip, id == profile.id) }
+        val generic = profile.protocol == Protocol.GENERIC
+        genericBox.visibility = if (generic) View.VISIBLE else View.GONE
+        sfChips.forEach { (sf, chip) -> setChipSelected(chip, generic && sf == profile.spreadingFactor) }
+        bwChips.forEach { (bw, chip) -> setChipSelected(chip, generic && bw == profile.bandwidthHz) }
         updateSettingsSummary()
     }
 
     private fun gainOrNull(): Int? = if (gainTenths == AUTO_GAIN) null else gainTenths
 
     private fun updateGainLabel() {
-        gainLabel.text = if (gainTenths == AUTO_GAIN) "Ganho do sintonizador: automático (AGC)"
-            else "Ganho do sintonizador: %.1f dB".format(Locale.US, gainTenths / 10.0)
+        gainLabel.text = if (gainTenths == AUTO_GAIN) tr("Tuner gain: automatic (AGC)", "Ganho do sintonizador: automático (AGC)")
+            else tr("Tuner gain: %.1f dB", "Ganho do sintonizador: %.1f dB").format(Locale.US, gainTenths / 10.0)
         gainChips.forEach { (tenths, chip) -> setChipSelected(chip, tenths == gainTenths) }
         if (::settingsSummary.isInitialized) updateSettingsSummary()
     }
@@ -404,7 +489,7 @@ class MainActivity : Activity() {
         gainTenths = tenths
         getPreferences(MODE_PRIVATE).edit().putInt("gainTenths", tenths).apply()
         updateGainLabel()
-        sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), "ganho")
+        sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), tr("gain", "ganho"))
     }
 
     /** Sends rtl_tcp commands if connected; otherwise they are applied on connect. */
@@ -418,20 +503,21 @@ class MainActivity : Activity() {
                     commands.forEach { out.write(it) }
                     out.flush()
                 }
-                log("SDR", "Comando rtl_tcp $what enviado")
-            } catch (e: Exception) { log("ERROR", "Comando $what: ${e.message}") }
+                log("SDR", tr("rtl_tcp command $what sent", "Comando rtl_tcp $what enviado"))
+            } catch (e: Exception) { log("ERROR", tr("Command", "Comando") + " $what: ${e.message}") }
         }
     }
 
     private fun launchDriver() {
-        if (running) { log("APP", "Recepção já ativa"); return }
+        if (running) { log("APP", tr("Reception already active", "Recepção já ativa")); return }
         applyFrequency()
         val uri = Uri.parse("iqsrc://-a 127.0.0.1 -p $port -s $sampleRate -f ${tunedHz()}")
         try {
             startActivityForResult(Intent(Intent.ACTION_VIEW, uri), 1001)
-            log("USB", "Solicitada abertura do driver RTL-SDR")
+            log("USB", tr("Asked the RTL-SDR driver to open the device", "Solicitada abertura do driver RTL-SDR"))
         } catch (e: ActivityNotFoundException) {
-            log("ERROR", "Driver RTL-SDR não encontrado. Instale RTL-SDR Driver (marto.rtl_tcp_andro).")
+            log("ERROR", tr("RTL-SDR driver not found. Install RTL-SDR Driver (marto.rtl_tcp_andro).",
+                "Driver RTL-SDR não encontrado. Instale RTL-SDR Driver (marto.rtl_tcp_andro)."))
         }
     }
 
@@ -440,17 +526,18 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != 1001) return
         if (resultCode != RESULT_OK) {
-            log("USB", "Driver cancelou ou falhou: ${data?.getStringExtra("detailed_exception_message") ?: "sem detalhes"}")
+            val detail = data?.getStringExtra("detailed_exception_message") ?: tr("no details", "sem detalhes")
+            log("USB", tr("Driver cancelled or failed: $detail", "Driver cancelou ou falhou: $detail"))
             return
         }
-        log("USB", "Driver abriu o dispositivo; conectando ao fluxo IQ")
+        log("USB", tr("Driver opened the device; connecting to the IQ stream", "Driver abriu o dispositivo; conectando ao fluxo IQ"))
         connectStream()
     }
 
     private fun connectStream() {
         if (running) return
         running = true
-        setStatus(status, "Conectando…", Ui.AMBER)
+        setStatus(status, tr("Connecting…", "Conectando…"), Ui.AMBER)
         setSettingsExpanded(false)
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -459,9 +546,11 @@ class MainActivity : Activity() {
         }
         try {
             ReceiverService.start(this, "${profile.label} • %.3f MHz".format(Locale.US, centerHz / 1e6))
-            log("APP", "Serviço em primeiro plano ativo: recepção continua com a tela apagada")
+            log("APP", tr("Foreground service active: reception continues with the screen off",
+                "Serviço em primeiro plano ativo: recepção continua com a tela apagada"))
         } catch (e: Exception) {
-            log("ERROR", "Serviço em primeiro plano: ${e.message} (a recepção pode parar com a tela apagada)")
+            log("ERROR", tr("Foreground service: ${e.message} (reception may stop with the screen off)",
+                "Serviço em primeiro plano: ${e.message} (a recepção pode parar com a tela apagada)"))
         }
         thread(name = "rtl-iq-reader") {
             try {
@@ -473,23 +562,26 @@ class MainActivity : Activity() {
                 var offset = 0
                 while (offset < header.size) {
                     val n = input.read(header, offset, header.size - offset)
-                    if (n < 0) throw IllegalStateException("Fim do fluxo no cabeçalho")
+                    if (n < 0) throw IllegalStateException(tr("Stream ended in the header", "Fim do fluxo no cabeçalho"))
                     offset += n
                 }
                 if (String(header, 0, 4, Charsets.US_ASCII) != "RTL0")
-                    throw IllegalStateException("Cabeçalho rtl_tcp inválido")
-                log("SDR", "RTL0 recebido; sintonizador ${RtlTcpProtocol.tunerName(header)}; amostras IQ ativas")
+                    throw IllegalStateException(tr("Invalid rtl_tcp header", "Cabeçalho rtl_tcp inválido"))
+                val tuner = RtlTcpProtocol.tunerName(header)
+                log("SDR", tr("RTL0 received; tuner $tuner; IQ samples flowing", "RTL0 recebido; sintonizador $tuner; amostras IQ ativas"))
                 synchronized(s) {
                     val out = s.getOutputStream()
                     RtlTcpProtocol.gainCommands(gainOrNull()).forEach { out.write(it) }
                     out.flush()
                 }
-                log("SDR", if (gainTenths == AUTO_GAIN) "Ganho automático (AGC) aplicado"
-                    else "Ganho manual %.1f dB aplicado".format(Locale.US, gainTenths / 10.0))
+                log("SDR", if (gainTenths == AUTO_GAIN) tr("Automatic gain (AGC) applied", "Ganho automático (AGC) aplicado")
+                    else tr("Manual gain %.1f dB applied", "Ganho manual %.1f dB aplicado").format(Locale.US, gainTenths / 10.0))
                 val level = IqLevel()
                 ui.post { updateStatus() }
                 receiverStale = false
-                var demod = newReceiver()
+                var demods = newReceivers()
+                // Time spent decoding, to show whether the phone keeps up (several SFs cost more).
+                var decodeNanos = 0L
                 val buffer = ByteArray(65536)
                 var capture: PublicFiles.Target? = null
                 var captureStart = 0L
@@ -512,7 +604,7 @@ class MainActivity : Activity() {
                         captureStart = System.currentTimeMillis()
                         captureBytes = 0L
                         captureFrom = if (streamBytes % 2 == 0L) 0 else 1
-                        log("IQ", "Gravando em $captureName")
+                        log("IQ", tr("Recording to $captureName", "Gravando em $captureName"))
                     }
                     // Local val: a captured `var` can't be smart-cast to non-null.
                     val activeCapture = capture
@@ -526,10 +618,11 @@ class MainActivity : Activity() {
                             if (System.currentTimeMillis() - captureStart >= 10_000L) {
                                 activeCapture.close()
                                 capture = null
-                                log("IQ", "Gravação concluída: $captureBytes bytes em $captureName")
+                                log("IQ", tr("Recording finished: $captureBytes bytes in $captureName",
+                                    "Gravação concluída: $captureBytes bytes em $captureName"))
                             }
                         } catch (e: Exception) {
-                            log("ERROR", "Gravação IQ: ${e.message}")
+                            log("ERROR", tr("IQ recording", "Gravação IQ") + ": ${e.message}")
                             try { activeCapture.close() } catch (_: Exception) {}
                             capture = null
                         }
@@ -537,17 +630,23 @@ class MainActivity : Activity() {
                     if (receiverStale) {
                         // Profile or frequency changed: restart the decoder with the new settings.
                         receiverStale = false
-                        demod.close()
-                        demod = newReceiver()
+                        demods.forEach { it.close() }
+                        demods = newReceivers()
                     }
-                    demod.feed(buffer, n)
+                    val t0 = System.nanoTime()
+                    demods.forEach { it.feed(buffer, n) }
+                    decodeNanos += System.nanoTime() - t0
                     level.add(buffer, n)
                     bytes += n
                     streamBytes += n
                     val now = System.currentTimeMillis()
                     if (now - last >= 2000) {
                         val rate = bytes * 1000.0 / (now - last) / 1e6
-                        log("IQ", "%.2f MB/s • %s".format(Locale.US, rate, level.summary()))
+                        val cpu = decodeNanos / 1e4 / (now - last)
+                        val busy = if (cpu > 80) tr(" — decoder can't keep up: pick a single SF",
+                            " — decodificador não acompanha: escolha um único SF") else ""
+                        log("IQ", "%.2f MB/s • %s • CPU %.0f%%%s".format(Locale.US, rate, level.summary(), cpu, busy))
+                        decodeNanos = 0
                         val rms = level.lastRms
                         val clip = level.lastClipPct
                         ui.post { if (running) updateLevel(rms, clip) }
@@ -555,18 +654,19 @@ class MainActivity : Activity() {
                         last = now
                     }
                 }
-                demod.close()
+                demods.forEach { it.close() }
                 capture?.close()
-                if (capture != null) log("IQ", "Gravação parcial: $captureBytes bytes em $captureName")
+                if (capture != null) log("IQ", tr("Partial recording: $captureBytes bytes in $captureName",
+                    "Gravação parcial: $captureBytes bytes em $captureName"))
             } catch (e: Exception) {
-                if (running) log("ERROR", "Fluxo IQ: ${e.message}")
+                if (running) log("ERROR", tr("IQ stream", "Fluxo IQ") + ": ${e.message}")
             } finally {
                 running = false
                 ReceiverService.stop(this)
                 try { socket?.close() } catch (_: Exception) {}
                 socket = null
                 ui.post { updateStatus() }
-                log("SDR", "Recepção encerrada")
+                log("SDR", tr("Reception stopped", "Recepção encerrada"))
             }
         }
     }
@@ -574,7 +674,7 @@ class MainActivity : Activity() {
     private fun disconnect() {
         running = false
         try { socket?.close() } catch (_: Exception) {}
-        log("APP", "Desconexão solicitada")
+        log("APP", tr("Disconnect requested", "Desconexão solicitada"))
     }
 
     override fun onDestroy() {

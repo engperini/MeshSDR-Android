@@ -1,19 +1,21 @@
 package com.engperini.meshsdr
 
-/** Native LoRa PHY for one [LoraProfile], fed with the raw rtl_tcp byte stream. */
 /**
+ * Native LoRa PHY for one [LoraProfile] and spreading factor, fed with the raw rtl_tcp byte stream.
+ * @param spreadingFactor one of the profile's [LoraProfile.spreadingFactors].
  * @param tuningOffsetHz how far above the channel the tuner sits (0 = on the channel).
  * @param average boxcar-average before decimating instead of keeping every Nth sample.
  */
 class LoraReceiver(
     profile: LoraProfile,
+    private val spreadingFactor: Int,
     tuningOffsetHz: Int,
     average: Boolean,
     private val onFrame: (LoraFrame) -> Unit
 ) : AutoCloseable {
     companion object { init { System.loadLibrary("meshsdr_lora") } }
     private var handle = nativeCreate(
-        profile.spreadingFactor, profile.bandwidthHz, profile.codingRate, 0, profile.frequencyHz,
+        spreadingFactor, profile.bandwidthHz, profile.codingRate, 0, profile.frequencyHz,
         LoraProfile.decimation(profile), tuningOffsetHz.toDouble(), LoraProfile.SAMPLE_RATE.toDouble(), average
     )
     private external fun nativeCreate(
@@ -25,7 +27,7 @@ class LoraReceiver(
 
     @Suppress("unused") // Called by the native decoder.
     fun onFrame(data: ByteArray, status: Int, declaredLength: Int, crcOk: Boolean, hasCrc: Boolean, snr: Float, sync: Int) {
-        onFrame(LoraFrame(data, status, declaredLength, crcOk, snr, sync, hasCrc))
+        onFrame(LoraFrame(data, status, declaredLength, crcOk, snr, sync, hasCrc, spreadingFactor))
     }
 
     fun feed(bytes: ByteArray, count: Int) {

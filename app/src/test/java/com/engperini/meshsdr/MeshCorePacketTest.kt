@@ -4,9 +4,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class MeshCorePacketTest {
+    // Assertions below use the Portuguese texts.
+    @Before fun portuguese() { Lang.portuguese = true }
+
     private fun bytes(hex: String) = ByteArray(hex.length / 2) { hex.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
 
     // Received over the air in Jundiaí on 17/10/2026 (MeshCore BR, CRC-ok).
