@@ -26,6 +26,13 @@ object RtlTcpProtocol {
     const val SET_GAIN_MODE = 0x03
     const val SET_GAIN = 0x04
     const val SET_AGC_MODE = 0x08
+    const val SET_FREQ_CORRECTION = 0x05
+
+    /** Crystal correction in ppm (signed), for dongles without a TCXO. */
+    fun ppmCommand(ppm: Int): ByteArray {
+        require(ppm in -200..200) { "ppm out of range" }
+        return command(SET_FREQ_CORRECTION, ppm.toLong() and 0xffffffffL)
+    }
 
     /** Tuner gain in tenths of dB, or null for automatic gain. */
     fun gainCommands(tenthsDb: Int?): List<ByteArray> =

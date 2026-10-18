@@ -252,6 +252,14 @@ private fun SettingsBody(state: AppState) {
         }
     }
 
+    Section(tr("Frequency correction (ppm) — see \"offset\" in messages",
+        "Correção de frequência (ppm) — veja o \"desvio\" nas mensagens"))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextInput(state.ppmText, Modifier.weight(1f), KeyboardType.Number) { state.ppmText = it }
+        Spacer(Modifier.width(8.dp))
+        Pill(tr("Apply", "Aplicar"), PillStyle.TONAL) { state.applyPpm() }
+    }
+
     Section(tr("Processing (optional)", "Processamento (opcional)"))
     SwitchRow(tr("Averaging filter when decimating", "Filtro de média na decimação"), state.averaging) { state.changeAveraging(it) }
     SwitchRow(tr("Record IQ automatically on detections (3 s before + after)",

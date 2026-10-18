@@ -38,4 +38,9 @@ class RtlTcpProtocolTest {
     @Test fun decodesTunerType() {
         assertEquals("R820T/R820T2", RtlTcpProtocol.tunerName("RTL0".toByteArray() + byteArrayOf(0, 0, 0, 5, 0, 0, 0, 29)))
     }
+
+    @Test fun ppmCorrectionIsSignedBigEndian() {
+        assertArrayEquals(byteArrayOf(0x05, 0, 0, 0, 17), RtlTcpProtocol.ppmCommand(17))
+        assertArrayEquals(byteArrayOf(0x05, -1, -1, -1, -17), RtlTcpProtocol.ppmCommand(-17))
+    }
 }

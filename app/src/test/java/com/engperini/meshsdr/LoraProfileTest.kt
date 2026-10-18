@@ -87,4 +87,11 @@ class LoraProfileTest {
             Lang.portuguese = true
         }
     }
+
+    @Test fun showsTheCarrierOffsetAsAPpmCorrection() {
+        // Field case, dongle without TCXO: MeshCore 15.3 kHz above the tuned frequency.
+        val f = LoraFrame(ByteArray(0), LoraFrame.HEADER_ONLY, 81, false, -8.6f, 0x12, offsetHz = 15_300f)
+        val text = f.describe(LoraProfile.MESHCORE_BR)
+        assertTrue(text, text.contains("desvio +15.3 kHz (ppm -16.6)"))
+    }
 }

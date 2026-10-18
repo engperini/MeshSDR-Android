@@ -3,3 +3,4 @@ build/
 .kotlin/
 # Filled by CI: native PHY (and rtl_tcp on Windows) per platform.
 /resources/
+hs_err_pid*.log
