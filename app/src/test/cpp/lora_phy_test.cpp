@@ -10,6 +10,7 @@
 
 #include "lora_lite.h"
 #include "iq_u8.h"
+#include "diversity.h"
 #include "lora_tx.h"
 
 namespace {
@@ -283,6 +284,41 @@ void testRealCapture() {
     }
 }
 
+// Real packet from a dongle without TCXO (data/README.md): one decoder finds it
+// only at some decimation phases; the app's 4-phase diversity at all of them.
+void testPhaseDiversity() {
+    std::printf("[phase-diversity] drifting dongle, MeshCore PATH, Jundiai 18/10/2026\n");
+    const std::string path = std::string(MESHSDR_TEST_DATA) + "/meshcore_jundiai_20261018_driftingdongle_923125000Hz_1Msps.cu8";
+    FILE* f = std::fopen(path.c_str(), "rb");
+    CHECK(f != nullptr, "cannot open %s", path.c_str());
+    if (!f) return;
+    std::vector<uint8_t> bytes;
+    uint8_t buf[1 << 16];
+    size_t n;
+    while ((n = std::fread(buf, 1, sizeof buf, f)) > 0) bytes.insert(bytes.end(), buf, buf + n);
+    std::fclose(f);
+    const char* want = "2144995c83b0e28a786a5794df8d241db803dabc629f1f0d822d82f5c78d";
+    std::vector<uint8_t> expected;
+    for (size_t i = 0; want[i] && want[i + 1]; i += 2) expected.push_back((uint8_t)std::strtol(std::string(want + i, 2).c_str(), nullptr, 16));
+    int single = 0, diverse = 0;
+    for (int start = 0; start < 8; ++start) {   // where the stream happens to begin, in samples
+        for (int phases : {1, 4}) {
+            Sink sink;
+            meshsdr::PhaseDiversity d(phases, 8, 0, kFs, true, 8, 4, 0, 62500, 923125000, Sink::cb, &sink);
+            for (size_t i = 2 * start; i < bytes.size(); i += 65536)
+                d.push(bytes.data() + i, (int)std::min<size_t>(65536, bytes.size() - i));
+            // Phase 0 may also report the CRC failure; exactly one decoded frame is expected.
+            int good = 0, other = 0;
+            for (const auto& p : sink.decoded)
+                if (p.status == lora_lite::PKT_DECODED) (sameBytes(p, expected) ? good : other)++;
+            const bool ok = good == 1 && other == 0;
+            (phases == 1 ? single : diverse) += ok;
+        }
+    }
+    std::printf("  start offsets decoded: 1 phase %d/8, 4 phases %d/8\n", single, diverse);
+    CHECK(diverse == 8, "4-phase diversity decoded %d/8 start offsets", diverse);
+}
+
 void runAll() {
     std::printf("\n===== front end: %s (offset %.0f kHz, average %s) =====\n", gDsp.name, gDsp.offset / 1e3, gDsp.average ? "on" : "off");
     testLongFastRtlTcp("clean", Channel{}, {40}, false, 1);
@@ -295,6 +331,7 @@ void runAll() {
     testMeshCoreBr();
     testDetectionWithoutDecode();
     testRealCapture();
+    if (gDsp.offset == 0 && gDsp.average) testPhaseDiversity();
     testPpmSweep();
     testNoFalsePositives();
 }

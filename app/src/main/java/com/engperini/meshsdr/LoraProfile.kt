@@ -23,6 +23,14 @@ data class LoraProfile(
     val spreadingFactors: List<Int>
         get() = if (spreadingFactor == ALL_SF) GENERIC_SFS else listOf(spreadingFactor)
 
+    /**
+     * Decimation phases decoded in parallel: 4 recover packets that only one
+     * sample phase decodes (dongles with a drifting oscillator); "all SF" mode
+     * keeps 1, as it already runs six decoders.
+     */
+    val decodePhases: Int
+        get() = if (spreadingFactor == ALL_SF) 1 else 4
+
     fun describe(): String {
         val sf = if (spreadingFactor == ALL_SF) "SF7–12" else "SF$spreadingFactor"
         val cr = if (protocol == Protocol.GENERIC) "" else " / CR4/${codingRate + 4}"

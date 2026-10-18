@@ -1,24 +1,22 @@
 #include <jni.h>
 #include <cstdint>
+#include <memory>
 #include <vector>
 #include "lora_lite.h"
 #include "iq_u8.h"
+#include "diversity.h"
 
 struct Receiver {
-    lora_lite::Demod demod;
-    meshsdr::IqFrontEnd frontEnd;
+    std::unique_ptr<meshsdr::PhaseDiversity> decoders;
     jobject listener;
     jmethodID onFrame;
     JNIEnv* env = nullptr;
-    std::vector<lora_lite::Cx> samples;
     /** Hz per FFT bin, to report the carrier offset in Hz. */
     float hzPerBin = 0;
-    Receiver(JNIEnv* e, jobject callback, int decimation, double shiftHz, double sampleRate, bool average)
-        : frontEnd(decimation, shiftHz, sampleRate, average), listener(e->NewGlobalRef(callback)) {
+    Receiver(JNIEnv* e, jobject callback) : listener(e->NewGlobalRef(callback)) {
         jclass cls = e->GetObjectClass(callback);
         onFrame = e->GetMethodID(cls, "onFrame", "([BIIZZFIF)V");
         e->DeleteLocalRef(cls);
-        samples.reserve(16384);
     }
     // Every event goes to Kotlin: header-only detections and CRC failures
     // too, so the UI can show LoRa activity it could not fully decode.
@@ -42,14 +40,16 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_engperini_meshsdr_LoraReceiver_nativeCreate(JNIEnv* env, jobject thiz, jint sf, jint bandwidth,
                                                      jint codingRate, jint syncWord, jlong centerHz,
                                                      jint decimation, jdouble shiftHz, jdouble sampleRate,
-                                                     jboolean average) {
+                                                     jboolean average, jint phases) {
     if (sf < 6 || sf > LORA_LITE_MAX_SF || decimation < 1) return 0;
-    auto* r = new Receiver(env, thiz, decimation, shiftHz, sampleRate, average == JNI_TRUE);
+    auto* r = new Receiver(env, thiz);
     if (!r->onFrame) { env->DeleteGlobalRef(r->listener); delete r; return 0; }
     r->hzPerBin = static_cast<float>(bandwidth) / static_cast<float>(1 << sf);
     // syncWord 0 accepts any sync word; the detected one is reported per frame.
-    r->demod.init(sf, codingRate, true, static_cast<uint16_t>(syncWord), Receiver::received, r,
-                  static_cast<uint32_t>(bandwidth), static_cast<uint32_t>(centerHz));
+    r->decoders = std::make_unique<meshsdr::PhaseDiversity>(
+        phases, decimation, shiftHz, sampleRate, average == JNI_TRUE, sf, codingRate,
+        static_cast<uint16_t>(syncWord), static_cast<uint32_t>(bandwidth), static_cast<uint32_t>(centerHz),
+        Receiver::received, r);
     return reinterpret_cast<jlong>(r);
 }
 
@@ -61,12 +61,10 @@ Java_com_engperini_meshsdr_LoraReceiver_nativeFeed(JNIEnv* env, jobject, jlong h
     if (length > size) length = size;
     jbyte* ptr = env->GetByteArrayElements(bytes, nullptr);
     if (!ptr) return;
-    r->samples.clear();
-    r->frontEnd.push(reinterpret_cast<const uint8_t*>(ptr), length, r->samples);
-    env->ReleaseByteArrayElements(bytes, ptr, JNI_ABORT);
     r->env = env;
-    r->demod.feed(r->samples.data(), static_cast<int>(r->samples.size()));
+    r->decoders->push(reinterpret_cast<const uint8_t*>(ptr), length);
     r->env = nullptr;
+    env->ReleaseByteArrayElements(bytes, ptr, JNI_ABORT);
 }
 
 extern "C" JNIEXPORT void JNICALL
