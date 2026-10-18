@@ -104,7 +104,7 @@ void runRtlTcp(lora_lite::Demod& demod, const std::vector<uint8_t>& bytes, uint3
 }
 
 bool sameBytes(const lora_lite::Packet& p, const std::vector<uint8_t>& want) {
-    return p.status == lora_lite::PKT_DECODED && p.len == want.size() &&
+    return p.status == lora_lite::PKT_DECODED && p.has_crc && p.len == want.size() &&
            std::equal(want.begin(), want.end(), p.data);
 }
 

@@ -36,6 +36,14 @@ class LoraProfileTest {
         assertTrue(bad.describe().contains("CRC inválido"))
     }
 
+    @Test fun frameWithoutCrcIsNotVerified() {
+        // Field case: noise produced a header claiming "no CRC"; its bytes cannot be trusted.
+        val f = LoraFrame(ByteArray(117), LoraFrame.DECODED, 117, true, -19.7f, 0x59, hasCrc = false)
+        assertTrue(!f.verified)
+        assertTrue(f.describe(LoraProfile.MESHCORE_BR), f.describe(LoraProfile.MESHCORE_BR).contains("sem CRC"))
+        assertTrue(LoraFrame(ByteArray(20), LoraFrame.DECODED, 20, true, 5f, 0x12).verified)
+    }
+
     @Test fun decodedMeshtasticFrameUsesEnvelope() {
         val bytes = ByteArray(20).also { for (i in 0..3) it[i] = 0xff.toByte() }
         val frame = LoraFrame(bytes, LoraFrame.DECODED, 20, true, 5f, 0x2B)

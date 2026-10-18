@@ -14,7 +14,7 @@ struct Receiver {
     Receiver(JNIEnv* e, jobject callback, int decimation, double shiftHz, double sampleRate, bool average)
         : frontEnd(decimation, shiftHz, sampleRate, average), listener(e->NewGlobalRef(callback)) {
         jclass cls = e->GetObjectClass(callback);
-        onFrame = e->GetMethodID(cls, "onFrame", "([BIIZFI)V");
+        onFrame = e->GetMethodID(cls, "onFrame", "([BIIZZFI)V");
         e->DeleteLocalRef(cls);
         samples.reserve(16384);
     }
@@ -29,6 +29,7 @@ struct Receiver {
         e->SetByteArrayRegion(data, 0, p.len, reinterpret_cast<const jbyte*>(p.data));
         e->CallVoidMethod(self->listener, self->onFrame, data, static_cast<jint>(p.status),
                           static_cast<jint>(p.hdr_len), static_cast<jboolean>(p.crc_ok),
+                          static_cast<jboolean>(p.has_crc),
                           static_cast<jfloat>(p.snr), static_cast<jint>(p.sync));
         e->DeleteLocalRef(data);
     }

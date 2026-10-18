@@ -24,8 +24,8 @@ class LoraReceiver(
     private external fun nativeDestroy(handle: Long)
 
     @Suppress("unused") // Called by the native decoder.
-    fun onFrame(data: ByteArray, status: Int, declaredLength: Int, crcOk: Boolean, snr: Float, sync: Int) {
-        onFrame(LoraFrame(data, status, declaredLength, crcOk, snr, sync))
+    fun onFrame(data: ByteArray, status: Int, declaredLength: Int, crcOk: Boolean, hasCrc: Boolean, snr: Float, sync: Int) {
+        onFrame(LoraFrame(data, status, declaredLength, crcOk, snr, sync, hasCrc))
     }
 
     fun feed(bytes: ByteArray, count: Int) {
