@@ -1,0 +1,503 @@
+package com.engperini.meshsdr.desktop
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.engperini.meshsdr.IqLevel
+import com.engperini.meshsdr.Lang
+import com.engperini.meshsdr.LoraFrame
+import com.engperini.meshsdr.LoraProfile
+import com.engperini.meshsdr.LoraReceiver
+import com.engperini.meshsdr.Protocol
+import com.engperini.meshsdr.RtlTcpProtocol
+import com.engperini.meshsdr.tr
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.prefs.Preferences
+import javax.swing.SwingUtilities
+import kotlin.concurrent.thread
+
+enum class LinkStatus { DISCONNECTED, CONNECTING, RECEIVING }
+
+/**
+ * Everything the desktop window shows, plus the receive loop. Mirrors the
+ * Android MainActivity: same profiles, decoder, logs and IQ recorder; the IQ
+ * comes from an rtl_tcp server that the app starts itself or one on the network.
+ */
+class AppState {
+    private val prefs = Preferences.userRoot().node("com/engperini/meshsdr")
+    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+    private val sampleRate = LoraProfile.SAMPLE_RATE
+
+    var portuguese by mutableStateOf(false)
+        private set
+    var profile by mutableStateOf(LoraProfile.DEFAULT)
+        private set
+    /** LoRa channel frequency; with offset tuning the tuner sits TUNING_OFFSET_HZ above it. */
+    var centerHz by mutableStateOf(LoraProfile.DEFAULT.frequencyHz)
+        private set
+    var freqText by mutableStateOf("")
+    var bwText by mutableStateOf("")
+    /** Tuner gain in tenths of dB; AUTO_GAIN means hardware AGC. */
+    var gainTenths by mutableIntStateOf(402)
+        private set
+    var offsetTuning by mutableStateOf(false)
+        private set
+    var averaging by mutableStateOf(true)
+        private set
+    var genericSf by mutableIntStateOf(LoraProfile.ALL_SF)
+        private set
+    var genericBw by mutableIntStateOf(125_000)
+        private set
+    /** Start the local rtl_tcp on Connect; off = use [serverText] (e.g. a Raspberry Pi). */
+    var autoStartRtlTcp by mutableStateOf(true)
+        private set
+    var serverText by mutableStateOf("127.0.0.1:1234")
+
+    var status by mutableStateOf(LinkStatus.DISCONNECTED)
+        private set
+    var detections by mutableIntStateOf(0)
+        private set
+    var decoded by mutableIntStateOf(0)
+        private set
+    var levelRms by mutableStateOf<Double?>(null)
+        private set
+    var levelClipPct by mutableStateOf(0.0)
+        private set
+    val logs = mutableStateListOf<String>()
+    val messages = mutableStateListOf<String>()
+    var settingsExpanded by mutableStateOf(true)
+    var showLogs by mutableStateOf(true)
+
+    @Volatile private var running = false
+    @Volatile private var receiverStale = false
+    @Volatile private var captureRequested = false
+    @Volatile private var socket: Socket? = null
+    @Volatile private var rtlTcp: Process? = null
+
+    init {
+        portuguese = when (prefs.get("language", null)) {
+            "pt" -> true
+            "en" -> false
+            else -> Locale.getDefault().language == "pt"
+        }
+        Lang.portuguese = portuguese
+        genericSf = prefs.getInt("genericSf", genericSf)
+        genericBw = prefs.getInt("genericBw", genericBw).takeIf { it in LoraProfile.GENERIC_BANDWIDTHS } ?: 125_000
+        profile = LoraProfile.byId(prefs.get("profile", null))
+        centerHz = prefs.getLong("frequency", profile.frequencyHz)
+        if (profile.protocol == Protocol.GENERIC) profile = LoraProfile.generic(centerHz, genericSf, genericBw)
+        gainTenths = prefs.getInt("gainTenths", gainTenths)
+        offsetTuning = prefs.getBoolean("offsetTuning", false)
+        averaging = prefs.getBoolean("averaging", true)
+        autoStartRtlTcp = prefs.getBoolean("autoStartRtlTcp", true)
+        serverText = prefs.get("server", serverText)
+        freqText = "%.6f".format(Locale.US, centerHz / 1e6)
+        bwText = LoraProfile.formatKhz(genericBw)
+        log("APP", tr("LoRa profile: ${active().describe()}. Any sync word is accepted and shown.",
+            "Perfil LoRa: ${active().describe()}. Qualquer sync word é aceito e mostrado."))
+    }
+
+    /** Profile with the frequency actually in use. */
+    fun active(): LoraProfile = profile.copy(frequencyHz = centerHz)
+
+    // ---- settings -------------------------------------------------------
+
+    fun selectLanguage(pt: Boolean) {
+        prefs.put("language", if (pt) "pt" else "en")
+        Lang.portuguese = pt
+        portuguese = pt
+    }
+
+    fun selectProfile(p: LoraProfile) {
+        profile = p
+        prefs.put("profile", p.id)
+        // The generic profile keeps whatever frequency is being explored.
+        if (p.protocol != Protocol.GENERIC) freqText = "%.6f".format(Locale.US, p.frequencyHz / 1e6)
+        log("APP", tr("LoRa profile: ", "Perfil LoRa: ") + p.copy(frequencyHz = centerHz).describe())
+        applyFrequency()
+    }
+
+    fun selectGenericProfile() = selectProfile(LoraProfile.generic(centerHz, genericSf, genericBw))
+
+    fun selectGenericSf(sf: Int) {
+        genericSf = sf
+        prefs.putInt("genericSf", sf)
+        selectProfile(LoraProfile.generic(centerHz, sf, genericBw))
+    }
+
+    fun applyFrequency() {
+        val mhz = freqText.replace(',', '.').toDoubleOrNull()
+        if (mhz == null || mhz !in 24.0..1766.0) {
+            log("UI", tr("Invalid frequency or outside the typical R820T range: 24–1766 MHz",
+                "Frequência inválida ou fora da faixa típica R820T: 24–1766 MHz"))
+            return
+        }
+        if (profile.protocol == Protocol.GENERIC) {
+            val bw = bwText.replace(',', '.').toDoubleOrNull()?.let { LoraProfile.genericBandwidth(it) }
+            if (bw == null) {
+                log("UI", tr("Bandwidth not supported at 1 MS/s. Use (kHz): ", "Largura de banda não suportada a 1 MS/s. Use (kHz): ") +
+                    LoraProfile.GENERIC_BANDWIDTHS.joinToString(", ") { LoraProfile.formatKhz(it) })
+                return
+            }
+            if (bw != genericBw) {
+                genericBw = bw
+                prefs.putInt("genericBw", bw)
+                profile = LoraProfile.generic(centerHz, genericSf, bw)
+            }
+            bwText = LoraProfile.formatKhz(bw)
+        }
+        centerHz = (mhz * 1e6).toLong()
+        prefs.putLong("frequency", centerHz)
+        log("SDR", tr("Frequency requested: $centerHz Hz", "Frequência solicitada: $centerHz Hz"))
+        sendCommands(listOf(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, tunedHz())), "SET_FREQ")
+        receiverStale = true
+    }
+
+    fun applyGain(tenths: Int) {
+        gainTenths = tenths
+        prefs.putInt("gainTenths", tenths)
+        sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), tr("gain", "ganho"))
+    }
+
+    fun changeOffsetTuning(on: Boolean) {
+        offsetTuning = on
+        prefs.putBoolean("offsetTuning", on)
+        applyFrequency()
+    }
+
+    fun changeAveraging(on: Boolean) {
+        averaging = on
+        prefs.putBoolean("averaging", on)
+        receiverStale = true
+        log("APP", if (on) tr("Averaging filter on", "Filtro de média ligado") else tr("Averaging filter off", "Filtro de média desligado"))
+    }
+
+    fun setAutoStart(on: Boolean) {
+        autoStartRtlTcp = on
+        prefs.putBoolean("autoStartRtlTcp", on)
+    }
+
+    fun settingsSummary(): String {
+        val gain = if (gainTenths == AUTO_GAIN) tr("auto gain", "ganho auto") else "%.1f dB".format(Locale.US, gainTenths / 10.0)
+        val extras = listOfNotNull(if (offsetTuning) tr("offset", "deslocado") else null,
+            if (averaging) tr("filter", "filtro") else null)
+        return "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
+            if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
+    }
+
+    fun gainLabel(): String = if (gainTenths == AUTO_GAIN) tr("Tuner gain: automatic (AGC)", "Ganho do sintonizador: automático (AGC)")
+        else tr("Tuner gain: %.1f dB", "Ganho do sintonizador: %.1f dB").format(Locale.US, gainTenths / 10.0)
+
+    // ---- output ---------------------------------------------------------
+
+    fun log(tag: String, detail: String) = ui {
+        logs.add("[${timeFormat.format(Date())}] [$tag] $detail")
+        while (logs.size > 400) logs.removeAt(0)
+    }
+
+    fun clearTab() {
+        if (showLogs) logs.clear() else messages.clear()
+    }
+
+    fun outputText(): String = (if (showLogs) logs else messages).joinToString("\n")
+
+    fun saveLogs() {
+        val text = (logs + listOf("", tr("--- Messages ---", "--- Mensagens ---")) + messages).joinToString("\n")
+        thread(name = "save-logs") {
+            try {
+                val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+                val file = File(outputDir(), "meshsdr-log-$stamp.txt")
+                file.writeText(text, Charsets.UTF_8)
+                log("APP", tr("Logs saved to ${file.absolutePath}", "Logs salvos em ${file.absolutePath}"))
+            } catch (e: Exception) {
+                log("ERROR", tr("Save logs", "Salvar logs") + ": ${e.message}")
+            }
+        }
+    }
+
+    fun requestCapture() {
+        if (status != LinkStatus.RECEIVING) {
+            log("IQ", tr("Connect the RTL-SDR before recording", "Conecte o RTL-SDR antes de gravar"))
+        } else {
+            captureRequested = true
+            log("IQ", tr("IQ recording requested: 10 seconds, unsigned 8-bit IQ",
+                "Gravação IQ solicitada: 10 segundos, formato unsigned IQ 8-bit"))
+        }
+    }
+
+    // ---- radio ----------------------------------------------------------
+
+    private fun tuningOffsetHz(): Int = if (offsetTuning) LoraProfile.TUNING_OFFSET_HZ else 0
+    private fun tunedHz(): Long = centerHz + tuningOffsetHz()
+    private fun gainOrNull(): Int? = if (gainTenths == AUTO_GAIN) null else gainTenths
+
+    /** One decoder per spreading factor of the profile (six in generic "all SF" mode). */
+    private fun newReceivers(): List<LoraReceiver> {
+        val p = active()
+        val offset = tuningOffsetHz()
+        val on = tr("on", "ligado")
+        val off = tr("off", "desligado")
+        log("LORA", tr("Decoder: %s; tuner at %.3f MHz; offset %s; averaging filter %s",
+            "Decoder: %s; sintonizador em %.3f MHz; deslocamento %s; filtro de média %s").format(
+            Locale.US, p.describe(), tunedHz() / 1e6, if (offset != 0) "250 kHz" else off, if (averaging) on else off))
+        return p.spreadingFactors.map { sf ->
+            LoraReceiver(p, sf, offset, averaging) { frame -> ui { onFrame(frame) } }
+        }
+    }
+
+    private fun onFrame(frame: LoraFrame) {
+        if (frame.verified) decoded++ else detections++
+        val text = frame.describe(active())
+        messages.add("[${timeFormat.format(Date())}] $text")
+        while (messages.size > 200) messages.removeAt(0)
+        log("LORA", text)
+    }
+
+    private fun sendCommands(commands: List<ByteArray>, what: String) {
+        val active = socket
+        if (active == null || !active.isConnected || active.isClosed) return
+        thread {
+            try {
+                synchronized(active) {
+                    val out = active.getOutputStream()
+                    commands.forEach { out.write(it) }
+                    out.flush()
+                }
+                log("SDR", tr("rtl_tcp command $what sent", "Comando rtl_tcp $what enviado"))
+            } catch (e: Exception) {
+                log("ERROR", tr("Command", "Comando") + " $what: ${e.message}")
+            }
+        }
+    }
+
+    fun connect() {
+        if (running) { log("APP", tr("Reception already active", "Recepção já ativa")); return }
+        applyFrequency()
+        running = true
+        status = LinkStatus.CONNECTING
+        settingsExpanded = false
+        thread(name = "rtl-iq-reader") { receiveLoop() }
+    }
+
+    fun disconnect() {
+        if (!running) return
+        running = false
+        try { socket?.close() } catch (_: Exception) {}
+        log("APP", tr("Disconnect requested", "Desconexão solicitada"))
+    }
+
+    /** Starts the bundled or installed rtl_tcp; returns host and port to connect to. */
+    private fun startRtlTcp(): Pair<String, Int>? {
+        val exe = RtlTcpLocator.find()
+        if (exe == null) {
+            log("ERROR", tr("rtl_tcp not found. Linux: install the rtl-sdr package (sudo apt install rtl-sdr). " +
+                "Or turn off \"start rtl_tcp\" and type a server address.",
+                "rtl_tcp não encontrado. Linux: instale o pacote rtl-sdr (sudo apt install rtl-sdr). " +
+                "Ou desligue \"iniciar rtl_tcp\" e digite o endereço de um servidor."))
+            return null
+        }
+        val port = LOCAL_PORT
+        val cmd = listOf(exe.absolutePath, "-a", "127.0.0.1", "-p", "$port", "-s", "$sampleRate", "-f", "${tunedHz()}")
+        log("SDR", tr("Starting ", "Iniciando ") + cmd.joinToString(" "))
+        val process = ProcessBuilder(cmd).directory(exe.parentFile).redirectErrorStream(true).start()
+        rtlTcp = process
+        thread(name = "rtl_tcp-output", isDaemon = true) {
+            process.inputStream.bufferedReader().forEachLine { line ->
+                if (line.isNotBlank()) log("RTL", line.trim())
+            }
+        }
+        return "127.0.0.1" to port
+    }
+
+    private fun connectSocket(host: String, port: Int): Socket {
+        // A freshly started rtl_tcp needs a moment to open the dongle and listen.
+        val deadline = System.currentTimeMillis() + 8000
+        while (true) {
+            val process = rtlTcp
+            if (process != null && !process.isAlive)
+                throw IllegalStateException(tr("rtl_tcp exited (code ${process.exitValue()}): is the dongle plugged in?",
+                    "rtl_tcp encerrou (código ${process.exitValue()}): o dongle está conectado?"))
+            try {
+                return Socket().apply { connect(InetSocketAddress(host, port), 2000) }
+            } catch (e: Exception) {
+                if (process == null || System.currentTimeMillis() > deadline) throw e
+                Thread.sleep(250)
+            }
+        }
+    }
+
+    private fun receiveLoop() {
+        try {
+            val target = if (autoStartRtlTcp) startRtlTcp() ?: return else parseServer() ?: return
+            val s = connectSocket(target.first, target.second)
+            socket = s
+            s.soTimeout = 5000
+            val input = BufferedInputStream(s.getInputStream())
+            val header = ByteArray(12)
+            var offset = 0
+            while (offset < header.size) {
+                val n = input.read(header, offset, header.size - offset)
+                if (n < 0) throw IllegalStateException(tr("Stream ended in the header", "Fim do fluxo no cabeçalho"))
+                offset += n
+            }
+            if (!RtlTcpProtocol.isValidHeader(header))
+                throw IllegalStateException(tr("Invalid rtl_tcp header", "Cabeçalho rtl_tcp inválido"))
+            val tuner = RtlTcpProtocol.tunerName(header)
+            log("SDR", tr("RTL0 received; tuner $tuner; IQ samples flowing", "RTL0 recebido; sintonizador $tuner; amostras IQ ativas"))
+            synchronized(s) {
+                val out = s.getOutputStream()
+                // A remote server may run at another rate or frequency: set both.
+                out.write(RtlTcpProtocol.command(0x02, sampleRate.toLong()))
+                out.write(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, tunedHz()))
+                RtlTcpProtocol.gainCommands(gainOrNull()).forEach { out.write(it) }
+                out.flush()
+            }
+            log("SDR", if (gainTenths == AUTO_GAIN) tr("Automatic gain (AGC) applied", "Ganho automático (AGC) aplicado")
+                else tr("Manual gain %.1f dB applied", "Ganho manual %.1f dB aplicado").format(Locale.US, gainTenths / 10.0))
+            ui { status = LinkStatus.RECEIVING }
+            val level = IqLevel()
+            receiverStale = false
+            var demods = newReceivers()
+            var decodeNanos = 0L
+            val buffer = ByteArray(65536)
+            var capture: FileOutputStream? = null
+            var captureFile: File? = null
+            var captureStart = 0L
+            var captureBytes = 0L
+            var captureFrom = 0
+            var bytes = 0L
+            // Bytes since the RTL0 header: even = an I byte. Recordings start on one.
+            var streamBytes = 0L
+            var last = System.currentTimeMillis()
+            while (running) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                if (captureRequested && capture == null) {
+                    captureRequested = false
+                    val file = File(outputDir(), "meshsdr-${System.currentTimeMillis()}-${tunedHz()}Hz-${sampleRate}sps.cu8")
+                    capture = FileOutputStream(file)
+                    captureFile = file
+                    captureStart = System.currentTimeMillis()
+                    captureBytes = 0L
+                    captureFrom = if (streamBytes % 2 == 0L) 0 else 1
+                    log("IQ", tr("Recording to ${file.absolutePath}", "Gravando em ${file.absolutePath}"))
+                }
+                val activeCapture = capture
+                if (activeCapture != null) {
+                    try {
+                        if (n > captureFrom) {
+                            activeCapture.write(buffer, captureFrom, n - captureFrom)
+                            captureBytes += n - captureFrom
+                        }
+                        captureFrom = 0
+                        if (System.currentTimeMillis() - captureStart >= 10_000L) {
+                            activeCapture.close()
+                            capture = null
+                            log("IQ", tr("Recording finished: $captureBytes bytes in ${captureFile?.absolutePath}",
+                                "Gravação concluída: $captureBytes bytes em ${captureFile?.absolutePath}"))
+                        }
+                    } catch (e: Exception) {
+                        log("ERROR", tr("IQ recording", "Gravação IQ") + ": ${e.message}")
+                        try { activeCapture.close() } catch (_: Exception) {}
+                        capture = null
+                    }
+                }
+                if (receiverStale) {
+                    // Profile or frequency changed: restart the decoders with the new settings.
+                    receiverStale = false
+                    demods.forEach { it.close() }
+                    demods = newReceivers()
+                }
+                val t0 = System.nanoTime()
+                demods.forEach { it.feed(buffer, n) }
+                decodeNanos += System.nanoTime() - t0
+                level.add(buffer, n)
+                bytes += n
+                streamBytes += n
+                val now = System.currentTimeMillis()
+                if (now - last >= 2000) {
+                    val rate = bytes * 1000.0 / (now - last) / 1e6
+                    val cpu = decodeNanos / 1e4 / (now - last)
+                    val busy = if (cpu > 80) tr(" — decoder can't keep up: pick a single SF",
+                        " — decodificador não acompanha: escolha um único SF") else ""
+                    log("IQ", "%.2f MB/s • %s • CPU %.0f%%%s".format(Locale.US, rate, level.summary(), cpu, busy))
+                    val rms = level.lastRms
+                    val clip = level.lastClipPct
+                    ui { if (running) { levelRms = rms; levelClipPct = clip } }
+                    decodeNanos = 0
+                    bytes = 0
+                    last = now
+                }
+            }
+            demods.forEach { it.close() }
+            capture?.close()
+            if (capture != null) log("IQ", tr("Partial recording: $captureBytes bytes in ${captureFile?.absolutePath}",
+                "Gravação parcial: $captureBytes bytes em ${captureFile?.absolutePath}"))
+        } catch (e: Exception) {
+            if (running) log("ERROR", tr("IQ stream", "Fluxo IQ") + ": ${e.message}")
+        } finally {
+            running = false
+            try { socket?.close() } catch (_: Exception) {}
+            socket = null
+            rtlTcp?.let { it.destroy(); if (!it.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) it.destroyForcibly() }
+            rtlTcp = null
+            ui {
+                status = LinkStatus.DISCONNECTED
+                levelRms = null
+            }
+            log("SDR", tr("Reception stopped", "Recepção encerrada"))
+        }
+    }
+
+    private fun parseServer(): Pair<String, Int>? {
+        val text = serverText.trim()
+        val host = text.substringBeforeLast(':', text).ifBlank { "127.0.0.1" }
+        val port = text.substringAfterLast(':', "1234").toIntOrNull()
+        if (port == null || port !in 1..65535) {
+            log("UI", tr("Invalid rtl_tcp server, use host:port (e.g. 192.168.0.10:1234)",
+                "Servidor rtl_tcp inválido, use host:porta (ex.: 192.168.0.10:1234)"))
+            return null
+        }
+        prefs.put("server", text)
+        log("SDR", tr("Connecting to rtl_tcp at $host:$port", "Conectando ao rtl_tcp em $host:$port"))
+        return host to port
+    }
+
+    private fun outputDir(): File {
+        val home = File(System.getProperty("user.home"))
+        val downloads = File(home, "Downloads").takeIf { it.isDirectory } ?: home
+        return File(downloads, "MeshSDR").apply { mkdirs() }
+    }
+
+    private fun ui(block: () -> Unit) {
+        if (SwingUtilities.isEventDispatchThread()) block() else SwingUtilities.invokeLater(block)
+    }
+
+    companion object {
+        const val AUTO_GAIN = -1
+        /** Port for the rtl_tcp the app starts itself, away from the default 1234. */
+        const val LOCAL_PORT = 14423
+        val GAIN_STEPS = listOf("Auto" to AUTO_GAIN, "20" to 197, "30" to 297, "40" to 402, "49.6" to 496)
+    }
+}
+
+/** Finds rtl_tcp: shipped next to the app (Windows build), or installed on the system. */
+object RtlTcpLocator {
+    fun find(): File? {
+        val windows = System.getProperty("os.name").lowercase().contains("win")
+        val name = if (windows) "rtl_tcp.exe" else "rtl_tcp"
+        val dirs = listOfNotNull(System.getProperty("compose.application.resources.dir")) +
+            (System.getenv("PATH") ?: "").split(File.pathSeparator) +
+            listOf("/usr/bin", "/usr/local/bin")
+        return dirs.filter { it.isNotBlank() }.map { File(it, name) }.firstOrNull { it.isFile && it.canExecute() }
+    }
+}

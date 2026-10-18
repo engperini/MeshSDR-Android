@@ -388,7 +388,7 @@ private:
         for (int i = 0; i < N_; i++) demod_down_[i] = cxconj(demod_down_[i]);
         for (int n = 0; n < N_; n++) {
             float a = -2.0f * PI_F * m_cfo_frac_ / N_ * n;
-            demod_down_[n] = cxmul(demod_down_[n], (Cx){cosf(a), sinf(a)});
+            demod_down_[n] = cxmul(demod_down_[n], Cx{cosf(a), sinf(a)});
         }
 
         // SNR from CFO-corrected preamble symbol
@@ -445,12 +445,12 @@ private:
         }
         Cx acc = {0, 0};
         for (int i = 0; i < UP_USE - 1; i++)
-            acc = (Cx){acc.r + (binval[i].r * binval[i + 1].r + binval[i].i * binval[i + 1].i),
+            acc = Cx{acc.r + (binval[i].r * binval[i + 1].r + binval[i].i * binval[i + 1].i),
                        acc.i + (binval[i].i * binval[i + 1].r - binval[i].r * binval[i + 1].i)};
         m_cfo_frac_ = -atan2f(acc.i, acc.r) / (2.0f * PI_F);
         for (int n = 0; n < UP_USE * N_; n++) {
             float a = -2.0f * PI_F * m_cfo_frac_ / N_ * n;
-            u_.pre.up[n] = cxmul(s[n], (Cx){cosf(a), sinf(a)});
+            u_.pre.up[n] = cxmul(s[n], Cx{cosf(a), sinf(a)});
         }
     }
 
@@ -459,7 +459,7 @@ private:
         for (int j = 0; j < NN; j++) mag_[j] = 0;
         for (int i = 0; i < UP_USE; i++) {
             for (int j = 0; j < N_; j++) dech_[j] = cxmul(u_.pre.up[N_ * i + j], downchirp_[j]);
-            for (int j = N_; j < NN; j++) dech_[j] = (Cx){0, 0};
+            for (int j = N_; j < NN; j++) dech_[j] = Cx{0, 0};
             fftN(dech_, fout_, NN);
             for (int j = 0; j < NN; j++) mag_[j] += cxnorm(fout_[j]);
         }

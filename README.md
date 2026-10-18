@@ -65,6 +65,23 @@ LoRa radio, a PC or GNU Radio.
    details in **Technical logs**.
 
 
+## Desktop app (Windows / Linux) — preview
+
+The same receiver as a desktop app, with the phone's interface: a Kotlin + Compose
+Multiplatform window over the same C++ LoRa PHY and the same protocol code.
+
+- **Windows:** plug in the dongle and install the WinUSB driver once with
+  [Zadig](https://zadig.akeo.ie/) (as for any RTL-SDR program). Then install the `.msi`, or
+  unzip the portable build. `rtl_tcp` from the RTL-SDR Blog drivers is bundled.
+- **Linux:** `sudo apt install rtl-sdr` (provides `rtl_tcp`), then install the `.deb` or
+  unpack the portable build and run `MeshSDR/bin/MeshSDR`. If the dongle is busy, unload the
+  DVB-T driver: `sudo rmmod dvb_usb_rtl28xxu`.
+- **Remote dongle:** turn off "start rtl_tcp" and type the address of any `rtl_tcp` server, e.g. a
+  Raspberry Pi on the roof running `rtl_tcp -a 0.0.0.0`.
+- `--connect` starts receiving at launch, for unattended monitoring stations.
+
+Builds are produced by the **Desktop app** workflow in GitHub Actions.
+
 ## How it works
 
 ```mermaid
@@ -115,9 +132,7 @@ external carrier about 12 dB stronger, so it is the better choice for range.
 
 ## Roadmap
 
-- **Desktop (Windows / Linux / Raspberry Pi):** a command-line receiver that reuses the same
-  C++ core, outputs JSON for scripts and MQTT, and has a **local web UI** (`--web`) for
-  monitoring stations.
+- **Desktop:** release installers, macOS, and JSON / MQTT output for monitoring stations.
 - **In the browser:** WebUSB + WebAssembly, so you just plug the dongle into Chrome with no install.
 - **Meshtastic:** protobuf decoding and decryption of public channels with their published
   default key.
@@ -138,6 +153,14 @@ gradle :app:testDebugUnitTest      # Kotlin unit tests
 # Native LoRa PHY tests on the host (Linux/macOS)
 cmake -S app/src/test/cpp -B build-host -DCMAKE_BUILD_TYPE=Release
 cmake --build build-host && ctest --test-dir build-host --output-on-failure
+```
+
+Desktop app (JDK 17+, CMake, Gradle 8.11+):
+
+```bash
+cmake -S desktop/native -B build-native -DCMAKE_BUILD_TYPE=Release && cmake --build build-native
+mkdir -p desktop/resources/linux-x64 && cp build-native/libmeshsdr_lora.so desktop/resources/linux-x64/
+cd desktop && gradle run                 # or: gradle packageDeb / packageMsi
 ```
 
 APKs are signed with a **public test key** that is committed to the repo
