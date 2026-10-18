@@ -67,6 +67,7 @@ struct Packet {
     uint8_t  status;      // PacketStatus
     bool     crc_ok;
     bool     has_crc;
+    uint8_t  crc_method;  // MeshSDR: 0 direct, 1 net-ID rotation, 2 nibble chase (recovered)
     float    snr;
     float    cfo;         // in bins
     uint8_t  sync;        // detected sync word
@@ -709,6 +710,7 @@ private:
         uint8_t bytes[LORA_LITE_MAX_PAYLOAD + 2];
         build_bytes(nibbles_, bytes, total);
         pkt.crc_ok = true;
+        pkt.crc_method = 0;
         if (pay_crc_ && pay_len_ >= 2) {
             pkt.crc_ok = crc_ok(bytes);
             if (!pkt.crc_ok && nid_resid_) {
@@ -718,10 +720,13 @@ private:
                 if (crc_ok(u_.pay.rot_bytes)) {
                     memcpy(bytes, u_.pay.rot_bytes, total);
                     pkt.crc_ok = true;
+                    pkt.crc_method = 1;
                 }
             }
-            if (!pkt.crc_ok && nibble_chase(bytes, total))
+            if (!pkt.crc_ok && nibble_chase(bytes, total)) {
                 pkt.crc_ok = true;
+                pkt.crc_method = 2;
+            }
         }
         for (uint32_t i = 0; i < pay_len_; i++) pkt.data[i] = bytes[i];
         pkt.len = pay_len_; pkt.has_crc = pay_crc_; pkt.snr = cur_snr_;

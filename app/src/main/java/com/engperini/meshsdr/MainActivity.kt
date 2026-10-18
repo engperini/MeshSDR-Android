@@ -351,7 +351,7 @@ class MainActivity : Activity() {
 
     /** UI thread. */
     private fun onFrame(frame: LoraFrame) {
-        if (frame.status == LoraFrame.DECODED) decoded++ else detections++
+        if (frame.verified) decoded++ else detections++
         val text = frame.describe(profile)
         messages.addLast("[${timeFormat.format(Date())}] $text")
         while (messages.size > 200) messages.removeFirst()

@@ -61,8 +61,13 @@ class LoraFrame(
     val declaredLength: Int,
     val crcOk: Boolean,
     val snrDb: Float,
-    val syncWord: Int
+    val syncWord: Int,
+    /** False when the LoRa header says the frame carries no CRC: nothing could be verified. */
+    val hasCrc: Boolean = true
 ) {
+    /** Payload actually verified by CRC. Meshtastic and MeshCore always send one. */
+    val verified: Boolean get() = status == DECODED && hasCrc
+
     /**
      * @param profile the active profile, if any: its protocol decides how a
      * CRC-ok frame is interpreted (the sync word read from a weak signal can
@@ -76,7 +81,10 @@ class LoraFrame(
         return when (status) {
             HEADER_ONLY -> "LoRa detectado • sync $sync • cabeçalho válido: $declaredLength bytes • $snr"
             CRC_FAIL -> "Quadro LoRa com CRC inválido • ${bytes.size} bytes • sync $sync • $snr"
-            else -> {
+            else -> if (!hasCrc) {
+                // Noise often yields a header claiming "no CRC"; such bytes are unverifiable.
+                "Quadro LoRa sem CRC • ${bytes.size} bytes • não verificável (provável ruído) • sync $sync • $snr"
+            } else {
                 val meshCoreProfile = profile?.id?.startsWith("meshcore") == true
                 val meshtasticProfile = profile?.id?.startsWith("meshtastic") == true
                 val parsed = when {
