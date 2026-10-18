@@ -23,6 +23,14 @@ data class LoraProfile(
     val spreadingFactors: List<Int>
         get() = if (spreadingFactor == ALL_SF) GENERIC_SFS else listOf(spreadingFactor)
 
+    /**
+     * Run the extra decoders of diversity.h (every decimation phase, both
+     * filter settings, drift tracking): they recover packets from dongles with
+     * a drifting oscillator. "All SF" mode keeps one decoder per SF.
+     */
+    val diversity: Boolean
+        get() = spreadingFactor != ALL_SF
+
     fun describe(): String {
         val sf = if (spreadingFactor == ALL_SF) "SF7–12" else "SF$spreadingFactor"
         val cr = if (protocol == Protocol.GENERIC) "" else " / CR4/${codingRate + 4}"

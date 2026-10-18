@@ -19,8 +19,10 @@ class IqFrontEnd {
 public:
     // `shiftHz` is added to every sample's frequency: with the tuner `offset` Hz
     // above the channel, the channel sits at -offset, so pass +offset.
-    IqFrontEnd(int decimation, double shiftHz, double sampleRate, bool average)
-        : decimation_(decimation < 1 ? 1 : decimation), average_(average) {
+    // `phase` drops that many input samples first, so the decimation groups
+    // start elsewhere: see PhaseDiversity.
+    IqFrontEnd(int decimation, double shiftHz, double sampleRate, bool average, int phase = 0)
+        : decimation_(decimation < 1 ? 1 : decimation), average_(average), skip_(phase < 0 ? 0 : phase) {
         const double w = 2.0 * M_PI * shiftHz / sampleRate;
         stepR_ = std::cos(w); stepI_ = std::sin(w);
     }
@@ -34,6 +36,7 @@ public:
             const double in = (pendingI_ - 127.5) / 127.5;
             const double quad = (value - 127.5) / 127.5;
             pendingI_ = -1;
+            if (skip_ > 0) { --skip_; continue; }
             if (average_ || count_ == 0) {
                 accR_ += in * ncoR_ - quad * ncoI_;
                 accI_ += in * ncoI_ + quad * ncoR_;
@@ -56,6 +59,7 @@ public:
 private:
     int decimation_;
     bool average_;
+    int skip_;
     int pendingI_ = -1;
     int count_ = 0;
     double accR_ = 0, accI_ = 0;

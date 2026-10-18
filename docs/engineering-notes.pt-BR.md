@@ -167,3 +167,32 @@ Veja [TODO.pt-BR.md](TODO.pt-BR.md). A prioridade imediata é **recuperar CI ver
 5. **Regressão:** Android APK #38 e Quality gates #34 falham. Não há demonstração de pacote LoRa decodificado.
 
 **Handoff para outro desenvolvedor/IA:** comece lendo o log da execução #38, resolva a **primeira falha concreta**, mantenha o DSP em tempo real e crie um teste determinístico que prove payload LoRa. Não anuncie sucesso só por um commit ou por um build verde.
+
+## 18/10 — Dongle sem TCXO: correção ppm e diversidade de decodificadores
+
+Gravações automáticas com o dongle "caixinha" (sem TCXO), MeshCore BR:
+
+- **Desvio de ~15 kHz** (~16 ppm): no limite de captura do SF8/62,5 kHz (±15,6 kHz),
+  a detecção oscilava e o sinal do CFO trocava entre pacotes. Resolvido com a
+  **correção ppm** (comando 0x05 do rtl_tcp; −17 neste dongle). O app mostra o desvio
+  medido em cada detecção.
+- **Deriva durante o pacote**: até 1–1,5 bin ao longo de pacotes de 78–142 bytes,
+  com oscilações de ±0,3 bin em poucos símbolos. Pacotes longos falham mesmo com
+  SNR > 0 dB.
+- **Fase de decimação**: os pacotes decodificáveis só saem em algumas das 8 fases
+  (1 MS/s → 2 amostras/chip). O app usava uma fase arbitrária.
+
+Rastreamento de deriva por símbolo (`set_tracking`) recupera pacotes, mas no
+decodificador único piora casos limpos da varredura de ppm (pequena polarização da
+interpolação). Por isso ele roda só em decodificadores extras.
+
+`diversity.h`: o decodificador principal (fase 0, filtro do usuário, sem rastreamento)
+é o de antes e reporta tudo; 31 extras (8 fases × filtro ligado/desligado × com/sem
+rastreamento) só acrescentam quadros com CRC válido sem nibble chase, com dedupe de
+~4 s. Nas 8 gravações do dongle sem TCXO: decodificador único 0 pacotes válidos,
+diversidade 4 (PATH, RESPONSE e duas GRP_TXT, todos por repetidoras conhecidas).
+Ruído: 0 falsos em 20 s com os 32 decodificadores. Roda em até 4 threads.
+
+Falso positivo observado do nibble chase (~134 tentativas de CRC por quadro falho):
+um GRP_TXT de 47 B "válido" que era uma versão corrompida do pacote real de 45 B.
+Os decodificadores extras nunca usam o nibble chase.

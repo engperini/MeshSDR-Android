@@ -9,3 +9,6 @@ target_include_directories(lora_phy_test PRIVATE ../../main/cpp ../../main/cpp/u
 target_compile_options(lora_phy_test PRIVATE -O2 -Wall -Wextra)
 target_compile_definitions(lora_phy_test PRIVATE MESHSDR_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/data")
 add_test(NAME lora_phy COMMAND lora_phy_test)
+
+find_package(Threads REQUIRED)
+target_link_libraries(lora_phy_test PRIVATE Threads::Threads)
