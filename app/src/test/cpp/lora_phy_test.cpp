@@ -205,6 +205,13 @@ void testDiversityNoise() {
     std::printf("  %d decoders, %.1fx real time on this host; %d header detections, %d decoded\n",
                 d.decoders(), 20.0 / secs, sink.headers, decoded);
     CHECK(decoded == 0, "noise produced %d decoded frames", decoded);
+    // Every bandwidth stays within 32 decoders (decimation 1 MS/s -> 2 samples/chip).
+    for (int bw : {500000, 250000, 125000, 62500, 31250, 15625}) {
+        const int dec = (int)(kFs / (2 * bw));
+        meshsdr::PhaseDiversity m(true, dec, 0, kFs, true, 8, 4, 0, (uint32_t)bw, 923125000, Sink::cb, &sink);
+        std::printf("  BW %.1f kHz: %d decoders\n", bw / 1e3, m.decoders());
+        CHECK(m.decoders() <= 32, "BW %d: %d decoders", bw, m.decoders());
+    }
 }
 
 // MeshCore Brazil: 923.125 MHz, BW 62.5 kHz, SF8, CR 4/8, private sync 0x12.

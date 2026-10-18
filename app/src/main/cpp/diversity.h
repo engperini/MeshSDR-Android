@@ -27,16 +27,18 @@ class PhaseDiversity {
 public:
     using Callback = void (*)(const lora_lite::Packet&, void*);
 
-    // Extended: every phase, both filter settings, with and without tracking.
-    // Otherwise a single decoder, as before.
+    // Extended: up to 8 decimation phases (evenly spaced when there are more,
+    // e.g. 32 at BW 15.6 kHz), both filter settings, with and without tracking:
+    // at most 32 decoders. Otherwise a single decoder, as before.
     PhaseDiversity(bool extended, int decimation, double shiftHz, double sampleRate, bool average,
                    int sf, int cr, uint16_t sync, uint32_t bw, uint32_t centerHz, Callback cb, void* user)
         : cb_(cb), user_(user), window_(static_cast<int64_t>(sampleRate) * 2 * 4) {
         add(0, average, 0.0f, true, decimation, shiftHz, sampleRate, sf, cr, sync, bw, centerHz);
         if (!extended) return;
+        const int step = (decimation + kMaxPhases - 1) / kMaxPhases;
         for (float track : {0.0f, kTrackGain})
             for (bool avg : {average, !average})
-                for (int phase = 0; phase < decimation; ++phase)
+                for (int phase = 0; phase < decimation; phase += step)
                     if ((phase != 0 || avg != average || track != 0.0f) && (decimation > 1 || avg == average))
                         add(phase, avg, track, false, decimation, shiftHz, sampleRate, sf, cr, sync, bw, centerHz);
     }
@@ -67,6 +69,7 @@ public:
 
 private:
     static constexpr float kTrackGain = 0.25f;
+    static constexpr int kMaxPhases = 8;
 
     void add(int phase, bool average, float track, bool primary, int decimation, double shiftHz,
              double sampleRate, int sf, int cr, uint16_t sync, uint32_t bw, uint32_t centerHz) {
