@@ -68,7 +68,7 @@ LoRa radio, a PC or GNU Radio.
    details in **Technical logs**.
 
 
-## Desktop app (Windows / Linux)
+## Desktop app (Windows / Linux / Raspberry Pi)
 
 The same receiver as a desktop app, with the phone's interface: a Kotlin + Compose
 Multiplatform window over the same C++ LoRa PHY and the same protocol code.
@@ -79,6 +79,8 @@ Multiplatform window over the same C++ LoRa PHY and the same protocol code.
 - **Linux:** `sudo apt install rtl-sdr` (provides `rtl_tcp`), then install the `.deb` or
   unpack the portable build and run `MeshSDR/bin/MeshSDR`. If the dongle is busy, unload the
   DVB-T driver: `sudo rmmod dvb_usb_rtl28xxu`.
+- **Raspberry Pi 4/5:** same as Linux, with the `arm64` `.deb` or the `linux-arm64` portable
+  build. It needs the 64-bit Raspberry Pi OS (`uname -m` prints `aarch64`).
 - **Remote dongle:** turn off "start rtl_tcp" and type the address of any `rtl_tcp` server, e.g. a
   Raspberry Pi on the roof running `rtl_tcp -a 0.0.0.0`.
 - `--connect` starts receiving at launch, for unattended monitoring stations.

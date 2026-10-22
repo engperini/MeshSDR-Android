@@ -1,4 +1,4 @@
-**MeshSDR turns an Android phone or a Windows/Linux computer and an RTL-SDR dongle into a passive LoRa receiver for Meshtastic and MeshCore networks.**
+**MeshSDR turns an Android phone or a Windows/Linux computer or Raspberry Pi and an RTL-SDR dongle into a passive LoRa receiver for Meshtastic and MeshCore networks.**
 
 ### Highlights
 - Real-time LoRa demodulation with a native C++ PHY: SF7–12, BW 15.6–500 kHz, CR 4/5–4/8.
@@ -29,12 +29,17 @@
 1. `sudo apt install rtl-sdr` (provides `rtl_tcp`).
 2. `sudo apt install ./meshsdr_<version>-1_amd64.deb`, or unpack `MeshSDR-<version>-linux-x64-portable.tar.gz` and run `MeshSDR/bin/MeshSDR`.
 
+**Raspberry Pi 4/5 (64-bit Raspberry Pi OS)**
+1. `sudo apt install rtl-sdr`.
+2. `sudo apt install ./meshsdr_<version>-1_arm64.deb`, or unpack `MeshSDR-<version>-linux-arm64-portable.tar.gz` and run `MeshSDR/bin/MeshSDR`. The 32-bit OS (armhf) is not supported; `uname -m` must print `aarch64`.
+
 Logs and recordings go to `Download/MeshSDR` (Android) or `~/Downloads/MeshSDR` (desktop).
 
 ### Assets
 - `MeshSDR-<version>.apk`: Android app, signed with the project's public test key so future builds install over it.
 - `MeshSDR-<version>.msi`, `MeshSDR-<version>-windows-x64-portable.zip`: Windows.
-- `meshsdr_<version>-1_amd64.deb`, `MeshSDR-<version>-linux-x64-portable.tar.gz`: Linux.
+- `meshsdr_<version>-1_amd64.deb`, `MeshSDR-<version>-linux-x64-portable.tar.gz`: Linux (x64).
+- `meshsdr_<version>-1_arm64.deb`, `MeshSDR-<version>-linux-arm64-portable.tar.gz`: Raspberry Pi 4/5 and other 64-bit ARM Linux.
 - `meshcore_jundiai_20261017_923125000Hz_1Msps.cu8`: 0.9 s of real IQ (u8, 1 MS/s, 923.125 MHz) containing one MeshCore packet, for trying the decoder or other SDR tools.
 - `SHA256SUMS.txt`: checksums of the files above.
 
