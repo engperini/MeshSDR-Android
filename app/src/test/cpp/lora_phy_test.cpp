@@ -16,7 +16,8 @@
 namespace {
 
 int failures = 0;
-#define CHECK(cond, ...) do { if (!(cond)) { ++failures; std::printf("  FAIL %s:%d: ", __FILE__, __LINE__); \
+bool quiet = false;   // rate measurements count failures without printing each one
+#define CHECK(cond, ...) do { if (!(cond)) { ++failures; if (quiet) break; std::printf("  FAIL %s:%d: ", __FILE__, __LINE__); \
     std::printf(__VA_ARGS__); std::printf("\n"); } } while (0)
 
 struct Sink {
@@ -120,7 +121,7 @@ void testTablesMatchReference() {
 
 // Meshtastic US LongFast through the real app path: 1 MS/s u8 -> 500 kS/s.
 void testLongFastRtlTcp(const char* name, Channel ch, std::vector<int> lens, bool tinyReads, uint32_t seed) {
-    std::printf("[%s] SF11/BW250k CR4/5 sync 0x2b, %zu frame(s), %+.0f ppm (%+.1f kHz), snr %.1f dB\n",
+    if (!quiet) std::printf("[%s] SF11/BW250k CR4/5 sync 0x2b, %zu frame(s), %+.0f ppm (%+.1f kHz), snr %.1f dB\n",
                 name, lens.size(), ch.ppm, ch.ppm * 0.906875, ch.snrDb);
     loratx::Params p;   // defaults are LongFast at os=4 (1 MS/s)
     std::vector<std::vector<uint8_t>> payloads;
@@ -345,13 +346,33 @@ void testPhaseDiversity() {
     CHECK(diverse == 8, "diversity decoded %d/8 start offsets", diverse);
 }
 
+// +25 ppm over a 2.7 s frame with the filter off is marginal: whether it decodes
+// depends on the noise, so one seed passes or fails with the platform's floating
+// point (x86 vs ARM). Measure the rate over many noise seeds instead.
+void testCheapXtalRate() {
+    const int before = failures, seeds = 20;
+    int ok = 0;
+    quiet = true;
+    for (int seed = 1; seed <= seeds; ++seed) {
+        const int f0 = failures;
+        Channel c; c.ppm = 25; c.snrDb = 10;
+        testLongFastRtlTcp("cheap-xtal", c, {200}, false, static_cast<uint32_t>(seed));
+        ok += failures == f0;
+    }
+    quiet = false;
+    failures = before;
+    std::printf("[cheap-xtal] SF11/BW250k, 200 bytes, +25 ppm, snr 10 dB: %d/%d noise seeds decoded exactly\n", ok, seeds);
+    CHECK(ok * 100 >= seeds * 70, "only %d/%d seeds decoded (need >= 70%%)", ok, seeds);
+}
+
 void runAll() {
     std::printf("\n===== front end: %s (offset %.0f kHz, average %s) =====\n", gDsp.name, gDsp.offset / 1e3, gDsp.average ? "on" : "off");
     testLongFastRtlTcp("clean", Channel{}, {40}, false, 1);
     testLongFastRtlTcp("reads", Channel{}, {1, 16, 77}, true, 2);
     { Channel c; c.ppm = 5; c.snrDb = 0; testLongFastRtlTcp("ppm+noise", c, {64}, true, 3); }
     { Channel c; c.ppm = -3; c.snrDb = -10; testLongFastRtlTcp("weak", c, {32}, false, 4); }
-    { Channel c; c.ppm = 25; c.snrDb = 10; testLongFastRtlTcp("cheap-xtal", c, {200}, false, 7); }
+    if (gDsp.average) { Channel c; c.ppm = 25; c.snrDb = 10; testLongFastRtlTcp("cheap-xtal", c, {200}, false, 7); }
+    else testCheapXtalRate();
     { Channel c; c.ppm = -25; c.snrDb = 10; testLongFastRtlTcp("cheap-xtal-neg", c, {120}, false, 8); }
     testLongFastRtlTcp("max-payload", Channel{}, {255}, false, 6);
     testMeshCoreBr();
