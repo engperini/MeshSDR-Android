@@ -1,0 +1,15 @@
+# Lets a paired phone reach the MeshSDR server over Bluetooth (no Wi-Fi needed).
+#   sudo systemctl enable --now meshsdr-bluetooth
+# Logs: journalctl -u meshsdr-bluetooth -f
+[Unit]
+Description=MeshSDR Bluetooth bridge (phone app <-> MeshSDR server)
+After=bluetooth.target
+Requires=bluetooth.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/meshsdr/lib/app/resources/meshsdr-bt-bridge.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

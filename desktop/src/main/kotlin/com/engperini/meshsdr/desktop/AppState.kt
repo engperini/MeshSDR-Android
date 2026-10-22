@@ -12,6 +12,8 @@ import com.engperini.meshsdr.LoraFrame
 import com.engperini.meshsdr.LoraProfile
 import com.engperini.meshsdr.LoraReceiver
 import com.engperini.meshsdr.Protocol
+import com.engperini.meshsdr.RemoteLink
+import com.engperini.meshsdr.RemoteState
 import com.engperini.meshsdr.RtlTcpProtocol
 import com.engperini.meshsdr.tr
 import java.io.BufferedInputStream
@@ -32,8 +34,11 @@ enum class LinkStatus { DISCONNECTED, CONNECTING, RECEIVING }
  * Everything the desktop window shows, plus the receive loop. Mirrors the
  * Android MainActivity: same profiles, decoder, logs and IQ recorder; the IQ
  * comes from an rtl_tcp server that the app starts itself or one on the network.
+ *
+ * @param keepTrying server mode: after Connect, reconnect whenever the dongle or
+ * rtl_tcp goes away (e.g. a Raspberry Pi booting before the dongle is ready).
  */
-class AppState {
+class AppState(private val keepTrying: Boolean = false) {
     private val prefs = Preferences.userRoot().node("com/engperini/meshsdr")
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
     private val sampleRate = LoraProfile.SAMPLE_RATE
@@ -82,6 +87,17 @@ class AppState {
     val messages = mutableStateListOf<String>()
     var settingsExpanded by mutableStateOf(true)
     var showLogs by mutableStateOf(true)
+    /** A phone can be this receiver's screen over Wi-Fi or Bluetooth ([LinkServer]). */
+    var remoteScreen by mutableStateOf(false)
+        private set
+    /** Prints every log line, for `--server` under systemd (journalctl). */
+    var echoLogs = false
+
+    @Volatile private var link: LinkServer? = null
+    /** UTF-8 whatever the service's locale is, so journalctl shows accents. */
+    private val stdout by lazy { java.io.PrintStream(java.io.FileOutputStream(java.io.FileDescriptor.out), true, "UTF-8") }
+    /** Connect was pressed and Stop was not: [keepTrying] reconnects. */
+    @Volatile private var wanted = false
 
     @Volatile private var running = false
     @Volatile private var receiverStale = false
@@ -112,6 +128,7 @@ class AppState {
         serverText = prefs.get("server", serverText)
         freqText = "%.6f".format(Locale.US, centerHz / 1e6)
         bwText = LoraProfile.formatKhz(genericBw)
+        if (prefs.getBoolean("remoteScreen", false)) setRemoteScreen(true)
         log("APP", tr("LoRa profile: ${active().describe()}. Any sync word is accepted and shown.",
             "Perfil LoRa: ${active().describe()}. Qualquer sync word é aceito e mostrado."))
     }
@@ -209,6 +226,46 @@ class AppState {
         prefs.putBoolean("autoStartRtlTcp", on)
     }
 
+    /** Starts or stops the [LinkServer]; [persist] = remember it for the next launch. */
+    fun setRemoteScreen(on: Boolean, persist: Boolean = true) {
+        if (persist) prefs.putBoolean("remoteScreen", on)
+        if (on && link == null) {
+            val server = LinkServer(this)
+            try {
+                server.start()
+                link = server
+                remoteScreen = true
+                log("LINK", tr("Remote screen on: a phone can connect over Wi-Fi to %s port %d, or over Bluetooth through the Pi bridge",
+                    "Tela remota ligada: um celular pode conectar por Wi-Fi em %s porta %d, ou por Bluetooth pela ponte do Pi")
+                    .format(Locale.US, localAddresses().ifEmpty { listOf("?") }.joinToString(", "), RemoteLink.PORT))
+            } catch (e: Exception) {
+                remoteScreen = false
+                log("ERROR", tr("Remote screen: port ${RemoteLink.PORT} unavailable (${e.message}). Is MeshSDR already running as a service?",
+                    "Tela remota: porta ${RemoteLink.PORT} indisponível (${e.message}). O MeshSDR já está rodando como serviço?"))
+            }
+        } else if (!on && link != null) {
+            link?.stop()
+            link = null
+            remoteScreen = false
+            log("LINK", tr("Remote screen off", "Tela remota desligada"))
+        }
+    }
+
+    /** IPv4 addresses a phone on the same network (or the Pi's hotspot) can use. */
+    fun localAddresses(): List<String> = try {
+        java.net.NetworkInterface.getNetworkInterfaces().toList()
+            .filter { it.isUp && !it.isLoopback }
+            .flatMap { it.inetAddresses.toList() }
+            .filterIsInstance<java.net.Inet4Address>()
+            .map { it.hostAddress }
+    } catch (_: Exception) { emptyList() }
+
+    fun remoteState() = RemoteState(
+        status = status.name, profileId = profile.id, frequencyHz = centerHz, genericSf = genericSf,
+        genericBw = genericBw, gainTenths = gainTenths, ppm = ppm, averaging = averaging, autoRecord = autoRecord,
+        detections = detections, decoded = decoded, levelRms = levelRms, levelClipPct = levelClipPct
+    )
+
     fun settingsSummary(): String {
         val gain = if (gainTenths == AUTO_GAIN) tr("auto gain", "ganho auto") else "%.1f dB".format(Locale.US, gainTenths / 10.0)
         val extras = listOfNotNull(if (ppm != 0) "%+d ppm".format(Locale.US, ppm) else null,
@@ -223,9 +280,14 @@ class AppState {
 
     // ---- output ---------------------------------------------------------
 
-    fun log(tag: String, detail: String) = ui {
-        logs.add("[${timeFormat.format(Date())}] [$tag] $detail")
-        while (logs.size > 400) logs.removeAt(0)
+    fun log(tag: String, detail: String) {
+        val line = "[${synchronized(timeFormat) { timeFormat.format(Date()) }}] [$tag] $detail"
+        if (echoLogs) stdout.println(line)
+        link?.onLog(line)
+        ui {
+            logs.add(line)
+            while (logs.size > 400) logs.removeAt(0)
+        }
     }
 
     fun clearTab() {
@@ -279,7 +341,9 @@ class AppState {
     private fun onFrame(frame: LoraFrame) {
         if (frame.verified) decoded++ else detections++
         val text = frame.describe(active())
-        messages.add("[${timeFormat.format(Date())}] $text")
+        val line = "[${synchronized(timeFormat) { timeFormat.format(Date()) }}] $text"
+        link?.onMessage(line)
+        messages.add(line)
         while (messages.size > 200) messages.removeAt(0)
         log("LORA", text)
     }
@@ -302,6 +366,7 @@ class AppState {
     }
 
     fun connect() {
+        wanted = true
         if (running) { log("APP", tr("Reception already active", "Recepção já ativa")); return }
         applyFrequency()
         running = true
@@ -311,6 +376,7 @@ class AppState {
     }
 
     fun disconnect() {
+        wanted = false
         if (!running) return
         running = false
         try { socket?.close() } catch (_: Exception) {}
@@ -487,6 +553,13 @@ class AppState {
                 levelRms = null
             }
             log("SDR", tr("Reception stopped", "Recepção encerrada"))
+            if (keepTrying && wanted) {
+                log("SDR", tr("Trying again in 10 s", "Tentando de novo em 10 s"))
+                thread(name = "reconnect", isDaemon = true) {
+                    Thread.sleep(10_000)
+                    ui { if (wanted && !running) connect() }
+                }
+            }
         }
     }
 
@@ -512,7 +585,7 @@ class AppState {
         return host to port
     }
 
-    private fun outputDir(): File {
+    fun outputDir(): File {
         val home = File(System.getProperty("user.home"))
         val downloads = File(home, "Downloads").takeIf { it.isDirectory } ?: home
         return File(downloads, "MeshSDR").apply { mkdirs() }

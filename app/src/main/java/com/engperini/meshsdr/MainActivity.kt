@@ -1,6 +1,9 @@
 package com.engperini.meshsdr
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
+import android.bluetooth.BluetoothManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -11,17 +14,22 @@ import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.os.Build
+import android.provider.Settings
 import android.view.WindowInsets
 import android.widget.*
 import java.io.BufferedInputStream
 import java.net.Socket
 import java.text.SimpleDateFormat
+import java.util.Base64
 import java.util.Date
 import java.util.Locale
 import kotlin.concurrent.thread
 
 class MainActivity : Activity() {
-    private companion object { const val AUTO_GAIN = -1 }
+    private companion object {
+        const val AUTO_GAIN = -1
+        const val REQUEST_BLUETOOTH = 1003
+    }
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var freqInput: EditText
     private lateinit var status: TextView
@@ -76,6 +84,35 @@ class MainActivity : Activity() {
     private var genericBw = 125_000
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 
+    // Remote mode: a MeshSDR on a Raspberry Pi or computer decodes; this phone is its screen.
+    private var remoteMode = false
+    private var remoteBluetooth = true
+    private var remoteHost = RemoteLink.DEFAULT_HOST
+    /** Bluetooth address of the paired Pi. */
+    private var remoteDevice: String? = null
+    private var remoteDeviceName = ""
+    @Volatile private var remote: RemoteClient? = null
+    /** Connect was pressed and Stop was not: reconnect when the link drops. */
+    private var remoteWanted = false
+    /** The receiver answered (hello). */
+    private var remoteLinked = false
+    private var remoteState: RemoteState? = null
+    /** Set while views are updated from the receiver's state, so they don't send it back. */
+    private var applyingRemote = false
+    private lateinit var remoteBox: LinearLayout
+    private lateinit var hostInput: EditText
+    private lateinit var deviceButton: Button
+    private lateinit var averagingSwitch: Switch
+    private lateinit var autoRecordSwitch: Switch
+    private val sourceChips = mutableMapOf<Boolean, Button>()
+    private val transportChips = mutableMapOf<Boolean, Button>()
+    // File download from the receiver: touched by the link's reader thread only.
+    private var download: PublicFiles.Target? = null
+    private var downloadName = ""
+    private var downloadBytes = 0L
+    private var downloadStep = 0
+    @Volatile private var downloadSize = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Lang.apply(getPreferences(MODE_PRIVATE).getString("language", null))
@@ -90,6 +127,11 @@ class MainActivity : Activity() {
         autoRecord = getPreferences(MODE_PRIVATE).getBoolean("autoRecord", false)
         // On by default since 18/10: ~9 dB more sensitivity measured on a real MeshCore packet.
         averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", true)
+        remoteMode = getPreferences(MODE_PRIVATE).getBoolean("remoteMode", false)
+        remoteBluetooth = getPreferences(MODE_PRIVATE).getBoolean("remoteBluetooth", true)
+        remoteHost = getPreferences(MODE_PRIVATE).getString("remoteHost", null) ?: RemoteLink.DEFAULT_HOST
+        remoteDevice = getPreferences(MODE_PRIVATE).getString("remoteDevice", null)
+        remoteDeviceName = getPreferences(MODE_PRIVATE).getString("remoteDeviceName", null) ?: ""
         val pad = dp(16)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -178,6 +220,34 @@ class MainActivity : Activity() {
         }
         settings.addView(settingsScroll)
 
+        // Where the radio is: on this phone, or on a Pi/computer that decodes and sends the results.
+        settingsBody.addView(sectionLabel(tr("Receiver", "Receptor")))
+        val localChip = chip(tr("Dongle on this phone", "Dongle neste celular")) { selectRemoteMode(false) }
+        val remoteChip = chip(tr("Remote (Pi / PC)", "Remoto (Pi / PC)")) { selectRemoteMode(true) }
+        sourceChips[false] = localChip
+        sourceChips[true] = remoteChip
+        settingsBody.addView(row(this, localChip, remoteChip, gapDp = 6))
+        remoteBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        remoteBox.addView(label(tr("MeshSDR on the Raspberry Pi or computer decodes; this phone shows it and changes its settings.",
+            "O MeshSDR no Raspberry Pi ou computador decodifica; este celular mostra e muda as configurações dele."), 12f), spaced(6))
+        val bluetoothChip = chip("Bluetooth") { selectTransport(true) }
+        val wifiChip = chip("Wi-Fi") { selectTransport(false) }
+        transportChips[true] = bluetoothChip
+        transportChips[false] = wifiChip
+        remoteBox.addView(row(this, bluetoothChip, wifiChip, gapDp = 6), spaced(6))
+        deviceButton = pill("", UiStyle.TONAL) { chooseBluetoothDevice() }
+        remoteBox.addView(deviceButton, spaced(6))
+        hostInput = numberInput(remoteHost).apply {
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+        }
+        remoteBox.addView(hostInput, spaced(6))
+        remoteBox.addView(row(this,
+            pill(tr("Recordings", "Gravações"), UiStyle.TONAL) { requestRemoteFiles() },
+            pill(tr("Stop its reception", "Parar a recepção dele"), UiStyle.OUTLINED) { remoteCommand("stop") },
+            gapDp = 6), spaced(6))
+        settingsBody.addView(remoteBox)
+        updateRemoteViews()
+
         settingsBody.addView(sectionLabel(tr("LoRa profile", "Perfil LoRa")))
         profileLabel = label("", 12f)
         val profileButtons = listOf("Meshtastic BR" to LoraProfile.MESHTASTIC_BR, "MeshCore BR" to LoraProfile.MESHCORE_BR,
@@ -239,31 +309,37 @@ class MainActivity : Activity() {
         })
 
         settingsBody.addView(sectionLabel(tr("Processing (optional)", "Processamento (opcional)")))
-        settingsBody.addView(Switch(this).apply {
+        autoRecordSwitch = Switch(this).apply {
             text = tr("Record IQ automatically on detections (3 s before + after)",
                 "Gravar IQ automaticamente nas detecções (3 s antes + depois)")
             setTextColor(Ui.TEXT)
             isChecked = autoRecord
             setOnCheckedChangeListener { _, on ->
+                if (applyingRemote) return@setOnCheckedChangeListener
+                remoteCommand("autoRec", "on" to on)
                 autoRecord = on
                 getPreferences(MODE_PRIVATE).edit().putBoolean("autoRecord", on).apply()
                 log("APP", if (on) tr("Automatic recording on", "Gravação automática ligada")
                     else tr("Automatic recording off", "Gravação automática desligada"))
                 updateSettingsSummary()
             }
-        }, spaced(4))
-        settingsBody.addView(Switch(this).apply {
+        }
+        settingsBody.addView(autoRecordSwitch, spaced(4))
+        averagingSwitch = Switch(this).apply {
             text = tr("Averaging filter when decimating", "Filtro de média na decimação")
             setTextColor(Ui.TEXT)
             isChecked = averaging
             setOnCheckedChangeListener { _, on ->
+                if (applyingRemote) return@setOnCheckedChangeListener
+                remoteCommand("avg", "on" to on)
                 averaging = on
                 getPreferences(MODE_PRIVATE).edit().putBoolean("averaging", on).apply()
                 receiverStale = true
                 log("APP", if (on) tr("Averaging filter on", "Filtro de média ligado") else tr("Averaging filter off", "Filtro de média desligado"))
                 updateSettingsSummary()
             }
-        }, spaced(8))
+        }
+        settingsBody.addView(averagingSwitch, spaced(8))
 
         settingsBody.addView(sectionLabel("Idioma / Language"))
         val languageButtons = listOf("Português" to true, "English" to false).map { (label, pt) ->
@@ -276,10 +352,11 @@ class MainActivity : Activity() {
         updateProfileLabel()
 
         // Main actions.
-        val connect = pill(tr("Connect", "Conectar"), UiStyle.PRIMARY) { launchDriver() }
-        val stop = pill(tr("Stop", "Parar"), UiStyle.OUTLINED) { disconnect() }
+        val connect = pill(tr("Connect", "Conectar"), UiStyle.PRIMARY) { if (remoteMode) connectRemote() else launchDriver() }
+        val stop = pill(tr("Stop", "Parar"), UiStyle.OUTLINED) { if (remoteMode) disconnectRemote() else disconnect() }
         val record = pill(tr("● Record IQ 10 s", "● Gravar IQ 10 s"), UiStyle.OUTLINED) {
-            if (!running) log("IQ", tr("Connect the RTL-SDR before recording", "Conecte o RTL-SDR antes de gravar"))
+            if (remoteMode) remoteCommand("record")
+            else if (!running) log("IQ", tr("Connect the RTL-SDR before recording", "Conecte o RTL-SDR antes de gravar"))
             else {
                 captureRequested = true
                 log("IQ", tr("IQ recording requested: 10 seconds, unsigned 8-bit IQ",
@@ -342,11 +419,21 @@ class MainActivity : Activity() {
     }
 
     private fun log(tag: String, detail: String) {
-        ui.post {
-            logs.addLast("[${timeFormat.format(Date())}] [$tag] $detail")
-            while (logs.size > 400) logs.removeFirst()
-            if (showLogs) render()
-        }
+        ui.post { appendLog("[${timeFormat.format(Date())}] [$tag] $detail") }
+    }
+
+    /** UI thread. */
+    private fun appendLog(line: String) {
+        logs.addLast(line)
+        while (logs.size > 400) logs.removeFirst()
+        if (showLogs) render()
+    }
+
+    /** UI thread. */
+    private fun appendMessage(line: String) {
+        messages.addLast(line)
+        while (messages.size > 200) messages.removeFirst()
+        if (!showLogs) render() else messagesTab.text = "${tr("Messages", "Mensagens")} (${messages.size})"
     }
 
     private fun render() {
@@ -390,7 +477,8 @@ class MainActivity : Activity() {
         val extras = listOfNotNull(if (ppm != 0) "%+d ppm".format(Locale.US, ppm) else null,
             if (averaging) tr("filter", "filtro") else null,
             if (autoRecord) tr("auto rec.", "grav. auto") else null)
-        settingsSummary.text = "%s • %.3f MHz • %s%s".format(Locale.US, profile.label, centerHz / 1e6, gain,
+        val source = if (remoteMode) tr("Remote", "Remoto") + " (" + (if (remoteBluetooth) "Bluetooth" else "Wi-Fi") + ") • " else ""
+        settingsSummary.text = "%s%s • %.3f MHz • %s%s".format(Locale.US, source, profile.label, centerHz / 1e6, gain,
             if (extras.isEmpty()) "" else " • " + extras.joinToString(" + "))
     }
 
@@ -433,6 +521,8 @@ class MainActivity : Activity() {
         getPreferences(MODE_PRIVATE).edit().putLong("frequency", centerHz).apply()
         log("SDR", tr("Frequency requested: $centerHz Hz", "Frequência solicitada: $centerHz Hz"))
         updateProfileLabel()
+        remoteCommand("freq", "mhz" to "%.6f".format(Locale.US, mhz),
+            "bw" to if (profile.protocol == Protocol.GENERIC) LoraProfile.formatKhz(genericBw) else null)
         sendCommands(listOf(RtlTcpProtocol.command(RtlTcpProtocol.SET_FREQUENCY, tunedHz())), "SET_FREQ")
         receiverStale = true
     }
@@ -465,11 +555,25 @@ class MainActivity : Activity() {
     }
 
     private fun updateStatus() {
-        if (running) setStatus(status, tr("Receiving", "Recebendo"), Ui.GREEN)
-        else setStatus(status, tr("Disconnected", "Desconectado"), Ui.MUTED)
+        val receiving: Boolean
+        if (remoteMode) {
+            val s = remoteState
+            when {
+                remote == null -> setStatus(status, tr("Disconnected", "Desconectado"), Ui.MUTED)
+                !remoteLinked || s == null -> setStatus(status, tr("Connecting…", "Conectando…"), Ui.AMBER)
+                s.status == RemoteState.RECEIVING -> setStatus(status, tr("Receiving (remote)", "Recebendo (remoto)"), Ui.GREEN)
+                s.status == RemoteState.CONNECTING -> setStatus(status, tr("Remote connecting…", "Remoto conectando…"), Ui.AMBER)
+                else -> setStatus(status, tr("Remote stopped", "Remoto parado"), Ui.AMBER)
+            }
+            receiving = remote != null && s?.status == RemoteState.RECEIVING
+        } else {
+            if (running) setStatus(status, tr("Receiving", "Recebendo"), Ui.GREEN)
+            else setStatus(status, tr("Disconnected", "Desconectado"), Ui.MUTED)
+            receiving = running
+        }
         detectionsValue.text = detections.toString()
         decodedValue.text = decoded.toString()
-        if (!running) {
+        if (!receiving) {
             levelValue.text = "—"
             levelValue.setTextColor(Ui.TEXT)
             setMeter(levelMeter, 0, Ui.ACCENT)
@@ -485,6 +589,8 @@ class MainActivity : Activity() {
         // The generic profile keeps whatever frequency is being explored.
         if (p.protocol != Protocol.GENERIC) freqInput.setText("%.6f".format(Locale.US, p.frequencyHz / 1e6))
         log("APP", tr("LoRa profile: ", "Perfil LoRa: ") + p.copy(frequencyHz = centerHz).describe())
+        remoteCommand("profile", "id" to p.id)
+        if (p.protocol == Protocol.GENERIC) remoteCommand("sf", "sf" to p.spreadingFactor)
         applyFrequency()
         render()
     }
@@ -499,7 +605,7 @@ class MainActivity : Activity() {
 
     private fun selectLanguage(portuguese: Boolean) {
         if (portuguese == Lang.portuguese) return
-        if (running) {
+        if (running || remote != null) {
             log("APP", tr("Stop reception before changing the language", "Pare a recepção antes de trocar o idioma"))
             return
         }
@@ -539,6 +645,7 @@ class MainActivity : Activity() {
         getPreferences(MODE_PRIVATE).edit().putInt("ppm", value).apply()
         log("SDR", tr("Frequency correction: $value ppm", "Correção de frequência: $value ppm"))
         updateSettingsSummary()
+        remoteCommand("ppm", "ppm" to value)
         sendCommands(listOf(RtlTcpProtocol.ppmCommand(value)), "ppm")
     }
 
@@ -546,6 +653,7 @@ class MainActivity : Activity() {
         gainTenths = tenths
         getPreferences(MODE_PRIVATE).edit().putInt("gainTenths", tenths).apply()
         updateGainLabel()
+        remoteCommand("gain", "gain" to tenths)
         sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), tr("gain", "ganho"))
     }
 
@@ -596,19 +704,7 @@ class MainActivity : Activity() {
         running = true
         setStatus(status, tr("Connecting…", "Conectando…"), Ui.AMBER)
         setSettingsExpanded(false)
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            // Optional: without it the service still runs, the notification is just hidden.
-            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1002)
-        }
-        try {
-            ReceiverService.start(this, "${profile.label} • %.3f MHz".format(Locale.US, centerHz / 1e6))
-            log("APP", tr("Foreground service active: reception continues with the screen off",
-                "Serviço em primeiro plano ativo: recepção continua com a tela apagada"))
-        } catch (e: Exception) {
-            log("ERROR", tr("Foreground service: ${e.message} (reception may stop with the screen off)",
-                "Serviço em primeiro plano: ${e.message} (a recepção pode parar com a tela apagada)"))
-        }
+        startKeepAlive("${profile.label} • %.3f MHz".format(Locale.US, centerHz / 1e6))
         thread(name = "rtl-iq-reader") {
             try {
                 val s = Socket("127.0.0.1", port)
@@ -746,6 +842,23 @@ class MainActivity : Activity() {
         log = { log("IQ", it) }
     )
 
+    /** Foreground service so reception (or the remote link) continues with the screen off. */
+    private fun startKeepAlive(text: String) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            // Optional: without it the service still runs, the notification is just hidden.
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1002)
+        }
+        try {
+            ReceiverService.start(this, text)
+            log("APP", tr("Foreground service active: reception continues with the screen off",
+                "Serviço em primeiro plano ativo: recepção continua com a tela apagada"))
+        } catch (e: Exception) {
+            log("ERROR", tr("Foreground service: ${e.message} (reception may stop with the screen off)",
+                "Serviço em primeiro plano: ${e.message} (a recepção pode parar com a tela apagada)"))
+        }
+    }
+
     private fun disconnect() {
         running = false
         try { socket?.close() } catch (_: Exception) {}
@@ -754,6 +867,307 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         disconnect()
+        remoteWanted = false
+        remote?.close()
         super.onDestroy()
+    }
+
+    // ---- remote mode -------------------------------------------------------
+
+    private fun prefs() = getPreferences(MODE_PRIVATE)
+
+    private fun selectRemoteMode(on: Boolean) {
+        if (on == remoteMode) return
+        if (running || remote != null) {
+            log("APP", tr("Stop first, then switch the receiver", "Pare primeiro, depois troque o receptor"))
+            return
+        }
+        prefs().edit().putBoolean("remoteMode", on).apply()
+        // Start clean: local settings come back from preferences, remote ones from the receiver.
+        recreate()
+    }
+
+    private fun selectTransport(bluetooth: Boolean) {
+        if (remote != null) {
+            log("APP", tr("Stop first, then switch between Bluetooth and Wi-Fi", "Pare primeiro, depois troque entre Bluetooth e Wi-Fi"))
+            return
+        }
+        remoteBluetooth = bluetooth
+        prefs().edit().putBoolean("remoteBluetooth", bluetooth).apply()
+        updateRemoteViews()
+        updateSettingsSummary()
+    }
+
+    private fun updateRemoteViews() {
+        sourceChips.forEach { (isRemote, chip) -> setChipSelected(chip, isRemote == remoteMode) }
+        transportChips.forEach { (bluetooth, chip) -> setChipSelected(chip, bluetooth == remoteBluetooth) }
+        remoteBox.visibility = if (remoteMode) View.VISIBLE else View.GONE
+        deviceButton.visibility = if (remoteBluetooth) View.VISIBLE else View.GONE
+        hostInput.visibility = if (remoteBluetooth) View.GONE else View.VISIBLE
+        deviceButton.text = if (remoteDevice == null) tr("Choose the paired Pi…", "Escolher o Pi pareado…")
+            else "Bluetooth: $remoteDeviceName"
+    }
+
+    private fun remoteTarget() = if (remoteBluetooth) "Bluetooth ($remoteDeviceName)" else "Wi-Fi ($remoteHost)"
+
+    /** Sends a command when linked; otherwise the receiver's own settings show up on connect. */
+    private fun remoteCommand(op: String, vararg fields: Pair<String, Any?>) {
+        if (!remoteMode) return
+        val client = remote
+        if (client == null || !remoteLinked) {
+            if (op == "stop" || op == "record") log("LINK", tr("Connect to the receiver first", "Conecte ao receptor primeiro"))
+            return
+        }
+        client.send(RemoteLink.command(op, *fields))
+    }
+
+    private fun hasBluetoothPermission() = Build.VERSION.SDK_INT < 31 ||
+        checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    private fun chooseBluetoothDevice() {
+        if (!hasBluetoothPermission()) {
+            requestPermissions(arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT), REQUEST_BLUETOOTH)
+            return
+        }
+        showDeviceChooser()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQUEST_BLUETOOTH) return
+        if (hasBluetoothPermission()) showDeviceChooser()
+        else log("LINK", tr("Bluetooth permission denied: allow \"Nearby devices\" for MeshSDR",
+            "Permissão de Bluetooth negada: permita \"Dispositivos próximos\" para o MeshSDR"))
+    }
+
+    @SuppressLint("MissingPermission")  // hasBluetoothPermission() was checked by the caller
+    private fun showDeviceChooser() {
+        val adapter = getSystemService(BluetoothManager::class.java)?.adapter
+        if (adapter == null) {
+            log("LINK", tr("This phone has no Bluetooth", "Este celular não tem Bluetooth"))
+            return
+        }
+        val devices = try { adapter.bondedDevices.orEmpty().sortedBy { it.name ?: it.address } } catch (_: SecurityException) { emptyList() }
+        if (devices.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle(tr("No paired devices", "Nenhum aparelho pareado"))
+                .setMessage(tr("Pair the Raspberry Pi with this phone in the Bluetooth settings first.",
+                    "Pareie primeiro o Raspberry Pi com este celular nas configurações de Bluetooth."))
+                .setPositiveButton(tr("Bluetooth settings", "Configurações de Bluetooth")) { _, _ ->
+                    try { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) } catch (_: ActivityNotFoundException) {}
+                }
+                .setNegativeButton(tr("Cancel", "Cancelar"), null)
+                .show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(tr("Paired device running MeshSDR", "Aparelho pareado rodando o MeshSDR"))
+            .setItems(devices.map { "${it.name ?: "?"}  •  ${it.address}" }.toTypedArray()) { _, i ->
+                remoteDevice = devices[i].address
+                remoteDeviceName = devices[i].name ?: devices[i].address
+                prefs().edit().putString("remoteDevice", remoteDevice).putString("remoteDeviceName", remoteDeviceName).apply()
+                updateRemoteViews()
+            }
+            .setNegativeButton(tr("Cancel", "Cancelar"), null)
+            .show()
+    }
+
+    private fun connectRemote() {
+        val client = remote
+        if (client != null) {
+            // Already linked: start the receiver's reception if it was stopped.
+            remoteCommand("connect")
+            return
+        }
+        val connector = if (remoteBluetooth) {
+            val address = remoteDevice
+            if (address == null || !hasBluetoothPermission()) { chooseBluetoothDevice(); return }
+            RemoteClient.bluetooth(this, address)
+        } else {
+            val host = hostInput.text.toString().trim()
+            if (host.isEmpty()) {
+                log("UI", tr("Type the receiver's address (Pi hotspot: ${RemoteLink.DEFAULT_HOST})",
+                    "Digite o endereço do receptor (hotspot do Pi: ${RemoteLink.DEFAULT_HOST})"))
+                return
+            }
+            remoteHost = host
+            prefs().edit().putString("remoteHost", host).apply()
+            RemoteClient.wifi(this, host)
+        }
+        remoteWanted = true
+        startKeepAlive(tr("Remote", "Remoto") + ": " + remoteTarget())
+        startRemote(connector)
+    }
+
+    private fun startRemote(connector: () -> RemoteClient.Connection) {
+        log("LINK", tr("Connecting to MeshSDR via ${remoteTarget()}…", "Conectando ao MeshSDR via ${remoteTarget()}…"))
+        setSettingsExpanded(false)
+        lateinit var client: RemoteClient
+        client = RemoteClient(connector,
+            onMessage = { m -> onRemoteMessage(client, m) },
+            onEnd = { error -> ui.post { onRemoteEnd(client, connector, error) } })
+        remote = client
+        remoteLinked = false
+        remoteState = null
+        updateStatus()
+        client.start()
+    }
+
+    /** UI thread, after the link's reader thread has ended. */
+    private fun onRemoteEnd(client: RemoteClient, connector: () -> RemoteClient.Connection, error: String?) {
+        if (remote !== client) return
+        remote = null
+        remoteLinked = false
+        remoteState = null
+        download?.let {
+            try { it.close() } catch (_: Exception) {}
+            log("LINK", tr("Download interrupted: $downloadName", "Download interrompido: $downloadName"))
+        }
+        download = null
+        if (error != null) log("LINK", tr("Link lost: $error", "Conexão perdida: $error"))
+        if (remoteWanted) {
+            log("LINK", tr("Trying again in 5 s (Stop cancels)", "Tentando de novo em 5 s (Parar cancela)"))
+            ui.postDelayed({ if (remoteWanted && remote == null) startRemote(connector) }, 5000)
+        } else {
+            ReceiverService.stop(this)
+        }
+        updateStatus()
+    }
+
+    private fun disconnectRemote() {
+        if (!remoteWanted && remote == null) return
+        remoteWanted = false
+        remote?.close() ?: ReceiverService.stop(this)
+        log("LINK", tr("Disconnected; the remote receiver keeps listening", "Desconectado; o receptor remoto continua escutando"))
+        updateStatus()
+    }
+
+    /** Link reader thread: file chunks are written here, everything else goes to the UI thread. */
+    private fun onRemoteMessage(client: RemoteClient, m: Map<String, Any?>) {
+        if (m.str("t") == "chunk") {
+            onChunk(m)
+            return
+        }
+        ui.post {
+            if (remote !== client) return@post
+            when (m.str("t")) {
+                "hello" -> {
+                    remoteLinked = true
+                    logs.clear()
+                    messages.clear()
+                    log("LINK", tr("Connected to MeshSDR on ${m.str("host") ?: "?"} via ${remoteTarget()}",
+                        "Conectado ao MeshSDR em ${m.str("host") ?: "?"} via ${remoteTarget()}"))
+                    // The receiver writes its logs and messages in this phone's language.
+                    client.send(RemoteLink.command("lang", "pt" to Lang.portuguese))
+                    render()
+                }
+                "state" -> applyRemoteState(client, RemoteState.from(m))
+                "log" -> m.str("line")?.let { appendLog(it) }
+                "msg" -> m.str("line")?.let { appendMessage(it) }
+                "files" -> showRemoteFiles(m["files"] as? List<*>)
+                "error" -> log("LINK", m.str("text") ?: "?")
+            }
+        }
+    }
+
+    /** UI thread: the receiver is the source of truth for every setting while linked. */
+    private fun applyRemoteState(client: RemoteClient, s: RemoteState) {
+        val old = remoteState
+        remoteState = s
+        // First contact with a stopped receiver: Connect means "start receiving".
+        if (old == null && remoteWanted && s.status == RemoteState.DISCONNECTED) client.send(RemoteLink.command("connect"))
+        applyingRemote = true
+        try {
+            genericSf = s.genericSf
+            genericBw = s.genericBw
+            profile = s.profile()
+            centerHz = s.frequencyHz
+            // Rewrite the text fields only when the value changed, so typing isn't overwritten.
+            if (old?.frequencyHz != s.frequencyHz) freqInput.setText("%.6f".format(Locale.US, s.frequencyHz / 1e6))
+            if (old?.genericBw != s.genericBw) bwInput.setText(LoraProfile.formatKhz(s.genericBw))
+            if (old?.ppm != s.ppm) ppmInput.setText("${s.ppm}")
+            gainTenths = s.gainTenths
+            ppm = s.ppm
+            averaging = s.averaging
+            autoRecord = s.autoRecord
+            averagingSwitch.isChecked = s.averaging
+            autoRecordSwitch.isChecked = s.autoRecord
+            detections = s.detections
+            decoded = s.decoded
+            updateGainLabel()
+            updateProfileLabel()
+            updateStatus()
+            val rms = s.levelRms
+            if (rms != null && s.status == RemoteState.RECEIVING) updateLevel(rms, s.levelClipPct)
+        } finally {
+            applyingRemote = false
+        }
+    }
+
+    private fun requestRemoteFiles() {
+        if (remote == null || !remoteLinked) {
+            log("LINK", tr("Connect to the receiver first", "Conecte ao receptor primeiro"))
+            return
+        }
+        remoteCommand("files")
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun showRemoteFiles(list: List<*>?) {
+        val files = list.orEmpty().filterIsInstance<Map<*, *>>().map { it as Map<String, Any?> }
+        if (files.isEmpty()) {
+            log("LINK", tr("No recordings or logs on the receiver yet", "Ainda não há gravações nem logs no receptor"))
+            return
+        }
+        val labels = files.map { "${it.str("name")}\n%.1f MB".format(Locale.US, (it.long("size") ?: 0L) / 1e6) }
+        AlertDialog.Builder(this)
+            .setTitle(tr("Download from the receiver", "Baixar do receptor"))
+            .setItems(labels.toTypedArray()) { _, i ->
+                val name = files[i].str("name") ?: return@setItems
+                downloadSize = files[i].long("size") ?: 0L
+                log("LINK", tr("Downloading $name (%.1f MB) to Download/MeshSDR…", "Baixando $name (%.1f MB) para Download/MeshSDR…")
+                    .format(Locale.US, downloadSize / 1e6))
+                remoteCommand("get", "name" to name)
+            }
+            .setNegativeButton(tr("Cancel", "Cancelar"), null)
+            .show()
+    }
+
+    /** Link reader thread: writes a downloaded file straight to Download/MeshSDR. */
+    private fun onChunk(m: Map<String, Any?>) {
+        val name = m.str("name") ?: return
+        if (!RemoteLink.isSafeFileName(name)) return
+        try {
+            var target = download
+            if (target == null || downloadName != name) {
+                target?.close()
+                target = PublicFiles.create(this, name, if (name.endsWith(".txt")) "text/plain" else "application/octet-stream")
+                download = target
+                downloadName = name
+                downloadBytes = 0L
+                downloadStep = 0
+            }
+            val data = m.str("data").orEmpty()
+            if (data.isNotEmpty()) {
+                val bytes = Base64.getDecoder().decode(data)
+                target.stream.write(bytes)
+                downloadBytes += bytes.size
+                val size = downloadSize
+                val step = if (size > 0) (downloadBytes * 10 / size).toInt() else 0
+                if (step > downloadStep && step < 10) {
+                    downloadStep = step
+                    log("LINK", "$name: ${step * 10}%")
+                }
+            }
+            if (m.bool("done") == true) {
+                target.close()
+                download = null
+                log("LINK", tr("Saved to ${target.location} ($downloadBytes bytes)", "Salvo em ${target.location} ($downloadBytes bytes)"))
+            }
+        } catch (e: Exception) {
+            log("ERROR", "Download $name: ${e.message}")
+            try { download?.close() } catch (_: Exception) {}
+            download = null
+        }
     }
 }

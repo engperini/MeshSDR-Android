@@ -10,6 +10,7 @@
 - **Automatic IQ recording** (optional): the 3 s before and the seconds after every detection are saved as `.cu8`.
 - **ppm correction** for dongles without TCXO; each detection shows the measured offset and the ppm that cancels it.
 - **Decoder diversity:** up to 32 decoders per profile (up to 8 decimation phases, filter on/off, with and without drift tracking) on several CPU cores, so packets that only some of them decode are no longer lost. With a dongle without TCXO: 4 real MeshCore packets decoded from the field captures, against 0 with a single decoder.
+- **Field station: Raspberry Pi + phone, no internet.** `MeshSDR --server` runs headless on the Pi (systemd units included) and decodes; the Android app's **Remote** mode is its screen over **Bluetooth** or **Wi-Fi**: same interface, settings, messages and logs, plus downloading the Pi's recordings. See *Field station* in the README.
 - English and Portuguese UI.
 - Profiles for Brazil (Meshtastic ANZ LongFast 919.875 MHz, MeshCore 923.125 MHz) and the US (906.875 MHz).
 - Gain control, live IQ level meter, screen-off reception on Android.
@@ -30,8 +31,9 @@
 2. `sudo apt install ./meshsdr_<version>-1_amd64.deb`, or unpack `MeshSDR-<version>-linux-x64-portable.tar.gz` and run `MeshSDR/bin/MeshSDR`.
 
 **Raspberry Pi 4/5 (64-bit Raspberry Pi OS)**
-1. `sudo apt install rtl-sdr`.
+1. `sudo apt install rtl-sdr python3-dbus python3-gi`.
 2. `sudo apt install ./meshsdr_<version>-1_arm64.deb`, or unpack `MeshSDR-<version>-linux-arm64-portable.tar.gz` and run `MeshSDR/bin/MeshSDR`. The 32-bit OS (armhf) is not supported; `uname -m` must print `aarch64`.
+3. Field station with the phone as screen (Bluetooth or Wi-Fi): follow *Field station* in the README.
 
 Logs and recordings go to `Download/MeshSDR` (Android) or `~/Downloads/MeshSDR` (desktop).
 

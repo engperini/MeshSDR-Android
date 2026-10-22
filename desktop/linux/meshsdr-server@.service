@@ -1,0 +1,17 @@
+# MeshSDR without a window, as a field station: receives from boot, reconnects
+# if the dongle goes away, and the phone app is its screen (Wi-Fi or Bluetooth).
+#   sudo cp /opt/meshsdr/lib/app/resources/meshsdr-*.service /etc/systemd/system/
+#   sudo systemctl enable --now meshsdr-server@$USER
+# Logs: journalctl -u meshsdr-server@$USER -f
+[Unit]
+Description=MeshSDR LoRa receiver (server for the phone app)
+After=network.target
+
+[Service]
+User=%i
+ExecStart=/opt/meshsdr/bin/MeshSDR --server
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
