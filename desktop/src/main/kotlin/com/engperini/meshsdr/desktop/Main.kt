@@ -40,6 +40,7 @@ import com.engperini.meshsdr.LoraProfile
 import com.engperini.meshsdr.Protocol
 import com.engperini.meshsdr.tr
 import java.util.Locale
+import javax.swing.SwingUtilities
 
 /** Dark "night sky" palette, the same as the Android app. */
 private object Palette {
@@ -58,8 +59,28 @@ private object Palette {
     val background = Brush.linearGradient(listOf(Color(0xFF060A13), Color(0xFF0A1424), Color(0xFF0B2530)))
 }
 
-/** `--connect` starts receiving at launch, e.g. for an unattended monitoring station. */
-fun main(args: Array<String>) = application {
+/**
+ * `--connect` starts receiving at launch, e.g. for an unattended monitoring station.
+ * `--server` runs without a window (Raspberry Pi in the field): it receives,
+ * reconnects if the dongle goes away, and a phone is its screen ([LinkServer]).
+ */
+fun main(args: Array<String>) {
+    if ("--server" in args) runServer() else runWindow(args)
+}
+
+private fun runServer() {
+    System.setProperty("java.awt.headless", "true")
+    SwingUtilities.invokeAndWait {
+        val state = AppState(keepTrying = true)
+        state.echoLogs = true
+        state.setRemoteScreen(true, persist = false)
+        state.connect()
+    }
+    // The receiver and the link run on their own threads.
+    Thread.currentThread().join()
+}
+
+private fun runWindow(args: Array<String>) = application {
     val state = remember { AppState() }
     LaunchedEffect(Unit) { if ("--connect" in args) state.connect() }
     val icon = remember { BitmapPainter(useResource("logo.png", ::loadImageBitmap)) }
@@ -273,6 +294,15 @@ private fun SettingsBody(state: AppState) {
         TextInput(state.serverText, Modifier.fillMaxWidth(), KeyboardType.Uri) { state.serverText = it }
         Text(tr("rtl_tcp server, host:port (e.g. a Raspberry Pi with the dongle)",
             "Servidor rtl_tcp, host:porta (ex.: um Raspberry Pi com o dongle)"), color = Palette.muted, fontSize = 12.sp)
+    }
+
+    Section(tr("Remote screen (phone over Wi-Fi or Bluetooth)", "Tela remota (celular por Wi-Fi ou Bluetooth)"))
+    SwitchRow(tr("Let the MeshSDR phone app show and control this receiver", "Permitir que o app MeshSDR do celular mostre e controle este receptor"),
+        state.remoteScreen) { state.setRemoteScreen(it) }
+    if (state.remoteScreen) {
+        Text(tr("Phone: Remote → Wi-Fi → %s (port %d)", "Celular: Remoto → Wi-Fi → %s (porta %d)").format(Locale.US,
+            state.localAddresses().ifEmpty { listOf("?") }.joinToString(" / "), com.engperini.meshsdr.RemoteLink.PORT),
+            color = Palette.muted, fontSize = 12.sp)
     }
 
     Section("Idioma / Language")

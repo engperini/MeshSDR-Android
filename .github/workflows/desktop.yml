@@ -48,6 +48,13 @@ jobs:
           mkdir -p desktop/resources/${{ matrix.platform }}
           find build-native -name 'libmeshsdr_lora.so' -o -name 'meshsdr_lora.dll' | xargs -I{} cp {} desktop/resources/${{ matrix.platform }}/
           ls -la desktop/resources/${{ matrix.platform }}
+      - name: Field-station files (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # Bluetooth bridge and systemd units, installed to /opt/meshsdr/lib/app/resources/.
+          python3 -m unittest discover -s desktop/linux -p 'test_*.py' -v
+          cp desktop/linux/meshsdr-bt-bridge.py desktop/linux/*.service desktop/resources/${{ matrix.platform }}/
+          chmod +x desktop/resources/${{ matrix.platform }}/meshsdr-bt-bridge.py
       - name: Bundle rtl_tcp (Windows)
         if: runner.os == 'Windows'
         env:
@@ -80,6 +87,8 @@ jobs:
         run: |
           app=build/compose/binaries/main/app/MeshSDR
           test -f "$app/lib/app/resources/libmeshsdr_lora.so"
+          test -f "$app/lib/app/resources/meshsdr-bt-bridge.py"
+          test -f "$app/lib/app/resources/meshsdr-server@.service"
           ldd "$app/lib/app/resources/libmeshsdr_lora.so"
       - name: Collect
         run: |

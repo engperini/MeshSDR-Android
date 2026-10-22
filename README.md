@@ -38,6 +38,9 @@ LoRa radio, a PC or GNU Radio.
 - **Generic LoRa mode.** Listen on any frequency for any LoRa transmission: pick one SF or
   run **SF7–12 at once**, type the bandwidth (default 125 kHz, the common LoRa IoT setting), and see the frames as raw bytes, without
   assuming Meshtastic or MeshCore.
+- **Field station: Raspberry Pi + phone, no internet.** MeshSDR runs headless on a Raspberry Pi
+  and decodes; the phone app is its screen over **Bluetooth or Wi-Fi**, with the same interface,
+  settings, messages and logs, and can download its recordings.
 - **English and Portuguese.** Follows the phone's language, switchable in the app.
 - **Radio controls.** Tuner gain (AGC or 20–49.6 dB), a live IQ level and clipping meter,
   an optional decimation filter, and **ppm correction** for dongles without TCXO. Every
@@ -92,6 +95,60 @@ on the MeshCore channel) and **Windows** on a recent Intel Core i7.
 Download the `.msi`, `.deb` or portable builds from the
 [latest release](https://github.com/engperini/MeshSDR-Android/releases/latest).
 
+## Field station: Raspberry Pi + phone (no internet)
+
+The Pi keeps the dongle and antenna and **decodes**; the phone only shows the results and sends
+the settings. Only decoded packets and logs travel between them (a few KB), over **Bluetooth**
+or the Pi's own **Wi-Fi hotspot**. If the link drops, the Pi keeps decoding and the phone gets
+the history when it reconnects.
+
+**1. Install on the Pi** (64-bit Raspberry Pi OS):
+```bash
+sudo apt install rtl-sdr python3-dbus python3-gi ./meshsdr_<version>-1_arm64.deb
+echo 'blacklist dvb_usb_rtl28xxu' | sudo tee /etc/modprobe.d/blacklist-rtl.conf
+```
+
+**2. Start MeshSDR at boot, without a window:**
+```bash
+sudo cp /opt/meshsdr/lib/app/resources/meshsdr-*.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now meshsdr-server@$USER meshsdr-bluetooth
+journalctl -u meshsdr-server@$USER -f     # watch it receive
+```
+It starts receiving with the last settings and reconnects if the dongle is unplugged. To use the
+MeshSDR window on the Pi instead, stop the service first: `sudo systemctl stop meshsdr-server@$USER`.
+
+**3a. Bluetooth: pair the phone once.** On the Pi's desktop use the Bluetooth icon → *Make
+discoverable*, then pair from the phone's Bluetooth settings and accept on both. Without a desktop:
+```bash
+sudo bluetoothctl
+# inside bluetoothctl:
+power on
+agent on
+default-agent
+discoverable on
+pairable on
+# now pair from the phone; answer "yes" here, then:
+trust <phone address shown above>
+quit
+```
+
+**3b. Or Wi-Fi: the Pi makes its own network** (run it on the Pi itself, not over SSH by Wi-Fi):
+```bash
+sudo nmcli device wifi hotspot ifname wlan0 ssid MeshSDR password <8+ characters>
+sudo nmcli connection modify Hotspot connection.autoconnect yes
+```
+The Pi is `10.42.0.1` on that network.
+
+**4. On the phone:** Settings → **Receiver: Remote (Pi / PC)** → **Bluetooth** (choose the Pi) or
+**Wi-Fi** (`10.42.0.1`) → **Connect**. Every setting now changes the Pi's receiver; **Stop** only
+disconnects the phone (the Pi keeps listening); **Recordings** downloads the Pi's `.cu8` files and
+logs to `Download/MeshSDR`, slowly over Bluetooth (about a minute per 6 MB).
+
+The Windows/Linux window has the same server: **Settings → Remote screen** lets the phone show a
+computer's receiver over Wi-Fi (port 14424). Anyone who can reach that port can control the
+receiver and download its recordings, so use it on the Pi's hotspot (WPA2) or a network you trust.
+
 ## How it works
 
 ```mermaid
@@ -142,7 +199,7 @@ external carrier about 12 dB stronger, so it is the better choice for range.
 
 ## Roadmap
 
-- **Desktop:** release installers, macOS, and JSON / MQTT output for monitoring stations.
+- **Desktop:** macOS, and MQTT output for monitoring stations.
 - **In the browser:** WebUSB + WebAssembly, so you just plug the dongle into Chrome with no install.
 - **Meshtastic:** protobuf decoding and decryption of public channels with their published
   default key.
