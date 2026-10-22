@@ -15,7 +15,8 @@ It demodulates LoRa in real time on the phone, with a native C++ PHY, and shows 
 **Meshtastic** and **MeshCore** mesh networks around you are transmitting. You don't need a
 LoRa radio, a PC or GNU Radio.
 
-<p align="center"><img src="docs/screenshot.jpg" alt="MeshSDR receiving MeshCore packets" width="300"></p>
+<p align="center"><img src="docs/screenshot.jpg" alt="MeshSDR desktop app receiving on a Raspberry Pi 4B" width="300"><br>
+<sub>The desktop app on a Raspberry Pi 4B, listening on the MeshCore BR channel at about 20% CPU.</sub></p>
 
 ## Features
 
@@ -84,6 +85,9 @@ Multiplatform window over the same C++ LoRa PHY and the same protocol code.
 - **Remote dongle:** turn off "start rtl_tcp" and type the address of any `rtl_tcp` server, e.g. a
   Raspberry Pi on the roof running `rtl_tcp -a 0.0.0.0`.
 - `--connect` starts receiving at launch, for unattended monitoring stations.
+
+Tested on **Linux Mint** (x64), **Raspberry Pi 4B** (64-bit Raspberry Pi OS, about 20% CPU
+on the MeshCore channel) and **Windows** on a recent Intel Core i7.
 
 Download the `.msi`, `.deb` or portable builds from the
 [latest release](https://github.com/engperini/MeshSDR-Android/releases/latest).
