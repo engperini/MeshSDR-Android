@@ -4,6 +4,7 @@ import com.engperini.meshsdr.LoraProfile
 import com.engperini.meshsdr.RemoteLink
 import com.engperini.meshsdr.bool
 import com.engperini.meshsdr.int
+import com.engperini.meshsdr.long
 import com.engperini.meshsdr.str
 import com.engperini.meshsdr.tr
 import java.io.File
@@ -118,6 +119,7 @@ class LinkServer(private val app: AppState, private val port: Int = RemoteLink.P
             "avg" -> m.bool("on")?.let { on -> ui { app.changeAveraging(on) } }
             "autoRec" -> m.bool("on")?.let { on -> ui { app.changeAutoRecord(on) } }
             "lang" -> m.bool("pt")?.let { pt -> ui { app.selectLanguage(pt) } }
+            "time" -> m.long("ms")?.let { ms -> app.syncClock(ms, m.str("tz")) }
             "files" -> client.send(filesLine())
             "get" -> sendFile(client, m.str("name") ?: "")
             else -> client.send(RemoteLink.line("t" to "error", "text" to "unknown command $op"))

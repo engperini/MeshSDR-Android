@@ -60,7 +60,8 @@ fun Context.label(text: String, sizeSp: Float = 13f, color: Int = Ui.MUTED, bold
         if (bold) typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
 
-enum class UiStyle { PRIMARY, OUTLINED, TONAL, TEXT }
+/** ACTIVE: something is running (e.g. a "Connected" button). */
+enum class UiStyle { PRIMARY, OUTLINED, TONAL, TEXT, ACTIVE }
 
 /** Rounded button with ripple; [restyle] switches style later (e.g. selected chips). */
 fun Context.pill(text: String, style: UiStyle = UiStyle.TONAL, onClick: () -> Unit): Button =
@@ -83,6 +84,7 @@ fun Context.restyle(button: Button, style: UiStyle) {
         UiStyle.OUTLINED -> Triple(Color.TRANSPARENT, Ui.OUTLINE, Ui.TEXT)
         UiStyle.TONAL -> Triple(Ui.SURFACE_2, 0, Ui.TEXT)
         UiStyle.TEXT -> Triple(Color.TRANSPARENT, 0, Ui.ACCENT)
+        UiStyle.ACTIVE -> Triple(Color.argb(40, 52, 211, 153), Ui.GREEN, Ui.GREEN)
     }
     val shape = rounded(fill, 22f, stroke, if (stroke != 0) 1f else 0f)
     button.background = RippleDrawable(ColorStateList.valueOf(Color.argb(60, 255, 255, 255)), shape,

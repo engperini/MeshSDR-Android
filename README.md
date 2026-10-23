@@ -29,7 +29,7 @@ LoRa radio, a PC or GNU Radio.
   path, and sizes of encrypted payloads. ADVERT packets show the **node type, name and GPS
   position**, since they are signed but not encrypted.
 - **Meshtastic interpretation.** The radio header: sender, destination, packet id, channel
-  hash and hop limit.
+  (the public LongFast channel is recognised), hops taken, relay node and ACK request.
 - **Any sync word.** It reports `0x2B` (Meshtastic), `0x12` (private / MeshCore) and
   `0x34` (LoRaWAN), and flags a sync word that doesn't match the selected profile.
 - **Ready-made profiles.** Meshtastic BR (ANZ LongFast, 919.875 MHz) and MeshCore BR
@@ -44,7 +44,7 @@ LoRa radio, a PC or GNU Radio.
 - **English and Portuguese.** Follows the phone's language, switchable in the app.
 - **Radio controls.** Tuner gain (AGC or 20–49.6 dB), a live IQ level and clipping meter,
   an optional decimation filter, and **ppm correction** for dongles without TCXO. Every
-  detection shows the measured carrier offset and the ppm that would cancel it.
+  detection shows the measured carrier offset and the ppm value to set.
 - **Keeps listening with the screen off.** A foreground service and wake lock keep it
   running for long monitoring sessions.
 - **Records raw IQ.** 10-second `.cu8` captures and log exports go to `Download/MeshSDR`,

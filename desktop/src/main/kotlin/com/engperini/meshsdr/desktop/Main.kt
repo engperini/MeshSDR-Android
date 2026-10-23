@@ -113,8 +113,15 @@ private fun App(state: AppState, logo: BitmapPainter) {
             SettingsCard(state, windowHeight * 0.42f)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Pill(tr("Connect", "Conectar"), PillStyle.PRIMARY, Modifier.weight(1f)) { state.connect() }
-                Pill(tr("Stop", "Parar"), PillStyle.OUTLINED, Modifier.weight(1f)) { state.disconnect() }
+                // The buttons show the state, so a running receiver is not "connected" twice.
+                val (connectText, connectStyle) = when (state.status) {
+                    LinkStatus.RECEIVING -> tr("● Connected", "● Conectado") to PillStyle.ACTIVE
+                    LinkStatus.CONNECTING -> tr("Connecting…", "Conectando…") to PillStyle.TONAL
+                    LinkStatus.DISCONNECTED -> tr("Connect", "Conectar") to PillStyle.PRIMARY
+                }
+                Pill(connectText, connectStyle, Modifier.weight(1f)) { state.connect() }
+                Pill(tr("Stop", "Parar"), if (state.status == LinkStatus.DISCONNECTED) PillStyle.OUTLINED else PillStyle.PRIMARY,
+                    Modifier.weight(1f)) { state.disconnect() }
                 Pill(tr("● Record IQ 10 s", "● Gravar IQ 10 s"), PillStyle.OUTLINED, Modifier.weight(1f)) { state.requestCapture() }
             }
             Spacer(Modifier.height(12.dp))
@@ -301,7 +308,7 @@ private fun SettingsBody(state: AppState) {
         state.remoteScreen) { state.setRemoteScreen(it) }
     if (state.remoteScreen) {
         Text(tr("Phone: Remote → Wi-Fi → %s (port %d)", "Celular: Remoto → Wi-Fi → %s (porta %d)").format(Locale.US,
-            state.localAddresses().ifEmpty { listOf("?") }.joinToString(" / "), com.engperini.meshsdr.RemoteLink.PORT),
+            state.addressText(), com.engperini.meshsdr.RemoteLink.PORT),
             color = Palette.muted, fontSize = 12.sp)
     }
 
@@ -344,7 +351,7 @@ private fun Output(state: AppState, modifier: Modifier) {
 
 // ---- building blocks, matching the Android app's look ------------------
 
-private enum class PillStyle { PRIMARY, OUTLINED, TONAL, TEXT }
+private enum class PillStyle { PRIMARY, OUTLINED, TONAL, TEXT, ACTIVE }
 
 @Composable
 private fun Pill(text: String, style: PillStyle, modifier: Modifier = Modifier, onClick: () -> Unit) {
@@ -353,6 +360,7 @@ private fun Pill(text: String, style: PillStyle, modifier: Modifier = Modifier, 
         PillStyle.OUTLINED -> Triple(Color.Transparent, Palette.outline, Palette.text)
         PillStyle.TONAL -> Triple(Palette.surface2, null, Palette.text)
         PillStyle.TEXT -> Triple(Color.Transparent, null, Palette.accent)
+        PillStyle.ACTIVE -> Triple(Palette.green.copy(alpha = 0.16f), Palette.green, Palette.green)
     }
     Button(
         onClick = onClick, modifier = modifier.heightIn(min = 44.dp), shape = RoundedCornerShape(22.dp),

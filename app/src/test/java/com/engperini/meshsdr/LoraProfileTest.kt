@@ -92,6 +92,13 @@ class LoraProfileTest {
         // Field case, dongle without TCXO: MeshCore 15.3 kHz above the tuned frequency.
         val f = LoraFrame(ByteArray(0), LoraFrame.HEADER_ONLY, 81, false, -8.6f, 0x12, offsetHz = 15_300f)
         val text = f.describe(LoraProfile.MESHCORE_BR)
-        assertTrue(text, text.contains("desvio +15.3 kHz (ppm -16.6)"))
+        assertTrue(text, text.contains("desvio +15.3 kHz (ppm ≈ -17)"))
+    }
+
+    @Test fun suggestedPpmAddsTheCorrectionInUse() {
+        // Field case 22/10: +10 ppm applied, the frame still 10 kHz high -> the setting to use is about -1.
+        val f = LoraFrame(ByteArray(0), LoraFrame.HEADER_ONLY, 44, false, -1.7f, 0x12, offsetHz = 10_000f)
+        val text = f.describe(LoraProfile.MESHCORE_BR, ppm = 10)
+        assertTrue(text, text.contains("desvio +10.0 kHz (ppm ≈ -1)"))
     }
 }

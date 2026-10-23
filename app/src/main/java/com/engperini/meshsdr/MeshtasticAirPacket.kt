@@ -15,11 +15,30 @@ data class MeshtasticAirPacket(
     val encryptedPayload: ByteArray
 ) {
     val broadcast: Boolean get() = destination == 0xffffffffL
-    fun summary(): String =
-        "Meshtastic from=!%08x to=%s id=%08x ch=%02x hop=%d bytes=%d (encrypted)".format(
-            sender, if (broadcast) "broadcast" else "!%08x".format(destination),
-            packetId, channelHash, flags and 0x07, encryptedPayload.size
-        )
+    /** Hops the packet may still take. */
+    val hopLimit: Int get() = flags and 0x07
+    /** Hop limit the sender set; 0 from firmware older than 2.3. */
+    val hopStart: Int get() = (flags shr 5) and 0x07
+    val wantAck: Boolean get() = flags and 0x08 != 0
+    val viaMqtt: Boolean get() = flags and 0x10 != 0
+
+    fun summary(): String {
+        val parts = mutableListOf("Meshtastic")
+        parts += if (broadcast) tr("broadcast", "para todos") else tr("to", "para") + " !%08x".format(destination)
+        parts += tr("from", "de") + " !%08x".format(sender)
+        parts += "id %08x".format(packetId)
+        // 0x08 is the hash of the public LongFast channel with the default key.
+        parts += tr("channel", "canal") + " %02x".format(channelHash) +
+            if (channelHash == 0x08) tr(" (public LongFast)", " (LongFast público)") else ""
+        parts += if (hopStart in 1..7 && hopStart >= hopLimit)
+            tr("${hopStart - hopLimit} of $hopStart hops", "${hopStart - hopLimit} de $hopStart saltos")
+            else tr("hop limit $hopLimit", "limite de saltos $hopLimit")
+        if (relayNode != 0) parts += tr("relayed by ..%02x", "retransmitido por ..%02x").format(relayNode)
+        if (wantAck) parts += tr("wants ack", "pede confirmação")
+        if (viaMqtt) parts += tr("via MQTT", "via MQTT")
+        parts += tr("${encryptedPayload.size} B encrypted", "${encryptedPayload.size} B cifrados")
+        return parts.joinToString(" • ")
+    }
 
     companion object {
         fun parse(frame: ByteArray): MeshtasticAirPacket {
