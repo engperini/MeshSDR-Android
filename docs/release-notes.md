@@ -4,7 +4,7 @@
 - Real-time LoRa demodulation with a native C++ PHY: SF7–12, BW 15.6–500 kHz, CR 4/5–4/8.
 - **Android, Windows and Linux** apps with the same interface and the same decoder.
 - Detections even when a packet is too weak to decode, with length, SNR and sync word.
-- MeshCore interpretation: route, payload type, hops and repeaters; ADVERTs show node name and GPS position.
+- MeshCore interpretation: route, payload type, hops and repeaters; ADVERTs show node name and GPS position. **Public channel messages are shown as text**, and so are the #hashtag channels listed in the settings; private channels and direct messages stay encrypted.
 - Meshtastic radio header: sender, destination, packet id, channel (the public LongFast channel is recognised), hops taken out of the hop start, relay node, ACK request and MQTT flag. LongFast decoding is tested through the same 8-decoder diversity the app uses: every frame exactly once, about 1 dB more sensitive than a single decoder.
 - **Generic LoRa mode:** any frequency, one SF or SF7–12 at once, typed bandwidth (default 125 kHz); frames shown raw.
 - **Automatic IQ recording** (optional): the 3 s before and the seconds after every detection are saved as `.cu8`.

@@ -7,7 +7,7 @@ package com.engperini.meshsdr
  *
  * Receiver → screen: hello, state, log, msg, files, chunk, error.
  * Screen → receiver: cmd (op = connect, stop, record, profile, sf, freq, gain,
- * ppm, avg, autoRec, lang, time, files, get).
+ * ppm, avg, autoRec, channels, lang, time, files, get).
  */
 object RemoteLink {
     const val PORT = 14424
@@ -67,7 +67,9 @@ data class RemoteState(
     val detections: Int = 0,
     val decoded: Int = 0,
     val levelRms: Double? = null,
-    val levelClipPct: Double = 0.0
+    val levelClipPct: Double = 0.0,
+    /** MeshCore hashtag channels the receiver reads, e.g. "#test, #brasil". */
+    val channels: String = ""
 ) {
     /** The profile in use, with its frequency. */
     fun profile(): LoraProfile =
@@ -77,7 +79,8 @@ data class RemoteState(
     fun toLine(): String = RemoteLink.line(
         "t" to "state", "status" to status, "profile" to profileId, "freq" to frequencyHz,
         "sf" to genericSf, "bw" to genericBw, "gain" to gainTenths, "ppm" to ppm, "avg" to averaging,
-        "autoRec" to autoRecord, "det" to detections, "dec" to decoded, "rms" to levelRms, "clip" to levelClipPct
+        "autoRec" to autoRecord, "det" to detections, "dec" to decoded, "rms" to levelRms, "clip" to levelClipPct,
+        "channels" to channels
     )
 
     companion object {
@@ -100,7 +103,8 @@ data class RemoteState(
                 detections = m.int("det") ?: d.detections,
                 decoded = m.int("dec") ?: d.decoded,
                 levelRms = m.double("rms"),
-                levelClipPct = m.double("clip") ?: d.levelClipPct
+                levelClipPct = m.double("clip") ?: d.levelClipPct,
+                channels = m.str("channels") ?: d.channels
             )
         }
     }
