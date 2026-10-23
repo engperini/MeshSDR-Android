@@ -288,6 +288,13 @@ private fun SettingsBody(state: AppState) {
         Pill(tr("Apply", "Aplicar"), PillStyle.TONAL) { state.applyPpm() }
     }
 
+    Section(tr("MeshCore channels to read (Public always; add #hashtags)", "Canais MeshCore para ler (Public sempre; adicione #hashtags)"))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextInput(state.hashtagText, Modifier.weight(1f), KeyboardType.Text) { state.hashtagText = it }
+        Spacer(Modifier.width(8.dp))
+        Pill(tr("Apply", "Aplicar"), PillStyle.TONAL) { state.applyHashtags() }
+    }
+
     Section(tr("Processing (optional)", "Processamento (opcional)"))
     SwitchRow(tr("Averaging filter when decimating", "Filtro de média na decimação"), state.averaging) { state.changeAveraging(it) }
     SwitchRow(tr("Record IQ automatically on detections (3 s before + after)",

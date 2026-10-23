@@ -11,6 +11,7 @@ import com.engperini.meshsdr.Lang
 import com.engperini.meshsdr.LoraFrame
 import com.engperini.meshsdr.LoraProfile
 import com.engperini.meshsdr.LoraReceiver
+import com.engperini.meshsdr.MeshCoreChannels
 import com.engperini.meshsdr.Protocol
 import com.engperini.meshsdr.RemoteLink
 import com.engperini.meshsdr.RemoteState
@@ -72,6 +73,8 @@ class AppState(private val keepTrying: Boolean = false) {
     var autoStartRtlTcp by mutableStateOf(true)
         private set
     var serverText by mutableStateOf("127.0.0.1:1234")
+    /** MeshCore hashtag channels to read besides Public (their key comes from the name). */
+    var hashtagText by mutableStateOf("")
 
     var status by mutableStateOf(LinkStatus.DISCONNECTED)
         private set
@@ -133,6 +136,8 @@ class AppState(private val keepTrying: Boolean = false) {
         serverText = prefs.get("server", serverText)
         freqText = "%.6f".format(Locale.US, centerHz / 1e6)
         bwText = LoraProfile.formatKhz(genericBw)
+        hashtagText = prefs.get("hashtags", "")
+        MeshCoreChannels.setHashtags(hashtagText)
         if (prefs.getBoolean("remoteScreen", false)) setRemoteScreen(true)
         log("APP", tr("LoRa profile: ${active().describe()}. Any sync word is accepted and shown.",
             "Perfil LoRa: ${active().describe()}. Qualquer sync word é aceito e mostrado."))
@@ -213,6 +218,14 @@ class AppState(private val keepTrying: Boolean = false) {
         sendCommands(RtlTcpProtocol.gainCommands(gainOrNull()), tr("gain", "ganho"))
     }
 
+    fun applyHashtags() {
+        hashtagText = MeshCoreChannels.normalize(hashtagText)
+        prefs.put("hashtags", hashtagText)
+        MeshCoreChannels.setHashtags(hashtagText)
+        log("APP", tr("MeshCore channels read: Public", "Canais MeshCore lidos: Public") +
+            if (hashtagText.isEmpty()) "" else ", $hashtagText")
+    }
+
     fun changeAutoRecord(on: Boolean) {
         autoRecord = on
         prefs.putBoolean("autoRecord", on)
@@ -290,7 +303,8 @@ class AppState(private val keepTrying: Boolean = false) {
     fun remoteState() = RemoteState(
         status = status.name, profileId = profile.id, frequencyHz = centerHz, genericSf = genericSf,
         genericBw = genericBw, gainTenths = gainTenths, ppm = ppm, averaging = averaging, autoRecord = autoRecord,
-        detections = detections, decoded = decoded, levelRms = levelRms, levelClipPct = levelClipPct
+        detections = detections, decoded = decoded, levelRms = levelRms, levelClipPct = levelClipPct,
+        channels = hashtagText
     )
 
     fun settingsSummary(): String {

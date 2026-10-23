@@ -229,3 +229,18 @@ Campo (22/10, Pi 4B + celular por Bluetooth): MeshCore decodificado até −15,9
 O Pi sem internet guarda a hora do último desligamento; agora o celular envia hora e
 fuso ao conectar. O "(ppm …)" das mensagens confundia (era a correção a somar); passou a
 ser o valor a digitar, já somando a correção em uso.
+
+## 23/10/2026 — Canal Public do MeshCore em texto
+
+Do código do MeshCore (`Mesh::createGroupDatagram`, `Utils::encryptThenMAC`,
+`BaseChatMesh::onGroupDataRecv`): payload GRP_TXT = hash do canal (1 B, primeiro byte do
+SHA-256 da chave) + MAC (2 B, HMAC-SHA256 do texto cifrado com a chave) + AES-128-ECB de
+`timestamp (4, LE) | tipo (1) | "remetente: texto"` com zeros até 16 B.
+
+- Public: chave `izOH6cXN6mrJ5e26oRXNcg==` → hash `11` (o "canal 11" dos logs de campo).
+- Hashtag: chave = 16 primeiros bytes de SHA-256("#nome"); `#test` → hash `d9`, também visto
+  em campo.
+- O MAC de 2 bytes decide se a chave serve (erro de 1/65536 numa colisão de hash).
+
+Testado com vetores gerados por implementação independente em Python (`cryptography`).
+Canais privados (chave própria) e mensagens diretas continuam cifrados.

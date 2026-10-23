@@ -27,7 +27,9 @@ LoRa radio, a PC or GNU Radio.
   with length, SNR and sync word, even when the payload is too weak to pass CRC.
 - **MeshCore interpretation.** Route type, payload type, hop count, the repeaters in the
   path, and sizes of encrypted payloads. ADVERT packets show the **node type, name and GPS
-  position**, since they are signed but not encrypted.
+  position**, since they are signed but not encrypted. **Public channel messages** are shown
+  as text ("sender: message"), and so are **#hashtag channels** you list in the settings (their
+  key comes from the name). Private channels and direct messages stay encrypted.
 - **Meshtastic interpretation.** The radio header: sender, destination, packet id, channel
   (the public LongFast channel is recognised), hops taken, relay node and ACK request.
 - **Any sync word.** It reports `0x2B` (Meshtastic), `0x12` (private / MeshCore) and
@@ -201,9 +203,8 @@ external carrier about 12 dB stronger, so it is the better choice for range.
 
 - **Desktop:** macOS, and MQTT output for monitoring stations.
 - **In the browser:** WebUSB + WebAssembly, so you just plug the dongle into Chrome with no install.
-- **Meshtastic:** protobuf decoding and decryption of public channels with their published
-  default key.
-- **MeshCore:** decryption of the public group channel; a map of nodes learned from ADVERTs.
+- **MeshCore:** a map of nodes learned from ADVERTs.
+- **Meshtastic:** text messages of the public LongFast channel (published default key).
 - **Scanning:** several profiles and channels at once.
 - Signed releases and a Play Store / F-Droid build.
 

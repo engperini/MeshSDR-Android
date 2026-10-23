@@ -7,7 +7,8 @@ import java.util.Locale
  * Layout from https://docs.meshcore.io/packet_format/ and /payloads/:
  * header (0bVVPPPPRR), transport codes (4 B, transport routes only),
  * path length (bits 6-7 hash size - 1, bits 0-5 hop count), path, payload.
- * Encrypted payloads are only described (sizes, hashes), never decrypted.
+ * Encrypted payloads are only described (sizes, hashes), except group text on
+ * channels with a public key (Public, hashtags: [MeshCoreChannels]).
  * ADVERT is signed but not encrypted, so its node name and location are shown.
  */
 data class MeshCorePacket(
@@ -39,9 +40,17 @@ data class MeshCorePacket(
             if (payload.size >= 35) tr("to ${hx(payload[0])} • sender ${hex(payload.copyOfRange(1, 5))}… • ${payload.size - 35} B encrypted",
                 "destino ${hx(payload[0])} • remetente ${hex(payload.copyOfRange(1, 5))}… • ${payload.size - 35} B cifrados")
             else "${payload.size} B"
-        TYPE_GRP_TXT, TYPE_GRP_DATA ->
-            if (payload.size >= 3) tr("channel ${hx(payload[0])} • ${payload.size - 3} B encrypted",
-                "canal ${hx(payload[0])} • ${payload.size - 3} B cifrados") else "${payload.size} B"
+        TYPE_GRP_TXT, TYPE_GRP_DATA -> {
+            val message = if (payloadType == TYPE_GRP_TXT) MeshCoreChannels.decrypt(payload) else null
+            val known = if (payload.isNotEmpty()) MeshCoreChannels.nameFor(payload[0].toInt() and 0xff) else null
+            when {
+                message != null -> tr("channel ${message.channel}", "canal ${message.channel}") + " • \u201c${message.text}\u201d"
+                payload.size >= 3 -> tr("channel ${hx(payload[0])}", "canal ${hx(payload[0])}") +
+                    (known?.let { " ($it?)" } ?: "") +
+                    tr(" • ${payload.size - 3} B encrypted", " • ${payload.size - 3} B cifrados")
+                else -> "${payload.size} B"
+            }
+        }
         TYPE_ACK -> if (payload.size >= 4) "checksum ${hex(payload.copyOfRange(0, 4))}" else "${payload.size} B"
         else -> "${payload.size} B"
     }

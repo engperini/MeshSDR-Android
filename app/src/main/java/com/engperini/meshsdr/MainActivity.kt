@@ -79,6 +79,7 @@ class MainActivity : Activity() {
     private lateinit var genericBox: LinearLayout
     private lateinit var bwInput: EditText
     private lateinit var ppmInput: EditText
+    private lateinit var hashtagInput: EditText
     /** Crystal correction for dongles without TCXO (signed ppm). */
     @Volatile private var ppm = 0
     private lateinit var channelLabel: TextView
@@ -119,7 +120,7 @@ class MainActivity : Activity() {
     private var settingsSentAt = 0L
     /** Settings changed while not linked: sent when the link comes up. */
     private var pendingRemoteSettings = false
-    private val settingOps = setOf("profile", "sf", "freq", "gain", "ppm", "avg", "autoRec")
+    private val settingOps = setOf("profile", "sf", "freq", "gain", "ppm", "avg", "autoRec", "channels")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,6 +136,7 @@ class MainActivity : Activity() {
         autoRecord = getPreferences(MODE_PRIVATE).getBoolean("autoRecord", false)
         // On by default since 18/10: ~9 dB more sensitivity measured on a real MeshCore packet.
         averaging = getPreferences(MODE_PRIVATE).getBoolean("averaging", true)
+        MeshCoreChannels.setHashtags(getPreferences(MODE_PRIVATE).getString("hashtags", null) ?: "")
         remoteMode = getPreferences(MODE_PRIVATE).getBoolean("remoteMode", false)
         remoteBluetooth = getPreferences(MODE_PRIVATE).getBoolean("remoteBluetooth", true)
         remoteHost = getPreferences(MODE_PRIVATE).getString("remoteHost", null) ?: RemoteLink.DEFAULT_HOST
@@ -313,6 +315,22 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             addView(ppmInput, LinearLayout.LayoutParams(0, -2, 1f))
             addView(pill(tr("Apply", "Aplicar"), UiStyle.TONAL) { applyPpm() },
+                LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
+        })
+
+        // Public is always read; hashtag channels have a key derived from the name.
+        settingsBody.addView(sectionLabel(tr("MeshCore channels to read (Public always; add #hashtags)",
+            "Canais MeshCore para ler (Public sempre; adicione #hashtags)")))
+        hashtagInput = numberInput(getPreferences(MODE_PRIVATE).getString("hashtags", null) ?: "").apply {
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            hint = "#test, #brasil"
+            setHintTextColor(Ui.MUTED)
+        }
+        settingsBody.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(hashtagInput, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(pill(tr("Apply", "Aplicar"), UiStyle.TONAL) { applyHashtags() },
                 LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
         })
 
@@ -680,6 +698,15 @@ class MainActivity : Activity() {
         sendCommands(listOf(RtlTcpProtocol.ppmCommand(value)), "ppm")
     }
 
+    private fun applyHashtags() {
+        val text = MeshCoreChannels.normalize(hashtagInput.text.toString())
+        hashtagInput.setText(text)
+        getPreferences(MODE_PRIVATE).edit().putString("hashtags", text).apply()
+        MeshCoreChannels.setHashtags(text)
+        log("APP", tr("MeshCore channels read: Public", "Canais MeshCore lidos: Public") + if (text.isEmpty()) "" else ", $text")
+        remoteCommand("channels", "text" to text)
+    }
+
     private fun applyGain(tenths: Int) {
         gainTenths = tenths
         getPreferences(MODE_PRIVATE).edit().putInt("gainTenths", tenths).apply()
@@ -966,6 +993,7 @@ class MainActivity : Activity() {
         remoteCommand("ppm", "ppm" to ppm)
         remoteCommand("avg", "on" to averaging)
         remoteCommand("autoRec", "on" to autoRecord)
+        remoteCommand("channels", "text" to MeshCoreChannels.normalize(hashtagInput.text.toString()))
     }
 
     private fun hasBluetoothPermission() = Build.VERSION.SDK_INT < 31 ||
@@ -1157,6 +1185,7 @@ class MainActivity : Activity() {
         if (old?.frequencyHz != s.frequencyHz) freqInput.setText("%.6f".format(Locale.US, s.frequencyHz / 1e6))
         if (old?.genericBw != s.genericBw) bwInput.setText(LoraProfile.formatKhz(s.genericBw))
         if (old?.ppm != s.ppm) ppmInput.setText("${s.ppm}")
+        if (old?.channels != s.channels) hashtagInput.setText(s.channels)
         gainTenths = s.gainTenths
         ppm = s.ppm
         averaging = s.averaging

@@ -46,7 +46,7 @@ class RemoteLinkTest {
         val state = RemoteState(
             status = RemoteState.RECEIVING, profileId = LoraProfile.MESHCORE_BR.id, frequencyHz = 923_125_000,
             genericSf = 9, genericBw = 62_500, gainTenths = 402, ppm = -17, averaging = false, autoRecord = true,
-            detections = 6, decoded = 2, levelRms = 17.2, levelClipPct = 0.03
+            detections = 6, decoded = 2, levelRms = 17.2, levelClipPct = 0.03, channels = "#test, #brasil"
         )
         assertEquals(state, RemoteState.from(RemoteLink.parse(state.toLine())!!))
         assertEquals(state.copy(levelRms = null), RemoteState.from(RemoteLink.parse(state.copy(levelRms = null).toLine())!!))

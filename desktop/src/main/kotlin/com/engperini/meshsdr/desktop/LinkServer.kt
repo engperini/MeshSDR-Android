@@ -119,6 +119,7 @@ class LinkServer(private val app: AppState, private val port: Int = RemoteLink.P
             "avg" -> m.bool("on")?.let { on -> ui { app.changeAveraging(on) } }
             "autoRec" -> m.bool("on")?.let { on -> ui { app.changeAutoRecord(on) } }
             "lang" -> m.bool("pt")?.let { pt -> ui { app.selectLanguage(pt) } }
+            "channels" -> m.str("text")?.let { text -> ui { app.hashtagText = text; app.applyHashtags() } }
             "time" -> m.long("ms")?.let { ms -> app.syncClock(ms, m.str("tz")) }
             "files" -> client.send(filesLine())
             "get" -> sendFile(client, m.str("name") ?: "")
