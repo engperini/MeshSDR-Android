@@ -196,3 +196,36 @@ Ruído: 0 falsos em 20 s com os 32 decodificadores. Roda em até 4 threads.
 Falso positivo observado do nibble chase (~134 tentativas de CRC por quadro falho):
 um GRP_TXT de 47 B "válido" que era uma versão corrompida do pacote real de 45 B.
 Os decodificadores extras nunca usam o nibble chase.
+
+## 23/10/2026 — Revisão do Meshtastic e estação de campo
+
+Até aqui os testes de Meshtastic usavam um decodificador único, mas o app usa a
+diversidade (8 decodificadores em BW 250 kHz: 2 fases × filtro × rastreamento).
+Novo teste `[meshtastic-diversity]` no caminho real (bytes rtl_tcp → `PhaseDiversity`):
+limpo, ppm+ruído com leituras de 1 byte, −10 dB, cristal −25 ppm, 3 quadros seguidos e
+255 bytes. Todos saem **exatamente uma vez**, byte a byte, sync 0x2B (sem duplicatas).
+
+Sensibilidade (LongFast, 64 B, 12 sementes, SNR na banda do teste):
+
+| SNR | 1 decodificador | diversidade |
+| --- | --- | --- |
+| −14 dB | 8/12 | 12/12 |
+| −15 dB | 3/12 | 7/12 |
+| −16 dB | 0/12 | 1/12 |
+
+Varredura −30…+30 ppm sem ruído: 60/61 → 61/61. CPU: metade do MeshCore (8 contra 32
+decodificadores); no Pi 4B o MeshCore usa ~20%.
+
+Ponta a ponta: pacote LongFast sintético em `.cu8` → `MeshSDR --server` (perfil
+Meshtastic BR, trocado pelo link) → mensagem com destino, origem, id, canal 08
+(LongFast público, hash do nome + chave padrão), "1 de 3 saltos" (hop_start − hop_limit),
+retransmissor, pedido de ACK e tamanho cifrado.
+
+Frequências do LongFast (djb2("LongFast") = 130429955): US 104 canais → slot 19 →
+906,875 MHz; ANZ 52 → slot 19 → 919,875 MHz (perfil Meshtastic BR). Na região BR_902
+(902–907,5 MHz) seria 903,875 MHz, se a rede local migrar para ela.
+
+Campo (22/10, Pi 4B + celular por Bluetooth): MeshCore decodificado até −15,9 dB.
+O Pi sem internet guarda a hora do último desligamento; agora o celular envia hora e
+fuso ao conectar. O "(ppm …)" das mensagens confundia (era a correção a somar); passou a
+ser o valor a digitar, já somando a correção em uso.

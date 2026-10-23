@@ -94,6 +94,11 @@ class AppState(private val keepTrying: Boolean = false) {
     var echoLogs = false
 
     @Volatile private var link: LinkServer? = null
+    /**
+     * Added to this computer's clock: a Raspberry Pi in the field has no internet
+     * (NTP) and no real-time clock, so it takes the time from the phone ([syncClock]).
+     */
+    @Volatile private var clockOffsetMs = 0L
     /** UTF-8 whatever the service's locale is, so journalctl shows accents. */
     private val stdout by lazy { java.io.PrintStream(java.io.FileOutputStream(java.io.FileDescriptor.out), true, "UTF-8") }
     /** Connect was pressed and Stop was not: [keepTrying] reconnects. */
@@ -149,7 +154,8 @@ class AppState(private val keepTrying: Boolean = false) {
         prefs.put("profile", p.id)
         // The generic profile keeps whatever frequency is being explored.
         if (p.protocol != Protocol.GENERIC) freqText = "%.6f".format(Locale.US, p.frequencyHz / 1e6)
-        log("APP", tr("LoRa profile: ", "Perfil LoRa: ") + p.copy(frequencyHz = centerHz).describe())
+        log("APP", tr("LoRa profile: ", "Perfil LoRa: ") +
+            p.copy(frequencyHz = if (p.protocol == Protocol.GENERIC) centerHz else p.frequencyHz).describe())
         applyFrequency()
     }
 
@@ -237,7 +243,7 @@ class AppState(private val keepTrying: Boolean = false) {
                 remoteScreen = true
                 log("LINK", tr("Remote screen on: a phone can connect over Wi-Fi to %s port %d, or over Bluetooth through the Pi bridge",
                     "Tela remota ligada: um celular pode conectar por Wi-Fi em %s porta %d, ou por Bluetooth pela ponte do Pi")
-                    .format(Locale.US, localAddresses().ifEmpty { listOf("?") }.joinToString(", "), RemoteLink.PORT))
+                    .format(Locale.US, addressText(), RemoteLink.PORT))
             } catch (e: Exception) {
                 remoteScreen = false
                 log("ERROR", tr("Remote screen: port ${RemoteLink.PORT} unavailable (${e.message}). Is MeshSDR already running as a service?",
@@ -251,6 +257,10 @@ class AppState(private val keepTrying: Boolean = false) {
         }
     }
 
+    /** Where a phone reaches this computer; at boot the network may not be up yet. */
+    fun addressText(): String = localAddresses().ifEmpty { null }?.joinToString(" / ")
+        ?: tr("this computer's IP (hostname -I)", "o IP deste computador (hostname -I)")
+
     /** IPv4 addresses a phone on the same network (or the Pi's hotspot) can use. */
     fun localAddresses(): List<String> = try {
         java.net.NetworkInterface.getNetworkInterfaces().toList()
@@ -259,6 +269,23 @@ class AppState(private val keepTrying: Boolean = false) {
             .filterIsInstance<java.net.Inet4Address>()
             .map { it.hostAddress }
     } catch (_: Exception) { emptyList() }
+
+    /** Wall-clock time for logs and file names, corrected by the phone's clock if needed. */
+    fun now(): Long = System.currentTimeMillis() + clockOffsetMs
+
+    /** Called with the phone's clock and time zone when it connects. */
+    fun syncClock(phoneMs: Long, timeZone: String?) {
+        timeZone?.let { tz -> synchronized(timeFormat) { timeFormat.timeZone = java.util.TimeZone.getTimeZone(tz) } }
+        val diff = phoneMs - System.currentTimeMillis()
+        // A few seconds is just the link; minutes or hours means this clock is wrong.
+        if (kotlin.math.abs(diff) < 30_000) { clockOffsetMs = 0; return }
+        clockOffsetMs = diff
+        val minutes = "%.0f".format(Locale.US, kotlin.math.abs(diff) / 60_000.0)
+        log("APP", if (diff > 0) tr("Clock taken from the phone: this computer was $minutes min behind",
+                "Relógio ajustado pelo celular: este computador estava $minutes min atrasado")
+            else tr("Clock taken from the phone: this computer was $minutes min ahead",
+                "Relógio ajustado pelo celular: este computador estava $minutes min adiantado"))
+    }
 
     fun remoteState() = RemoteState(
         status = status.name, profileId = profile.id, frequencyHz = centerHz, genericSf = genericSf,
@@ -281,7 +308,7 @@ class AppState(private val keepTrying: Boolean = false) {
     // ---- output ---------------------------------------------------------
 
     fun log(tag: String, detail: String) {
-        val line = "[${synchronized(timeFormat) { timeFormat.format(Date()) }}] [$tag] $detail"
+        val line = "[${synchronized(timeFormat) { timeFormat.format(Date(now())) }}] [$tag] $detail"
         if (echoLogs) stdout.println(line)
         link?.onLog(line)
         ui {
@@ -300,7 +327,7 @@ class AppState(private val keepTrying: Boolean = false) {
         val text = (logs + listOf("", tr("--- Messages ---", "--- Mensagens ---")) + messages).joinToString("\n")
         thread(name = "save-logs") {
             try {
-                val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+                val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date(now()))
                 val file = File(outputDir(), "meshsdr-log-$stamp.txt")
                 file.writeText(text, Charsets.UTF_8)
                 log("APP", tr("Logs saved to ${file.absolutePath}", "Logs salvos em ${file.absolutePath}"))
@@ -340,8 +367,8 @@ class AppState(private val keepTrying: Boolean = false) {
 
     private fun onFrame(frame: LoraFrame) {
         if (frame.verified) decoded++ else detections++
-        val text = frame.describe(active())
-        val line = "[${synchronized(timeFormat) { timeFormat.format(Date()) }}] $text"
+        val text = frame.describe(active(), ppm)
+        val line = "[${synchronized(timeFormat) { timeFormat.format(Date(now())) }}] $text"
         link?.onMessage(line)
         messages.add(line)
         while (messages.size > 200) messages.removeAt(0)
@@ -472,7 +499,7 @@ class AppState(private val keepTrying: Boolean = false) {
                 if (n < 0) break
                 if (captureRequested && capture == null) {
                     captureRequested = false
-                    val file = File(outputDir(), "meshsdr-${System.currentTimeMillis()}-${tunedHz()}Hz-${sampleRate}sps.cu8")
+                    val file = File(outputDir(), "meshsdr-${now()}-${tunedHz()}Hz-${sampleRate}sps.cu8")
                     capture = FileOutputStream(file)
                     captureFile = file
                     captureStart = System.currentTimeMillis()
@@ -485,7 +512,7 @@ class AppState(private val keepTrying: Boolean = false) {
                 if (autoRecord && auto == null) autoRecorder = newAutoRecorder()
                 else if (!autoRecord && auto != null) { auto.close(); autoRecorder = null }
                 autoRecorder?.add(buffer, n, streamBytes) {
-                    "meshsdr-auto-${System.currentTimeMillis()}-${tunedHz()}Hz-${sampleRate}sps.cu8"
+                    "meshsdr-auto-${now()}-${tunedHz()}Hz-${sampleRate}sps.cu8"
                 }
                 val activeCapture = capture
                 if (activeCapture != null) {

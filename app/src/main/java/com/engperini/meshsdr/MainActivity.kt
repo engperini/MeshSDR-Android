@@ -8,6 +8,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.os.Handler
 import android.os.Looper
 import android.graphics.Color
@@ -69,6 +70,8 @@ class MainActivity : Activity() {
     private lateinit var settingsSummary: TextView
     private lateinit var settingsArrow: TextView
     private lateinit var outputScroll: ScrollView
+    private lateinit var connectButton: Button
+    private lateinit var stopButton: Button
     private val profileChips = mutableMapOf<String, Button>()
     private val gainChips = mutableMapOf<Int, Button>()
     private val sfChips = mutableMapOf<Int, Button>()
@@ -112,6 +115,11 @@ class MainActivity : Activity() {
     private var downloadBytes = 0L
     private var downloadStep = 0
     @Volatile private var downloadSize = 0L
+    /** When the phone last sent a setting: the receiver's state from before it is ignored for a moment. */
+    private var settingsSentAt = 0L
+    /** Settings changed while not linked: sent when the link comes up. */
+    private var pendingRemoteSettings = false
+    private val settingOps = setOf("profile", "sf", "freq", "gain", "ppm", "avg", "autoRec")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -354,6 +362,8 @@ class MainActivity : Activity() {
         // Main actions.
         val connect = pill(tr("Connect", "Conectar"), UiStyle.PRIMARY) { if (remoteMode) connectRemote() else launchDriver() }
         val stop = pill(tr("Stop", "Parar"), UiStyle.OUTLINED) { if (remoteMode) disconnectRemote() else disconnect() }
+        connectButton = connect
+        stopButton = stop
         val record = pill(tr("● Record IQ 10 s", "● Gravar IQ 10 s"), UiStyle.OUTLINED) {
             if (remoteMode) remoteCommand("record")
             else if (!running) log("IQ", tr("Connect the RTL-SDR before recording", "Conecte o RTL-SDR antes de gravar"))
@@ -546,7 +556,7 @@ class MainActivity : Activity() {
     /** UI thread. */
     private fun onFrame(frame: LoraFrame) {
         if (frame.verified) decoded++ else detections++
-        val text = frame.describe(active())
+        val text = frame.describe(active(), ppm)
         messages.addLast("[${timeFormat.format(Date())}] $text")
         while (messages.size > 200) messages.removeFirst()
         log("LORA", text)
@@ -571,6 +581,7 @@ class MainActivity : Activity() {
             else setStatus(status, tr("Disconnected", "Desconectado"), Ui.MUTED)
             receiving = running
         }
+        updateButtons()
         detectionsValue.text = detections.toString()
         decodedValue.text = decoded.toString()
         if (!receiving) {
@@ -578,6 +589,25 @@ class MainActivity : Activity() {
             levelValue.setTextColor(Ui.TEXT)
             setMeter(levelMeter, 0, Ui.ACCENT)
         }
+    }
+
+    /** Connect and Stop show the state, so a running receiver isn't "connected" twice. */
+    private fun updateButtons() {
+        if (!::connectButton.isInitialized) return
+        val s = remoteState
+        val (text, style) = when {
+            !remoteMode && running -> tr("● Connected", "● Conectado") to UiStyle.ACTIVE
+            !remoteMode -> tr("Connect", "Conectar") to UiStyle.PRIMARY
+            remote == null && !remoteWanted -> tr("Connect", "Conectar") to UiStyle.PRIMARY
+            remoteLinked && s?.status == RemoteState.RECEIVING -> tr("● Connected", "● Conectado") to UiStyle.ACTIVE
+            // Linked to a receiver that is stopped: Connect starts its reception.
+            remoteLinked && s?.status == RemoteState.DISCONNECTED -> tr("Start", "Iniciar") to UiStyle.PRIMARY
+            else -> tr("Connecting…", "Conectando…") to UiStyle.TONAL
+        }
+        connectButton.text = text
+        restyle(connectButton, style)
+        val active = if (remoteMode) remote != null || remoteWanted else running
+        restyle(stopButton, if (active) UiStyle.PRIMARY else UiStyle.OUTLINED)
     }
 
     private fun tunedHz(): Long = centerHz
@@ -588,7 +618,8 @@ class MainActivity : Activity() {
         updateProfileLabel()
         // The generic profile keeps whatever frequency is being explored.
         if (p.protocol != Protocol.GENERIC) freqInput.setText("%.6f".format(Locale.US, p.frequencyHz / 1e6))
-        log("APP", tr("LoRa profile: ", "Perfil LoRa: ") + p.copy(frequencyHz = centerHz).describe())
+        log("APP", tr("LoRa profile: ", "Perfil LoRa: ") +
+            p.copy(frequencyHz = if (p.protocol == Protocol.GENERIC) centerHz else p.frequencyHz).describe())
         remoteCommand("profile", "id" to p.id)
         if (p.protocol == Protocol.GENERIC) remoteCommand("sf", "sf" to p.spreadingFactor)
         applyFrequency()
@@ -703,6 +734,7 @@ class MainActivity : Activity() {
         if (running) return
         running = true
         setStatus(status, tr("Connecting…", "Conectando…"), Ui.AMBER)
+        updateButtons()
         setSettingsExpanded(false)
         startKeepAlive("${profile.label} • %.3f MHz".format(Locale.US, centerHz / 1e6))
         thread(name = "rtl-iq-reader") {
@@ -915,10 +947,25 @@ class MainActivity : Activity() {
         if (!remoteMode) return
         val client = remote
         if (client == null || !remoteLinked) {
-            if (op == "stop" || op == "record") log("LINK", tr("Connect to the receiver first", "Conecte ao receptor primeiro"))
+            if (op in settingOps) pendingRemoteSettings = true
+            else if (op == "stop" || op == "record") log("LINK", tr("Connect to the receiver first", "Conecte ao receptor primeiro"))
             return
         }
+        if (op in settingOps) settingsSentAt = SystemClock.elapsedRealtime()
         client.send(RemoteLink.command(op, *fields))
+    }
+
+    /** Sends every setting shown, e.g. the ones changed while the link was down. */
+    private fun pushRemoteSettings() {
+        val generic = profile.protocol == Protocol.GENERIC
+        remoteCommand("profile", "id" to profile.id)
+        if (generic) remoteCommand("sf", "sf" to genericSf)
+        remoteCommand("freq", "mhz" to "%.6f".format(Locale.US, centerHz / 1e6),
+            "bw" to if (generic) LoraProfile.formatKhz(genericBw) else null)
+        remoteCommand("gain", "gain" to gainTenths)
+        remoteCommand("ppm", "ppm" to ppm)
+        remoteCommand("avg", "on" to averaging)
+        remoteCommand("autoRec", "on" to autoRecord)
     }
 
     private fun hasBluetoothPermission() = Build.VERSION.SDK_INT < 31 ||
@@ -1057,8 +1104,17 @@ class MainActivity : Activity() {
                     messages.clear()
                     log("LINK", tr("Connected to MeshSDR on ${m.str("host") ?: "?"} via ${remoteTarget()}",
                         "Conectado ao MeshSDR em ${m.str("host") ?: "?"} via ${remoteTarget()}"))
-                    // The receiver writes its logs and messages in this phone's language.
+                    // The receiver writes its logs and messages in this phone's language and
+                    // time: a Pi in the field has no internet to set its clock.
                     client.send(RemoteLink.command("lang", "pt" to Lang.portuguese))
+                    client.send(RemoteLink.command("time", "ms" to System.currentTimeMillis(),
+                        "tz" to java.util.TimeZone.getDefault().id))
+                    if (pendingRemoteSettings) {
+                        pendingRemoteSettings = false
+                        log("LINK", tr("Sending the settings changed while disconnected", "Enviando as configurações mudadas enquanto desconectado"))
+                        pushRemoteSettings()
+                    }
+                    updateStatus()
                     render()
                 }
                 "state" -> applyRemoteState(client, RemoteState.from(m))
@@ -1076,32 +1132,39 @@ class MainActivity : Activity() {
         remoteState = s
         // First contact with a stopped receiver: Connect means "start receiving".
         if (old == null && remoteWanted && s.status == RemoteState.DISCONNECTED) client.send(RemoteLink.command("connect"))
+        // Right after a change, a state sent before the receiver applied it would undo it on screen.
+        val settingsSettled = SystemClock.elapsedRealtime() - settingsSentAt > 1500
         applyingRemote = true
         try {
-            genericSf = s.genericSf
-            genericBw = s.genericBw
-            profile = s.profile()
-            centerHz = s.frequencyHz
-            // Rewrite the text fields only when the value changed, so typing isn't overwritten.
-            if (old?.frequencyHz != s.frequencyHz) freqInput.setText("%.6f".format(Locale.US, s.frequencyHz / 1e6))
-            if (old?.genericBw != s.genericBw) bwInput.setText(LoraProfile.formatKhz(s.genericBw))
-            if (old?.ppm != s.ppm) ppmInput.setText("${s.ppm}")
-            gainTenths = s.gainTenths
-            ppm = s.ppm
-            averaging = s.averaging
-            autoRecord = s.autoRecord
-            averagingSwitch.isChecked = s.averaging
-            autoRecordSwitch.isChecked = s.autoRecord
+            if (settingsSettled) applyRemoteSettings(old, s)
             detections = s.detections
             decoded = s.decoded
-            updateGainLabel()
-            updateProfileLabel()
             updateStatus()
             val rms = s.levelRms
             if (rms != null && s.status == RemoteState.RECEIVING) updateLevel(rms, s.levelClipPct)
         } finally {
             applyingRemote = false
         }
+    }
+
+    /** UI thread, with [applyingRemote] set. */
+    private fun applyRemoteSettings(old: RemoteState?, s: RemoteState) {
+        genericSf = s.genericSf
+        genericBw = s.genericBw
+        profile = s.profile()
+        centerHz = s.frequencyHz
+        // Rewrite the text fields only when the value changed, so typing isn't overwritten.
+        if (old?.frequencyHz != s.frequencyHz) freqInput.setText("%.6f".format(Locale.US, s.frequencyHz / 1e6))
+        if (old?.genericBw != s.genericBw) bwInput.setText(LoraProfile.formatKhz(s.genericBw))
+        if (old?.ppm != s.ppm) ppmInput.setText("${s.ppm}")
+        gainTenths = s.gainTenths
+        ppm = s.ppm
+        averaging = s.averaging
+        autoRecord = s.autoRecord
+        averagingSwitch.isChecked = s.averaging
+        autoRecordSwitch.isChecked = s.autoRecord
+        updateGainLabel()
+        updateProfileLabel()
     }
 
     private fun requestRemoteFiles() {

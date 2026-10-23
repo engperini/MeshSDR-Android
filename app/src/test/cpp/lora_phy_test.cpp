@@ -349,6 +349,48 @@ void testPhaseDiversity() {
 // +25 ppm over a 2.7 s frame with the filter off is marginal: whether it decodes
 // depends on the noise, so one seed passes or fails with the platform's floating
 // point (x86 vs ARM). Measure the rate over many noise seeds instead.
+// Meshtastic LongFast through the path the app really uses: the decoder diversity
+// (8 decoders at BW 250 kHz) fed with rtl_tcp bytes. Every frame must come out
+// exactly once, byte for byte: the extra decoders must not duplicate it.
+void testMeshtasticDiversity() {
+    std::printf("[meshtastic-diversity] LongFast SF11/BW250k through the app's decoder diversity\n");
+    struct Case { const char* name; Channel ch; std::vector<int> lens; bool tinyReads; uint32_t seed; };
+    std::vector<Case> cases;
+    cases.push_back({"clean", Channel{}, {40}, false, 21});
+    { Channel c; c.ppm = 5; c.snrDb = 0; cases.push_back({"ppm+noise, 1-byte reads", c, {64}, true, 22}); }
+    { Channel c; c.ppm = -3; c.snrDb = -10; cases.push_back({"weak -10 dB", c, {32}, false, 23}); }
+    { Channel c; c.ppm = -25; c.snrDb = 10; cases.push_back({"cheap crystal -25 ppm", c, {120}, false, 24}); }
+    { Channel c; c.ppm = 10; c.snrDb = 5; cases.push_back({"back-to-back", c, {1, 16, 77}, true, 25}); }
+    cases.push_back({"max payload", Channel{}, {255}, false, 26});
+    for (const auto& k : cases) {
+        loratx::Params p;
+        std::vector<std::vector<uint8_t>> payloads;
+        std::vector<std::vector<loratx::cf>> frames;
+        for (size_t i = 0; i < k.lens.size(); ++i) {
+            payloads.push_back(meshtasticLike(k.lens[i], k.seed + static_cast<uint32_t>(i)));
+            frames.push_back(loratx::modulate(payloads.back(), p, k.ch.ppm));
+        }
+        const auto bytes = toRtlTcp(frames, kFs, 250e3, k.ch, k.seed);
+        Sink sink;
+        meshsdr::PhaseDiversity d(true, 2, 0, kFs, true, 11, 1, 0, 250000, 919875000, Sink::cb, &sink);
+        std::mt19937 rng(k.seed);
+        std::uniform_int_distribution<int> big(1, 65536), small(1, 7);
+        for (size_t pos = 0; pos < bytes.size();) {
+            int n = k.tinyReads && (rng() % 4 == 0) ? small(rng) : big(rng);
+            n = (int)std::min<size_t>(n, bytes.size() - pos);
+            d.push(bytes.data() + pos, n);
+            pos += n;
+        }
+        std::vector<const lora_lite::Packet*> good;
+        for (const auto& pk : sink.decoded) if (pk.status == lora_lite::PKT_DECODED) good.push_back(&pk);
+        bool exact = good.size() == payloads.size();
+        for (size_t i = 0; exact && i < good.size(); ++i) exact = sameBytes(*good[i], payloads[i]) && good[i]->sync == 0x2b;
+        std::printf("  %-26s %zu frame(s): %zu decoded event(s), %d decoders%s\n", k.name, payloads.size(), good.size(),
+                    d.decoders(), exact ? "" : "  <-- MISMATCH");
+        CHECK(exact, "%s: %zu decoded events for %zu frames", k.name, good.size(), payloads.size());
+    }
+}
+
 void testCheapXtalRate() {
     const int before = failures, seeds = 20;
     int ok = 0;
@@ -378,7 +420,7 @@ void runAll() {
     testMeshCoreBr();
     testDetectionWithoutDecode();
     testRealCapture();
-    if (gDsp.offset == 0 && gDsp.average) testPhaseDiversity();
+    if (gDsp.offset == 0 && gDsp.average) { testPhaseDiversity(); testMeshtasticDiversity(); }
     testPpmSweep();
     testNoFalsePositives();
 }

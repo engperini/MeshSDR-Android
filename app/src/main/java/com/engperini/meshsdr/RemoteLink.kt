@@ -7,7 +7,7 @@ package com.engperini.meshsdr
  *
  * Receiver → screen: hello, state, log, msg, files, chunk, error.
  * Screen → receiver: cmd (op = connect, stop, record, profile, sf, freq, gain,
- * ppm, avg, autoRec, lang, files, get).
+ * ppm, avg, autoRec, lang, time, files, get).
  */
 object RemoteLink {
     const val PORT = 14424

@@ -110,18 +110,19 @@ class LoraFrame(
      * @param profile the active profile, if any: its protocol decides how a
      * CRC-ok frame is interpreted (the sync word read from a weak signal can
      * be wrong), and a sync word different from the expected one is flagged.
+     * @param ppm the frequency correction already applied, so the suggested one is the value to type.
      */
-    fun describe(profile: LoraProfile? = null): String {
+    fun describe(profile: LoraProfile? = null, ppm: Int = 0): String {
         var sync = LoraProfile.syncName(syncWord)
         if (profile != null && profile.syncWord >= 0 && syncWord != profile.syncWord)
             sync += String.format(Locale.US, tr(" (expected 0x%02X; reading may be wrong)",
                 " (esperado 0x%02X; leitura pode estar errada)"), profile.syncWord)
         var snr = String.format(Locale.US, "SNR %.1f dB", snrDb)
-        // The offset is mostly the dongle's crystal error: show it with the ppm
-        // correction that would cancel it, from the profile's frequency.
+        // The offset is mostly the dongle's crystal error, measured after the correction
+        // in use: show the ppm setting that would cancel it.
         if (offsetHz != 0f && profile != null)
-            snr += String.format(Locale.US, tr(" • offset %+.1f kHz (ppm %+.1f)", " • desvio %+.1f kHz (ppm %+.1f)"),
-                offsetHz / 1000f, -offsetHz / profile.frequencyHz * 1e6)
+            snr += String.format(Locale.US, tr(" • offset %+.1f kHz (ppm ≈ %d)", " • desvio %+.1f kHz (ppm ≈ %d)"),
+                offsetHz / 1000f, Math.round(ppm - offsetHz / profile.frequencyHz * 1e6).toInt())
         // Which decoder heard it matters when several spreading factors run at once.
         val sf = if (spreadingFactor > 0 && profile?.protocol == Protocol.GENERIC) "SF$spreadingFactor • " else ""
         return sf + when (status) {
