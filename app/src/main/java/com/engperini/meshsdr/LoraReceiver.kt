@@ -12,7 +12,7 @@ class LoraReceiver(
     private val spreadingFactor: Int,
     average: Boolean,
     diversity: Boolean,
-    private val onFrame: (LoraFrame) -> Unit
+    onFrame: (LoraFrame) -> Unit
 ) : AutoCloseable {
     companion object { init { NativeLibrary.load() } }
     private var handle = nativeCreate(
@@ -25,20 +25,24 @@ class LoraReceiver(
     ): Long
     private external fun nativeFeed(handle: Long, bytes: ByteArray, length: Int)
     private external fun nativeDestroy(handle: Long)
+    /** Hides the primary decoder's "bad CRC" when an extra decoder got the same frame. */
+    private val filter = CrcFailFilter(onFrame)
 
     @Suppress("unused") // Called by the native decoder.
     fun onFrame(data: ByteArray, status: Int, declaredLength: Int, crcOk: Boolean, hasCrc: Boolean, snr: Float, sync: Int,
                 offsetHz: Float) {
-        onFrame(LoraFrame(data, status, declaredLength, crcOk, snr, sync, hasCrc, spreadingFactor, offsetHz))
+        filter.accept(LoraFrame(data, status, declaredLength, crcOk, snr, sync, hasCrc, spreadingFactor, offsetHz))
     }
 
     fun feed(bytes: ByteArray, count: Int) {
         if (handle != 0L) nativeFeed(handle, bytes, count)
+        filter.flush()
     }
 
     override fun close() {
         val old = handle
         handle = 0
         if (old != 0L) nativeDestroy(old)
+        filter.drain()
     }
 }

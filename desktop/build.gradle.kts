@@ -9,12 +9,12 @@ plugins {
 // The radio and protocol code is shared with the Android app, file by file.
 val shared = listOf(
     "Lang.kt", "LoraProfile.kt", "LoraReceiver.kt", "MeshCorePacket.kt",
-    "MeshtasticAirPacket.kt", "IqLevel.kt", "RtlTcpProtocol.kt", "AutoRecorder.kt", "RemoteLink.kt", "MeshCoreChannels.kt"
+    "MeshtasticAirPacket.kt", "IqLevel.kt", "RtlTcpProtocol.kt", "AutoRecorder.kt", "RemoteLink.kt", "MeshCoreChannels.kt", "CrcFailFilter.kt"
 )
 // ...and so are their unit tests, which run here without an Android SDK.
 val sharedTests = listOf(
     "AutoRecorderTest.kt", "IqLevelTest.kt", "LoraProfileTest.kt", "MeshCorePacketTest.kt",
-    "MeshCoreChannelsTest.kt", "MeshtasticAirPacketTest.kt", "RemoteLinkTest.kt", "RtlTcpProtocolTest.kt"
+    "MeshCoreChannelsTest.kt", "MeshtasticAirPacketTest.kt", "RemoteLinkTest.kt", "RtlTcpProtocolTest.kt", "CrcFailFilterTest.kt"
 )
 sourceSets.main {
     kotlin.srcDir(layout.buildDirectory.dir("generated/shared"))

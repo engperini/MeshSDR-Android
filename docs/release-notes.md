@@ -9,7 +9,7 @@
 - **Generic LoRa mode:** any frequency, one SF or SF7–12 at once, typed bandwidth (default 125 kHz); frames shown raw.
 - **Automatic IQ recording** (optional): the 3 s before and the seconds after every detection are saved as `.cu8`.
 - **ppm correction** for dongles without TCXO; each detection shows the measured offset and the ppm value to set.
-- **Decoder diversity:** up to 32 decoders per profile (up to 8 decimation phases, filter on/off, with and without drift tracking) on several CPU cores, so packets that only some of them decode are no longer lost. With a dongle without TCXO: 4 real MeshCore packets decoded from the field captures, against 0 with a single decoder.
+- **Decoder diversity:** up to 32 decoders per profile (up to 8 decimation phases, filter on/off, with and without drift tracking) on several CPU cores, so packets that only some of them decode are no longer lost. When one decoder fails a packet's CRC and another decodes it, the log shows only the decoded packet; "bad CRC" lines are real losses. With a dongle without TCXO: 4 real MeshCore packets decoded from the field captures, against 0 with a single decoder.
 - **Field station: Raspberry Pi + phone, no internet.** `MeshSDR --server` runs headless on the Pi (systemd units included) and decodes; the Android app's **Remote** mode is its screen over **Bluetooth** or **Wi-Fi**: same interface, settings, messages and logs, plus downloading the Pi's recordings. The Pi takes the time from the phone (no internet clock in the field). The app shows the Pi's name and IP address once linked. See *Field station* in the README.
 - English and Portuguese UI.
 - Profiles for Brazil (Meshtastic ANZ LongFast 919.875 MHz, MeshCore 923.125 MHz) and the US (906.875 MHz).
