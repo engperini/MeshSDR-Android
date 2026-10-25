@@ -71,7 +71,7 @@ class LinkServer(private val app: AppState, private val port: Int = RemoteLink.P
                 tr("Remote screen connected via Bluetooth (bridge)", "Tela remota conectada via Bluetooth (ponte)")
                 else tr("Remote screen connected from $from", "Tela remota conectada de $from"))
             client.send(RemoteLink.line("t" to "hello", "app" to "MeshSDR", "proto" to RemoteLink.VERSION,
-                "host" to hostName()))
+                "host" to app.hostName))
             client.send(app.remoteState().toLine())
             synchronized(history) {
                 logs.forEach { client.send(RemoteLink.line("t" to "log", "line" to it)) }
@@ -167,7 +167,6 @@ class LinkServer(private val app: AppState, private val port: Int = RemoteLink.P
 
     private fun ui(block: () -> Unit) = SwingUtilities.invokeLater(block)
 
-    private fun hostName(): String = try { java.net.InetAddress.getLocalHost().hostName } catch (_: Exception) { "" }
 
     /** One phone: a writer thread drains its queue so a slow link never blocks the receiver. */
     private inner class Client(private val socket: Socket) {

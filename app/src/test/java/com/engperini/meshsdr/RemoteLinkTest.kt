@@ -46,10 +46,19 @@ class RemoteLinkTest {
         val state = RemoteState(
             status = RemoteState.RECEIVING, profileId = LoraProfile.MESHCORE_BR.id, frequencyHz = 923_125_000,
             genericSf = 9, genericBw = 62_500, gainTenths = 402, ppm = -17, averaging = false, autoRecord = true,
-            detections = 6, decoded = 2, levelRms = 17.2, levelClipPct = 0.03, channels = "#test, #brasil"
+            detections = 6, decoded = 2, levelRms = 17.2, levelClipPct = 0.03, channels = "#test, #brasil",
+            host = "rasp-lora", addresses = "10.170.78.143 / 192.168.0.9"
         )
         assertEquals(state, RemoteState.from(RemoteLink.parse(state.toLine())!!))
         assertEquals(state.copy(levelRms = null), RemoteState.from(RemoteLink.parse(state.copy(levelRms = null).toLine())!!))
+    }
+
+    @Test fun stateFromAnOlderReceiverHasNoHost() {
+        val old = RemoteLink.parse("{\"t\":\"state\",\"status\":\"RECEIVING\",\"profile\":\"meshcore-br\"}")!!
+        val s = RemoteState.from(old)
+        assertEquals("", s.host)
+        assertEquals("", s.addresses)
+        assertEquals(RemoteState.RECEIVING, s.status)
     }
 
     @Test fun stateProfileFollowsGenericSettings() {

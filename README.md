@@ -142,6 +142,17 @@ sudo nmcli connection modify Hotspot connection.autoconnect yes
 ```
 The Pi is `10.42.0.1` on that network.
 
+**3c. Wi-Fi to update the Pi in the field** (optional). Register the phone's hotspot as a
+second network: the Pi joins it whenever it is around and never gives up reconnecting.
+```bash
+sudo raspi-config nonint do_wifi_country BR      # your country
+sudo nmcli connection add type wifi ifname wlan0 con-name car ssid "HOTSPOT_NAME" \
+  wifi-sec.key-mgmt wpa-psk wifi-sec.psk "PASSWORD" connection.autoconnect-priority 10 \
+  connection.autoconnect-retries 0 802-11-wireless.powersave 2
+```
+Use 2.4 GHz and WPA2 on the hotspot. Once linked, the phone app shows the Pi's name and IP
+(Settings → Remote), so `ssh pi@<IP>` from Termux works without looking it up.
+
 **4. On the phone:** Settings → **Receiver: Remote (Pi / PC)** → **Bluetooth** (choose the Pi) or
 **Wi-Fi** (`10.42.0.1`) → **Connect**. Every setting now changes the Pi's receiver; **Stop** only
 disconnects the phone (the Pi keeps listening); **Recordings** downloads the Pi's `.cu8` files and
