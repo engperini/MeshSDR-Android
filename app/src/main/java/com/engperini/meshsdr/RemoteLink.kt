@@ -69,7 +69,10 @@ data class RemoteState(
     val levelRms: Double? = null,
     val levelClipPct: Double = 0.0,
     /** MeshCore hashtag channels the receiver reads, e.g. "#test, #brasil". */
-    val channels: String = ""
+    val channels: String = "",
+    /** The receiver's name and network addresses, e.g. "rasp-lora", "10.170.78.143" (empty from older versions). */
+    val host: String = "",
+    val addresses: String = ""
 ) {
     /** The profile in use, with its frequency. */
     fun profile(): LoraProfile =
@@ -80,7 +83,7 @@ data class RemoteState(
         "t" to "state", "status" to status, "profile" to profileId, "freq" to frequencyHz,
         "sf" to genericSf, "bw" to genericBw, "gain" to gainTenths, "ppm" to ppm, "avg" to averaging,
         "autoRec" to autoRecord, "det" to detections, "dec" to decoded, "rms" to levelRms, "clip" to levelClipPct,
-        "channels" to channels
+        "channels" to channels, "host" to host, "ips" to addresses
     )
 
     companion object {
@@ -104,7 +107,9 @@ data class RemoteState(
                 decoded = m.int("dec") ?: d.decoded,
                 levelRms = m.double("rms"),
                 levelClipPct = m.double("clip") ?: d.levelClipPct,
-                channels = m.str("channels") ?: d.channels
+                channels = m.str("channels") ?: d.channels,
+                host = m.str("host") ?: d.host,
+                addresses = m.str("ips") ?: d.addresses
             )
         }
     }

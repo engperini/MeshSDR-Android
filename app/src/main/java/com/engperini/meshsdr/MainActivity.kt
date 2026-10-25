@@ -105,6 +105,8 @@ class MainActivity : Activity() {
     private var applyingRemote = false
     private lateinit var remoteBox: LinearLayout
     private lateinit var hostInput: EditText
+    /** The linked receiver's name and IP, so it can be reached by SSH or Wi-Fi. */
+    private lateinit var receiverLabel: TextView
     private lateinit var deviceButton: Button
     private lateinit var averagingSwitch: Switch
     private lateinit var autoRecordSwitch: Switch
@@ -251,6 +253,8 @@ class MainActivity : Activity() {
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
         }
         remoteBox.addView(hostInput, spaced(6))
+        receiverLabel = label("", 12f, Ui.TEXT).apply { visibility = View.GONE; setTextIsSelectable(true) }
+        remoteBox.addView(receiverLabel, spaced(6))
         remoteBox.addView(row(this,
             pill(tr("Recordings", "Gravações"), UiStyle.TONAL) { requestRemoteFiles() },
             pill(tr("Stop its reception", "Parar a recepção dele"), UiStyle.OUTLINED) { remoteCommand("stop") },
@@ -1094,6 +1098,7 @@ class MainActivity : Activity() {
         remote = null
         remoteLinked = false
         remoteState = null
+        showReceiver(null)
         download?.let {
             try { it.close() } catch (_: Exception) {}
             log("LINK", tr("Download interrupted: $downloadName", "Download interrompido: $downloadName"))
@@ -1157,6 +1162,10 @@ class MainActivity : Activity() {
     /** UI thread: the receiver is the source of truth for every setting while linked. */
     private fun applyRemoteState(client: RemoteClient, s: RemoteState) {
         val old = remoteState
+        showReceiver(s)
+        // Its IP, e.g. to update it over SSH: logged once and whenever it changes network.
+        if (s.addresses.isNotEmpty() && s.addresses != old?.addresses)
+            log("LINK", tr("Receiver ${s.host} — IP: ${s.addresses}", "Receptor ${s.host} — IP: ${s.addresses}"))
         remoteState = s
         // First contact with a stopped receiver: Connect means "start receiving".
         if (old == null && remoteWanted && s.status == RemoteState.DISCONNECTED) client.send(RemoteLink.command("connect"))
@@ -1194,6 +1203,17 @@ class MainActivity : Activity() {
         autoRecordSwitch.isChecked = s.autoRecord
         updateGainLabel()
         updateProfileLabel()
+    }
+
+    /** "rasp-lora • IP 10.170.78.143", shown under the remote settings while linked. */
+    private fun showReceiver(s: RemoteState?) {
+        if (s == null || remote == null || s.host.isEmpty()) {
+            receiverLabel.visibility = View.GONE
+            return
+        }
+        receiverLabel.text = tr("Receiver: ", "Receptor: ") + s.host + " • " +
+            if (s.addresses.isEmpty()) tr("no network (Bluetooth only)", "sem rede (só Bluetooth)") else "IP ${s.addresses}"
+        receiverLabel.visibility = View.VISIBLE
     }
 
     private fun requestRemoteFiles() {

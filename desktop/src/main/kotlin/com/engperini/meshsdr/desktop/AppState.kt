@@ -277,7 +277,8 @@ class AppState(private val keepTrying: Boolean = false) {
     /** IPv4 addresses a phone on the same network (or the Pi's hotspot) can use. */
     fun localAddresses(): List<String> = try {
         java.net.NetworkInterface.getNetworkInterfaces().toList()
-            .filter { it.isUp && !it.isLoopback }
+            // Docker and VM bridges are not reachable from a phone.
+            .filter { it.isUp && !it.isLoopback && !it.isVirtual && VIRTUAL_INTERFACES.none { p -> it.name.startsWith(p) } }
             .flatMap { it.inetAddresses.toList() }
             .filterIsInstance<java.net.Inet4Address>()
             .map { it.hostAddress }
@@ -300,11 +301,29 @@ class AppState(private val keepTrying: Boolean = false) {
                 "Relógio ajustado pelo celular: este computador estava $minutes min adiantado"))
     }
 
+    /** This computer's name, read once (a slow name lookup must not delay the state). */
+    val hostName: String by lazy {
+        try { File("/etc/hostname").takeIf { it.isFile }?.readText()?.trim()?.ifEmpty { null } } catch (_: Exception) { null }
+            ?: try { java.net.InetAddress.getLocalHost().hostName } catch (_: Exception) { "" }
+    }
+
+    /** Addresses for the phone, refreshed every few seconds (the Pi may change network). */
+    private fun addressesForPhone(): String {
+        val now = System.currentTimeMillis()
+        if (now - addressesAt > 5000) {
+            addressesAt = now
+            addresses = localAddresses().joinToString(" / ")
+        }
+        return addresses
+    }
+    @Volatile private var addresses = ""
+    @Volatile private var addressesAt = 0L
+
     fun remoteState() = RemoteState(
         status = status.name, profileId = profile.id, frequencyHz = centerHz, genericSf = genericSf,
         genericBw = genericBw, gainTenths = gainTenths, ppm = ppm, averaging = averaging, autoRecord = autoRecord,
         detections = detections, decoded = decoded, levelRms = levelRms, levelClipPct = levelClipPct,
-        channels = hashtagText
+        channels = hashtagText, host = hostName, addresses = addressesForPhone()
     )
 
     fun settingsSummary(): String {
@@ -638,6 +657,7 @@ class AppState(private val keepTrying: Boolean = false) {
 
     companion object {
         const val AUTO_GAIN = -1
+        private val VIRTUAL_INTERFACES = listOf("docker", "br-", "veth", "virbr", "lxc", "tun", "tap")
         /** Port for the rtl_tcp the app starts itself, away from the default 1234. */
         const val LOCAL_PORT = 14423
         val GAIN_STEPS = listOf("Auto" to AUTO_GAIN, "20" to 197, "30" to 297, "40" to 402, "49.6" to 496)
